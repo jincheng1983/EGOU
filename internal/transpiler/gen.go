@@ -323,7 +323,11 @@ func (g *codeGen) writeLineDirective(globalLine int) {
 			fileLocalLine = globalLine - m.GlobalLine
 		}
 	}
-	fmt.Fprintf(&g.buf, "//line \"%s\":%d\n", fileName, fileLocalLine)
+	// 不带引号的 //line 指令格式：dlv（Delve）在解析 DWARF 调试信息时，
+	// 会把带引号的 //line "file.eg":N 中的引号作为文件名的一部分存入 DWARF，
+	// 导致 CreateBreakpoint("file.eg", N) 找不到文件（dlv 内部查找的是 "file.eg" 含引号）。
+	// 使用不带引号的 //line file.eg:N 格式可避免此问题，且 Go 编译器同样支持。
+	fmt.Fprintf(&g.buf, "//line %s:%d\n", fileName, fileLocalLine)
 }
 
 // writeDecl 分发顶层声明

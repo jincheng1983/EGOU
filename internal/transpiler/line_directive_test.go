@@ -64,14 +64,14 @@ func TestLineDirectiveMergedFiles(t *testing.T) {
 		t.Fatalf("GenerateGo failed: %v", err)
 	}
 
-	// 验证主源码声明前插入 //line "源码.eg":N（主源码在标记之前，用默认文件名）
-	if !strings.Contains(out, `//line "源码.eg":`) {
-		t.Errorf("期望主源码声明前插入 //line \"源码.eg\":N, 实际:\n%s", out)
+	// 验证主源码声明前插入 //line 源码.eg:N（不带引号，兼容 dlv 调试器）
+	if !strings.Contains(out, `//line 源码.eg:`) {
+		t.Errorf("期望主源码声明前插入 //line 源码.eg:N, 实际:\n%s", out)
 	}
 
-	// 验证扩展包声明前插入 //line "global:libs/stringx/source.eg":N
-	if !strings.Contains(out, `//line "global:libs/stringx/source.eg":`) {
-		t.Errorf("期望扩展包声明前插入 //line \"global:libs/stringx/source.eg\":N, 实际:\n%s", out)
+	// 验证扩展包声明前插入 //line global:libs/stringx/source.eg:N
+	if !strings.Contains(out, `//line global:libs/stringx/source.eg:`) {
+		t.Errorf("期望扩展包声明前插入 //line global:libs/stringx/source.eg:N, 实际:\n%s", out)
 	}
 }
 
@@ -93,7 +93,7 @@ func TestLineDirectiveFileLocalLineCalc(t *testing.T) {
 	out, _ := GenerateGo(file)
 
 	// foo 声明在合并源码第 5 行，标记在第 4 行，文件内行号 = 5 - 4 = 1
-	if !strings.Contains(out, `//line "global:libs/x/source.eg":1`) {
-		t.Errorf("期望 //line \"global:libs/x/source.eg\":1, 实际:\n%s", out)
+	if !strings.Contains(out, `//line global:libs/x/source.eg:1`) {
+		t.Errorf("期望 //line global:libs/x/source.eg:1, 实际:\n%s", out)
 	}
 }

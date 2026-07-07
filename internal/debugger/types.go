@@ -53,13 +53,15 @@ type Thread struct {
 }
 
 // Goroutine 表示一个 goroutine。
+// 注意：dlv 的 Status 字段是 GoroutineStatus（int64 枚举），不是字符串。
+//   0=Running 1=Waiting 2=Blocked 3=Syscall 4=WaitingForGc 5=Select 6=TimeSleep 7=Dead
 type Goroutine struct {
 	ID            int      `json:"id"`
 	CurrentLoc    Location `json:"currentLoc"`
 	UserLoc       Location `json:"userLoc"`
-	GoLoc        Location `json:"goLoc"`
+	GoLoc         Location `json:"goLoc"`
 	StartLoc      Location `json:"startLoc"`
-	Status        string   `json:"status"`
+	Status        int      `json:"status"`
 }
 
 // DebuggerState 表示调试器当前状态（Continue/Step 返回值）。
@@ -83,12 +85,13 @@ type Stackframe struct {
 }
 
 // Variable 表示一个变量/表达式的值。
+// Kind 是 reflect.Kind 的数值形式（dlv 返回 uint，不是字符串）。
 type Variable struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 	Type  string `json:"type"`
 	Addr  uint64 `json:"addr"`
-	Kind  string `json:"kind"`
+	Kind  int    `json:"kind"`
 }
 
 // LoadConfig 控制变量值的加载深度（dlv 的 LoadConfig）。

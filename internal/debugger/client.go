@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -70,6 +71,10 @@ type Client struct {
 	addr   string
 	closed bool
 
+	// exitOnce 保证 onExit 只触发一次（dlv 进程退出监听器与 executeCommand 竞争触发）
+	exitOnce sync.Once
+	exitFired int32
+
 	onHalt func(state *DebuggerState)
 	onExit func(state *DebuggerState)
 	onLog  func(line string)
@@ -97,6 +102,10 @@ func StartDebug(binaryPath string, args []string, onHalt, onExit func(*DebuggerS
 		"--api-version=2",
 		"--listen=127.0.0.1:0", // 随机端口
 		"--accept-multiclient",
+		// 关闭 Go 版本检查：dlv 的版本支持列表通常滞后于 Go 发布，
+		// 实际上 Go 1.x 之间的 DWARF 格式变化很小，强制关闭检查让调试器能用于新版 Go。
+		// 如果新版 Go 确实有不兼容的 DWARF 变化，dlv 会在解析时返回错误，不会导致错误调试。
+		"--check-go-version=false",
 	}
 	if len(args) > 0 {
 		dlvArgs = append(dlvArgs, "--")
@@ -147,7 +156,43 @@ func StartDebug(binaryPath string, args []string, onHalt, onExit func(*DebuggerS
 	}
 	c.conn = conn
 
+	// 启动 dlv 进程退出监听器：
+	// dlv 在被调试程序退出后会关闭 RPC 连接（即使 --accept-multiclient），
+	// 导致正在阻塞的 Continue/Next 的 RPC 调用返回 "connection closed" 错误，
+	// 而非返回 Exited=true 的 state。这里监听 dlv 进程退出，触发 onExit 回调，
+	// 让 IDE 能正确感知程序结束。
+	go c.watchProcessExit()
+
 	return c, nil
+}
+
+// watchProcessExit 监听 dlv 子进程退出，触发 onExit 回调。
+// 仅在 executeCommand 未触发 onExit 且非主动 Close 时作为兜底（用 exitOnce 保证只触发一次）。
+func (c *Client) watchProcessExit() {
+	if c.cmd == nil || c.cmd.Process == nil {
+		return
+	}
+	// 等待 dlv 进程退出（Close 中的 Kill 也会让 Wait 返回）
+	_ = c.cmd.Wait()
+	// 如果是主动 Close（c.closed=true），不触发 onExit（避免向 IDE 发送误导性的退出事件）
+	c.mu.Lock()
+	closed := c.closed
+	c.mu.Unlock()
+	if closed {
+		return
+	}
+	// 进程退出后，如果 onExit 还没触发，触发一次
+	c.fireExit(&DebuggerState{Exited: true, ExitStatus: -1, StopReason: "process exited"})
+}
+
+// fireExit 触发 onExit 回调（保证只触发一次）。
+func (c *Client) fireExit(state *DebuggerState) {
+	if !atomic.CompareAndSwapInt32(&c.exitFired, 0, 1) {
+		return
+	}
+	if c.onExit != nil {
+		c.onExit(state)
+	}
 }
 
 // readStream 逐行读取 dlv 输出，解析监听地址或转发日志。
@@ -211,15 +256,18 @@ func (c *Client) kill() {
 // ===== 断点管理 =====
 
 // CreateBreakpoint 在指定文件:行设置断点，返回带 ID 的断点。
+// dlv 的 CreateBreakpoint 响应格式为 {"Breakpoint": {...}}（包装在 Breakpoint 键中）。
 func (c *Client) CreateBreakpoint(file string, line int) (*Breakpoint, error) {
 	req := struct {
 		Breakpoint Breakpoint `json:"breakpoint"`
 	}{Breakpoint: Breakpoint{File: file, Line: line}}
-	var resp Breakpoint
+	var resp struct {
+		Breakpoint Breakpoint `json:"Breakpoint"`
+	}
 	if err := c.call("RPCServer.CreateBreakpoint", req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return &resp.Breakpoint, nil
 }
 
 // ClearBreakpoint 按 ID 删除断点。
@@ -232,12 +280,55 @@ func (c *Client) ClearBreakpoint(id int) error {
 }
 
 // ListBreakpoints 返回所有断点。
+// dlv 的 ListBreakpoints 响应格式为 {"Breakpoints": [...]}。
 func (c *Client) ListBreakpoints() ([]Breakpoint, error) {
-	var resp []Breakpoint
+	var resp struct {
+		Breakpoints []Breakpoint `json:"Breakpoints"`
+	}
 	if err := c.call("RPCServer.ListBreakpoints", struct{}{}, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return resp.Breakpoints, nil
+}
+
+// ListSources 返回调试器已知的所有源文件路径（包括 //line 指令生成的虚拟文件）。
+// 用于诊断断点设置失败：确认 dlv 是否识别了 .eg 文件名。
+func (c *Client) ListSources(filter string) ([]string, error) {
+	req := struct {
+		Filter string `json:"filter"`
+	}{Filter: filter}
+	// dlv 的 ListSources 返回 {"Sources": [...]} 结构
+	var resp struct {
+		Sources []string `json:"Sources"`
+	}
+	if err := c.call("RPCServer.ListSources", req, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Sources, nil
+}
+
+// FindLocation 查找代码位置（支持 "file:line" 格式）。
+// 用于诊断断点设置：dlv 的 CreateBreakpoint 内部用 FindLocation 解析文件名，
+// 如果 FindLocation 找不到，说明 //line 指令的虚拟文件名未被 dlv 识别。
+func (c *Client) FindLocation(scopeGoroutineID, frame int, loc string) ([]Location, error) {
+	req := struct {
+		Scope struct {
+			GoroutineID int `json:"goroutineID"`
+			Frame       int `json:"frame"`
+		} `json:"scope"`
+		Loc string `json:"loc"`
+	}{
+		Loc: loc,
+	}
+	req.Scope.GoroutineID = scopeGoroutineID
+	req.Scope.Frame = frame
+	var resp struct {
+		Locations []Location `json:"Locations"`
+	}
+	if err := c.call("RPCServer.FindLocation", req, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Locations, nil
 }
 
 // ===== 执行控制（阻塞调用，程序停止时才返回）=====
@@ -282,12 +373,17 @@ func (c *Client) executeCommand(name string) (*DebuggerState, error) {
 	}{Name: name}
 	var resp DebuggerState
 	if err := c.call("RPCServer.Command", req, &resp); err != nil {
+		// Continue/Next 在被调试程序退出时，dlv 会关闭 RPC 连接，
+		// 导致 RPC 调用返回 "connection closed" / "wsarecv" 错误。
+		// 此时 watchProcessExit 会触发 onExit，这里返回一个表示退出的 state。
+		if isConnClosedErr(err) {
+			c.fireExit(&DebuggerState{Exited: true, ExitStatus: -1, StopReason: "process exited"})
+			return &DebuggerState{Exited: true, ExitStatus: -1, StopReason: "process exited"}, nil
+		}
 		return nil, err
 	}
 	if resp.Exited {
-		if c.onExit != nil {
-			c.onExit(&resp)
-		}
+		c.fireExit(&resp)
 	} else if !resp.Running {
 		if c.onHalt != nil {
 			c.onHalt(&resp)
@@ -296,55 +392,100 @@ func (c *Client) executeCommand(name string) (*DebuggerState, error) {
 	return &resp, nil
 }
 
+// isConnClosedErr 判断错误是否由 RPC 连接关闭引起。
+// dlv 在被调试程序退出后关闭连接，Continue/Next 的阻塞 RPC 调用会返回此类错误。
+func isConnClosedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "wsarecv") ||
+		strings.Contains(msg, "connection reset") ||
+		strings.Contains(msg, "connection forcibly closed") ||
+		strings.Contains(msg, "EOF") ||
+		strings.Contains(msg, "closed network connection") ||
+		strings.Contains(msg, "connection refused")
+}
+
 // ===== 状态查询 =====
 
 // State 返回当前调试器状态（非阻塞）。
+// dlv 的 State 请求接受 {"nonBlocking": bool}，响应为 DebuggerState 对象。
 func (c *Client) State() (*DebuggerState, error) {
+	req := struct {
+		NonBlocking bool `json:"nonBlocking"`
+	}{NonBlocking: true}
 	var resp DebuggerState
-	if err := c.call("RPCServer.State", struct{}{}, &resp); err != nil {
+	if err := c.call("RPCServer.State", req, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
 }
 
+// ListGoroutines 返回所有 goroutine 列表。
+// dlv 的 ListGoroutines 响应格式为 {"Goroutines": [...]}。
+// 用于获取实际 goroutine ID（当 DebuggerState.SelectedGoroutine 为 nil 时作为 fallback）。
+func (c *Client) ListGoroutines() ([]Goroutine, error) {
+	req := struct {
+		Count    int `json:"count"`
+		Start    int `json:"start"`
+	}{}
+	var resp struct {
+		Goroutines []Goroutine `json:"Goroutines"`
+	}
+	if err := c.call("RPCServer.ListGoroutines", req, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Goroutines, nil
+}
+
 // Stacktrace 返回指定 goroutine 的调用栈。
 // goroutineID 为 -1 时使用当前选中的 goroutine。
+// dlv 的 Stacktrace 响应格式为 {"Locations": [...]}（包装在 Locations 键中）。
 func (c *Client) Stacktrace(goroutineID, depth int) ([]Stackframe, error) {
 	req := struct {
 		Id    int `json:"id"`
 		Depth int `json:"depth"`
 	}{Id: goroutineID, Depth: depth}
-	var resp []Stackframe
+	var resp struct {
+		Locations []Stackframe `json:"Locations"`
+	}
 	if err := c.call("RPCServer.Stacktrace", req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return resp.Locations, nil
 }
 
 // ListLocalVars 返回指定栈帧的局部变量。
+// dlv 的 ListLocalVars 响应格式为 {"Vars": [...]}。
 func (c *Client) ListLocalVars(goroutineID, frame int) ([]Variable, error) {
 	req := struct {
 		GoroutineID int `json:"goroutineID"`
 		Frame       int `json:"frame"`
 	}{GoroutineID: goroutineID, Frame: frame}
-	var resp []Variable
+	var resp struct {
+		Vars []Variable `json:"Vars"`
+	}
 	if err := c.call("RPCServer.ListLocalVars", req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return resp.Vars, nil
 }
 
 // ListFunctionArgs 返回指定栈帧的函数参数。
+// dlv 的 ListFunctionArgs 响应格式为 {"Args": [...]}。
 func (c *Client) ListFunctionArgs(goroutineID, frame int) ([]Variable, error) {
 	req := struct {
 		GoroutineID int `json:"goroutineID"`
 		Frame       int `json:"frame"`
 	}{GoroutineID: goroutineID, Frame: frame}
-	var resp []Variable
+	var resp struct {
+		Args []Variable `json:"Args"`
+	}
 	if err := c.call("RPCServer.ListFunctionArgs", req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return resp.Args, nil
 }
 
 // Detach 分离调试器（kill=true 时终止被调试进程）。

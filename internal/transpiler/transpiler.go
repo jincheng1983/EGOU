@@ -771,7 +771,8 @@ func insertLineDirectives(out []string, outLenBefore []int, srcInfos []srcLineIn
 		}
 		// 仅在该源码行产生了非空输出时插入 //line 指令
 		if endOut > startOut && startOut < len(out) && out[startOut] != "" && srcInfos[i].line > 0 {
-			result = append(result, fmt.Sprintf("//line \"%s\":%d", srcInfos[i].file, srcInfos[i].line))
+			// 不带引号格式：与 gen.go 保持一致，避免 dlv 把引号当作文件名的一部分
+			result = append(result, fmt.Sprintf("//line %s:%d", srcInfos[i].file, srcInfos[i].line))
 		}
 		for j := startOut; j < endOut && j < len(out); j++ {
 			result = append(result, out[j])
