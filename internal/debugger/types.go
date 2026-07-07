@@ -43,13 +43,17 @@ type Func struct {
 }
 
 // Thread 表示一个线程。
+// GoroutineID 是该线程当前绑定的 goroutine ID（v0.9.4 添加），
+// 断点命中时 CurrentThread.GoroutineID 就是用户代码 goroutine ID，
+// 比 ListGoroutines 的 UserLoc 更可靠（dlv 1.25.2 下 UserLoc 经常为空）。
 type Thread struct {
-	ID         int        `json:"id"`
-	PC         uint64     `json:"pc"`
-	File       string     `json:"file"`
-	Line       int        `json:"line"`
-	Function   *Func      `json:"function"`
-	Breakpoint *Breakpoint `json:"breakPoint"`
+	ID          int         `json:"id"`
+	PC          uint64      `json:"pc"`
+	File        string      `json:"file"`
+	Line        int         `json:"line"`
+	Function    *Func       `json:"function"`
+	GoroutineID int         `json:"goroutineID"`
+	Breakpoint  *Breakpoint `json:"breakPoint"`
 }
 
 // Goroutine 表示一个 goroutine。

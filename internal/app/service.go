@@ -42,9 +42,10 @@ type IDEService struct {
 	resourceDir string
 
 	// 调试器状态（P2 Delve 集成）
-	debugMu     sync.Mutex
-	debugClient *debugger.Client
-	debugTmpDir string // 调试编译的临时目录，调试结束后清理
+	debugMu            sync.Mutex
+	debugClient        *debugger.Client
+	debugTmpDir        string // 调试编译的临时目录，调试结束后清理
+	currentGoroutineID int    // 当前用户 goroutine ID（v0.9.4：解决 dlv 1.25.2 SelectedGoroutine 为空导致 ListLocalVars "unknown goroutine 0"）
 }
 
 // NewIDEService 构造一个 IDEService 实例。

@@ -109,6 +109,7 @@ func (s *IDEService) StopDebug() error {
 	tmpDir := s.debugTmpDir
 	s.debugClient = nil
 	s.debugTmpDir = ""
+	s.currentGoroutineID = 0 // 重置 goroutine ID（v0.9.4）
 	s.debugMu.Unlock()
 
 	if client == nil {
@@ -220,7 +221,8 @@ func (s *IDEService) DebugStacktrace(depth int) ([]debugger.Stackframe, error) {
 	if depth <= 0 {
 		depth = 20
 	}
-	return client.Stacktrace(-1, depth) // -1 = 当前选中 goroutine
+	gid := s.getCurrentGoroutineID()
+	return client.Stacktrace(gid, depth)
 }
 
 // DebugVariables 返回指定栈帧的局部变量和函数参数。frame=0 为当前帧。
@@ -229,11 +231,12 @@ func (s *IDEService) DebugVariables(frame int) (*DebugVars, error) {
 	if client == nil {
 		return nil, errDebugNotRunning
 	}
-	locals, err := client.ListLocalVars(-1, frame)
+	gid := s.getCurrentGoroutineID()
+	locals, err := client.ListLocalVars(gid, frame)
 	if err != nil {
 		return nil, err
 	}
-	args, err := client.ListFunctionArgs(-1, frame)
+	args, err := client.ListFunctionArgs(gid, frame)
 	if err != nil {
 		return nil, err
 	}
@@ -254,10 +257,65 @@ func (s *IDEService) getDebugClient() *debugger.Client {
 }
 
 // emitDebugHalt 触发程序暂停事件。
+// 同时维护 currentGoroutineID（v0.9.4：解决 dlv 1.25.2 SelectedGoroutine 为空导致 ListLocalVars "unknown goroutine 0"）。
+//
+// goroutine ID 解析优先级：
+//  1. state.SelectedGoroutine.ID（最准确，但 dlv 1.25.2 + Go 1.26.4 下经常为空）
+//  2. state.CurrentThread.GoroutineID（断点命中的线程绑定的 goroutine，最可靠）
+//  3. 主动调用 State() 获取完整状态再试 1/2（应对 Continue 返回不完整）
+//  4. ListGoroutines 中 UserLoc 在 .eg 文件上的 goroutine（fallback）
+//  5. ListGoroutines 第一个 goroutine（最后兜底）
+//
+// 注意：dlv 1.25.2 + Go 1.26.4 下 1-4 全部失效（State() 返回 threads=0），
+// 此时 ListLocalVars 无法工作。根本解决：用户安装与 Go 版本匹配的 dlv（v0.9.3 已支持配置 dlv 路径）。
 func (s *IDEService) emitDebugHalt(state *debugger.DebuggerState) {
 	if s.app == nil || state == nil {
 		return
 	}
+	// 维护当前 goroutine ID
+	resolvedGid := 0
+	if state.SelectedGoroutine != nil && state.SelectedGoroutine.ID > 0 {
+		resolvedGid = state.SelectedGoroutine.ID
+	} else if state.CurrentThread != nil && state.CurrentThread.GoroutineID > 0 {
+		// 断点命中时 CurrentThread.GoroutineID 就是用户代码 goroutine（最可靠）
+		resolvedGid = state.CurrentThread.GoroutineID
+	}
+	// 若 Continue 返回的 state 不完整，主动调用 State() 获取完整状态
+	if resolvedGid == 0 && state.CurrentThread == nil {
+		if client := s.getDebugClient(); client != nil {
+			if fullState, err := client.State(); err == nil && fullState != nil {
+				if fullState.SelectedGoroutine != nil && fullState.SelectedGoroutine.ID > 0 {
+					resolvedGid = fullState.SelectedGoroutine.ID
+				} else if fullState.CurrentThread != nil && fullState.CurrentThread.GoroutineID > 0 {
+					resolvedGid = fullState.CurrentThread.GoroutineID
+				}
+				// 用完整状态的 CurrentThread 补全 file/line
+				if fullState.CurrentThread != nil {
+					state.CurrentThread = fullState.CurrentThread
+				}
+			}
+		}
+	}
+	// 仍为空时通过 ListGoroutines fallback
+	if resolvedGid == 0 {
+		if client := s.getDebugClient(); client != nil {
+			if gs, err := client.ListGoroutines(); err == nil {
+				for _, g := range gs {
+					if isEgFile(g.UserLoc.File) {
+						resolvedGid = g.ID
+						break
+					}
+				}
+				if resolvedGid == 0 && len(gs) > 0 {
+					resolvedGid = gs[0].ID
+				}
+			}
+		}
+	}
+	if resolvedGid > 0 {
+		s.setGoroutineID(resolvedGid)
+	}
+
 	file := ""
 	line := 0
 	if state.CurrentThread != nil {
@@ -271,6 +329,32 @@ func (s *IDEService) emitDebugHalt(state *debugger.DebuggerState) {
 		"running":    state.Running,
 		"exited":     state.Exited,
 	})
+}
+
+// isEgFile 判断路径是否是 .eg 源文件（dlv 返回的 file 可能是绝对路径或 basename）。
+func isEgFile(path string) bool {
+	if path == "" {
+		return false
+	}
+	return filepath.Ext(path) == ".eg"
+}
+
+// getCurrentGoroutineID 返回当前记录的 goroutine ID（线程安全）。
+// 返回 -1 表示未记录（让 dlv 自己选择当前 goroutine）。
+func (s *IDEService) getCurrentGoroutineID() int {
+	s.debugMu.Lock()
+	defer s.debugMu.Unlock()
+	if s.currentGoroutineID <= 0 {
+		return -1
+	}
+	return s.currentGoroutineID
+}
+
+// setGoroutineID 设置当前 goroutine ID（线程安全）。
+func (s *IDEService) setGoroutineID(id int) {
+	s.debugMu.Lock()
+	s.currentGoroutineID = id
+	s.debugMu.Unlock()
 }
 
 // emitDebugExit 触发程序退出事件。

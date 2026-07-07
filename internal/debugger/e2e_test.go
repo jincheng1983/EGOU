@@ -348,10 +348,26 @@ func TestE2EDebuggerFlow(t *testing.T) {
 		haltState = s
 		t.Logf("命中断点: reason=%s, running=%v", s.StopReason, s.Running)
 		if s.CurrentThread != nil {
-			t.Logf("  位置: %s:%d", s.CurrentThread.File, s.CurrentThread.Line)
+			t.Logf("  位置: %s:%d (goroutineID=%d)", s.CurrentThread.File, s.CurrentThread.Line, s.CurrentThread.GoroutineID)
+		} else {
+			t.Logf("  CurrentThread 为 nil（dlv 版本不兼容时常见）")
 		}
 		if s.SelectedGoroutine != nil {
-			t.Logf("  goroutine ID: %d", s.SelectedGoroutine.ID)
+			t.Logf("  SelectedGoroutine ID: %d", s.SelectedGoroutine.ID)
+		}
+		// v0.9.4：Continue 返回的 state 可能不完整，主动调用 State() 获取完整状态
+		if s.CurrentThread == nil && s.SelectedGoroutine == nil {
+			t.Log("Continue 返回的 state 不完整，主动调用 State()...")
+			if fullState, ferr := client.State(); ferr == nil && fullState != nil {
+				t.Logf("State(): running=%v, threads=%d", fullState.Running, len(fullState.Threads))
+				if fullState.CurrentThread != nil {
+					t.Logf("  State.CurrentThread: id=%d, file=%s:%d, goroutineID=%d",
+						fullState.CurrentThread.ID, fullState.CurrentThread.File, fullState.CurrentThread.Line, fullState.CurrentThread.GoroutineID)
+					haltState = fullState
+				} else if len(fullState.Threads) == 0 {
+					t.Logf("  State() 返回 threads=0（dlv 1.25.2 + Go 1.26.4 不兼容，无法识别线程/goroutine）")
+				}
+			}
 		}
 	case <-exitCh:
 		t.Fatalf("程序在断点前已退出（断点未命中）")
@@ -359,19 +375,40 @@ func TestE2EDebuggerFlow(t *testing.T) {
 		t.Fatalf("等待 halt 超时（断点未命中且程序未退出）")
 	}
 
-	// 获取 goroutine ID：优先从 haltState.SelectedGoroutine，fallback 到 ListGoroutines
+	// 获取 goroutine ID：优先从 haltState.SelectedGoroutine，fallback 到 CurrentThread.GoroutineID，
+	// 再 fallback 到 ListGoroutines。
+	// v0.9.4：CurrentThread.GoroutineID 是断点命中线程绑定的 goroutine，比 ListGoroutines 更可靠
+	// （dlv 1.25.2 + Go 1.26.4 下 ListGoroutines 的 UserLoc 经常为空，无法识别用户代码 goroutine）
 	goroutineID := -1
 	if haltState != nil && haltState.SelectedGoroutine != nil {
 		goroutineID = haltState.SelectedGoroutine.ID
+		t.Logf("从 SelectedGoroutine 获取 goroutine ID: %d", goroutineID)
+	}
+	if goroutineID == -1 && haltState != nil && haltState.CurrentThread != nil && haltState.CurrentThread.GoroutineID > 0 {
+		goroutineID = haltState.CurrentThread.GoroutineID
+		t.Logf("从 CurrentThread.GoroutineID 获取 goroutine ID: %d (thread ID=%d)",
+			goroutineID, haltState.CurrentThread.ID)
 	}
 	if goroutineID == -1 {
-		t.Log("SelectedGoroutine 为空，尝试 ListGoroutines 获取 goroutine ID...")
+		t.Log("SelectedGoroutine 和 CurrentThread.GoroutineID 都为空，尝试 ListGoroutines...")
 		gs, gerr := client.ListGoroutines()
 		if gerr != nil {
 			t.Logf("ListGoroutines 失败: %v", gerr)
-		} else if len(gs) > 0 {
-			goroutineID = gs[0].ID
-			t.Logf("从 ListGoroutines 获取 goroutine ID: %d (共 %d 个 goroutine)", goroutineID, len(gs))
+		} else {
+			t.Logf("ListGoroutines 返回 %d 个 goroutine:", len(gs))
+			for _, g := range gs {
+				isEg := strings.HasSuffix(g.UserLoc.File, ".eg")
+				t.Logf("  goroutine ID=%d, userLoc=%s:%d (isEg=%v)", g.ID, g.UserLoc.File, g.UserLoc.Line, isEg)
+				if isEg && goroutineID == -1 {
+					goroutineID = g.ID
+				}
+			}
+			if goroutineID == -1 && len(gs) > 0 {
+				goroutineID = gs[0].ID
+			}
+			if goroutineID != -1 {
+				t.Logf("✓ 从 ListGoroutines 选定 goroutine ID: %d", goroutineID)
+			}
 		}
 	}
 
