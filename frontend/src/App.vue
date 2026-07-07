@@ -451,6 +451,8 @@
   v-model:garble-level="buildGarbleLevel"
   v-model:show-build-history="buildShowHistory"
   v-model:output-dir="buildOutputDir"
+  v-model:go-path="buildGoPath"
+  v-model:delve-path="buildDelvePath"
   v-model:open-last-project="uiOpenLastProject"
   v-model:left-panel-width="leftPanelWidth"
   v-model:right-panel-width="rightPanelWidth"
@@ -1513,6 +1515,9 @@ const buildAutoOpenFolder = persistedBoolNotFalse('eg-build-autofolder')
 const buildGarbleLevel = persistedStr('eg-build-garble-level', 'basic')
 const buildShowHistory = persistedBoolNotFalse('eg-build-history')
 const buildOutputDir = persistedStr('eg-build-outputdir', 'bin')
+// v0.9.2：Go/dlv 路径可配置（企业锁版本或 dlv 版本不匹配时用户自行指定，留空则自动查找）
+const buildGoPath = persistedStr('eg-build-go-path', '')
+const buildDelvePath = persistedStr('eg-build-delve-path', '')
 // 界面
 const uiOpenLastProject = persistedBoolNotFalse('eg-ui-lastproject')
 const sbShowCursor = persistedBoolNotFalse('eg-sb-cursor')
@@ -2600,6 +2605,31 @@ onMounted(() => {
     if (window.IDEService && window.IDEService.SetBuildOptions) {
       try { window.IDEService.SetBuildOptions(v) } catch (e) {
         console.warn('[build] SetBuildOptions 同步失败:', e)
+      }
+    }
+  })
+  // v0.9.2：同步 Go/dlv 路径到后端（用户可指定自安装的 SDK 路径，用于版本不匹配场景）
+  if (window.IDEService && window.IDEService.SetGoPath) {
+    try { window.IDEService.SetGoPath(buildGoPath.value) } catch (e) {
+      console.warn('[build] SetGoPath 初始同步失败:', e)
+    }
+  }
+  if (window.IDEService && window.IDEService.SetDelvePath) {
+    try { window.IDEService.SetDelvePath(buildDelvePath.value) } catch (e) {
+      console.warn('[build] SetDelvePath 初始同步失败:', e)
+    }
+  }
+  watch(buildGoPath, (v) => {
+    if (window.IDEService && window.IDEService.SetGoPath) {
+      try { window.IDEService.SetGoPath(v) } catch (e) {
+        console.warn('[build] SetGoPath 同步失败:', e)
+      }
+    }
+  })
+  watch(buildDelvePath, (v) => {
+    if (window.IDEService && window.IDEService.SetDelvePath) {
+      try { window.IDEService.SetDelvePath(v) } catch (e) {
+        console.warn('[build] SetDelvePath 同步失败:', e)
       }
     }
   })

@@ -98,6 +98,23 @@ func (s *IDEService) SetBuildOptions(garbleLevel string) {
 	runner.SetGarbleLevel(garbleLevel)
 }
 
+// SetGoPath 由前端同步"Go 编译器路径"设置到后端。
+// 允许用户指定自己安装的 Go SDK 路径（如 C:\Program Files\Go\bin\go.exe），
+// 适用于企业环境锁版本或个人用户用新版 Go 的场景。
+// 传入空字符串恢复为默认 "go"（从 PATH 查找）。
+func (s *IDEService) SetGoPath(path string) {
+	s.goBinary = path
+	runner.SetGoBinary(path)
+}
+
+// SetDelvePath 由前端同步"Delve 调试器路径"设置到后端。
+// 允许用户指定自己安装的 dlv 路径，适用于 dlv 版本与 Go 版本不匹配时
+// 用户自行安装兼容版本的场景。
+// 传入空字符串恢复为自动查找（PATH → GOPATH/bin）。
+func (s *IDEService) SetDelvePath(path string) {
+	debugger.SetDelveBinary(path)
+}
+
 // ServiceName 实现 Wails Service 接口，返回服务唯一标识。
 // Wails v3 要求每个 Service 必须实现此方法用于注册。
 func (s *IDEService) ServiceName() string {

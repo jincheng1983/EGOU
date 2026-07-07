@@ -261,6 +261,22 @@
             <strong>完整</strong>＝garble -literals -tiny，再加字符串字面量混淆（最强，但可能触发杀软误报 TrojanSpy/Stealer）。
           </div>
 
+          <div class="section-title"><span>工具链路径</span></div>
+          <div class="prop-grid">
+            <div class="prop-cell" style="grid-column: 1 / -1;">
+              <label class="prop-cell-label">Go 编译器路径（留空则从 PATH 查找）</label>
+              <n-input v-model:value="goPathLocal" size="small" placeholder="如 C:\Program Files\Go\bin\go.exe（留空自动查找）" clearable />
+            </div>
+            <div class="prop-cell" style="grid-column: 1 / -1;">
+              <label class="prop-cell-label">Delve 调试器路径（留空则自动查找）</label>
+              <n-input v-model:value="delvePathLocal" size="small" placeholder="如 C:\Users\xxx\go\bin\dlv.exe（留空自动查找）" clearable />
+            </div>
+          </div>
+          <div class="prop-hint">
+            适用于企业环境锁 Go 版本、或 dlv 版本与 Go 版本不匹配时指定自定义路径。
+            dlv 版本滞后于 Go 发布时，IDE 已自动添加 --check-go-version=false 跳过版本检查。
+          </div>
+
           <div class="section-title"><span>输出</span></div>
           <div class="prop-grid">
             <div class="prop-cell" style="grid-column: 1 / -1;">
@@ -593,6 +609,9 @@ const props = defineProps({
   garbleLevel: { type: String, default: 'basic' },
   showBuildHistory: { type: Boolean, default: true },
   outputDir: { type: String, default: 'bin' },
+  // 工具链路径（v0.9.2：用户可指定 Go/dlv 路径，适用于版本不匹配或企业锁版本场景）
+  goPath: { type: String, default: '' },
+  delvePath: { type: String, default: '' },
   // 界面
   openLastProject: { type: Boolean, default: true },
   leftPanelWidth: { type: Number, default: 240 },
@@ -617,6 +636,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:minimapEnabled', 'update:fontSize', 'update:lineNumbersEnabled', 'update:lineHeight', 'update:autoSaveDelay', 'update:tabSize', 'update:wordWrap', 'update:renderWhitespace', 'update:cursorBlinking', 'update:cursorSmoothCaretAnimation', 'update:cursorWidth', 'update:bracketPairColorization', 'update:guidesBracketPairs', 'update:fontLigatures', 'update:lineNumbersMinChars', 'update:renderFinalNewline', 'update:minimapShowSlider', 'update:minimapRenderCharacters', 'update:minimapMaxColumn', 'update:editorTheme', 'update:fontFamily', 'update:autoConvertSymbols',
   'update:gridSize', 'update:showGrid', 'update:snapGrid', 'update:defaultRadius', 'update:defaultBorderWidth',
   'update:defaultBuildMode', 'update:autoOpenFolder', 'update:garbleLevel', 'update:showBuildHistory', 'update:outputDir',
+  'update:goPath', 'update:delvePath',
   'update:openLastProject', 'update:leftPanelWidth', 'update:rightPanelWidth', 'update:outputPanelHeight',
   'update:sbShowCursor', 'update:sbShowIndent', 'update:sbShowEncoding', 'update:sbShowEol', 'update:sbShowLang', 'update:sbShowHealth',
   'update:autoSwitchOutputTab', 'update:smartScroll',
@@ -803,6 +823,13 @@ watch(showBuildHistoryLocal, (v) => emit('update:showBuildHistory', v))
 const outputDirLocal = ref(props.outputDir)
 watch(() => props.outputDir, (v) => { outputDirLocal.value = v })
 watch(outputDirLocal, (v) => emit('update:outputDir', v))
+// v0.9.2：Go/dlv 路径可配置（企业锁版本或 dlv 版本不匹配时用户自行指定）
+const goPathLocal = ref(props.goPath)
+watch(() => props.goPath, (v) => { goPathLocal.value = v })
+watch(goPathLocal, (v) => emit('update:goPath', v))
+const delvePathLocal = ref(props.delvePath)
+watch(() => props.delvePath, (v) => { delvePathLocal.value = v })
+watch(delvePathLocal, (v) => emit('update:delvePath', v))
 
 // 界面
 const openLastProjectLocal = ref(props.openLastProject)
