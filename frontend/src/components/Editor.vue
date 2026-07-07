@@ -264,6 +264,15 @@ onMounted(() => {
           className: 'eg-debug-current-line',
           stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
         }
+      }, {
+        // glyph margin 黄色箭头标记（VS Code 风格）
+        range: new monaco.Range(debugCurrentLine, 1, debugCurrentLine, 1),
+        options: {
+          isWholeLine: false,
+          glyphMarginClassName: 'eg-debug-current-glyph',
+          glyphMarginHoverMessage: { value: '当前执行位置' },
+          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+        }
       }])
     } else {
       currentLineDecoration = editor.deltaDecorations(currentLineDecoration, [])
@@ -967,9 +976,31 @@ defineExpose({
 .eg-breakpoint-glyph:hover {
   transform: scale(1.15);
 }
-/* 调试当前执行行高亮（黄色背景） */
+/* 调试当前执行行高亮（VS Code 风格：黄色背景 + 左侧箭头标记） */
 .eg-debug-current-line {
-  background: rgba(255, 213, 79, 0.25) !important;
-  border-left: 2px solid #ffd54f;
+  background: rgba(255, 213, 79, 0.35) !important;
+  border-left: 3px solid #ffd54f;
+  box-shadow: inset 0 0 0 1px rgba(255, 213, 79, 0.3);
+}
+/* 当前行 glyph 区域显示黄色箭头（指示当前执行位置） */
+.eg-debug-current-glyph {
+  width: 12px !important;
+  height: 12px !important;
+  margin-left: 2px;
+  margin-top: 4px;
+  background: transparent;
+  position: relative;
+}
+.eg-debug-current-glyph::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-left: 10px solid #ffd54f;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  filter: drop-shadow(0 0 2px rgba(255, 213, 79, 0.6));
 }
 </style>

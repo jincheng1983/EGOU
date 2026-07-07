@@ -355,6 +355,27 @@ func (s *IDEService) emitDebugHalt(state *debugger.DebuggerState) {
 		file = state.CurrentThread.File
 		line = state.CurrentThread.Line
 	}
+	// v0.9.11：当 CurrentThread 为空或 file/line 为空时（dlv 版本不兼容），
+	// 通过 Stacktrace 获取第一帧的 file/line，确保编辑器能高亮当前执行行。
+	if (file == "" || line == 0) && resolvedGid > 0 {
+		if client := s.getDebugClient(); client != nil {
+			if stack, err := client.Stacktrace(resolvedGid, 5); err == nil && len(stack) > 0 {
+				// 优先找 .eg 文件的栈帧（跳过 runtime 帧）
+				for _, frame := range stack {
+					if isEgFile(frame.File) {
+						file = frame.File
+						line = frame.Line
+						break
+					}
+				}
+				// 如果没有 .eg 帧，用第一帧
+				if file == "" && stack[0].File != "" {
+					file = stack[0].File
+					line = stack[0].Line
+				}
+			}
+		}
+	}
 	s.app.Event.Emit("debug:halt", map[string]any{
 		"file":       file,
 		"line":       line,
