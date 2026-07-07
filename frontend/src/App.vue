@@ -356,6 +356,7 @@
                         :project-path="projectPath"
                         @jump-to="gotoDebugLocation"
                         @debug-log="onDebugLog"
+                        @debug-started="onDebugStarted"
                       />
                     </n-tab-pane>
                   </n-tabs>
@@ -4178,6 +4179,12 @@ function onToggleBreakpoint(line) {
   if (isDebugging.value) {
     IDEService.DebugToggleBreakpoint(fileName, line).catch(() => {})
   }
+}
+
+// onDebugStarted: 调试器启动成功 → 展开输出面板 + 切换到"调试"tab
+function onDebugStarted() {
+  outputCollapsed.value = false
+  outputTabName.value = 'debug'
 }
 
 

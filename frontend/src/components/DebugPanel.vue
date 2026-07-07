@@ -96,7 +96,7 @@ import { Events } from '@wailsio/runtime'
 const props = defineProps({
   projectPath: { type: String, default: '' }
 })
-const emit = defineEmits(['jump-to', 'debug-log'])
+const emit = defineEmits(['jump-to', 'debug-log', 'debug-started'])
 
 const isDebugging = ref(false)
 const debugStatus = ref('')
@@ -158,6 +158,7 @@ async function startDebug() {
     await IDEService.StartDebug(props.projectPath, bps)
     isDebugging.value = true
     debugStatus.value = '已就绪'
+    emit('debug-started')
   } catch (e) {
     debugStatus.value = '启动失败: ' + (e.message || e)
   }
