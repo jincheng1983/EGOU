@@ -1,0 +1,35 @@
+{
+  "type": "colorpicker",
+  "label": "颜色选择器",
+  "icon": "",
+  "width": 100,
+  "height": 28,
+  "text": "",
+  "props": [
+    {
+      "key": "mode",
+      "label": "模式",
+      "type": "select",
+      "default": "single",
+      "options": [
+        { "label": "单色", "value": "single" },
+        { "label": "渐变", "value": "gradient" }
+      ]
+    },
+    {
+      "key": "showAlpha",
+      "label": "显示透明度",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "key": "preset",
+      "label": "预设颜色",
+      "type": "text",
+      "default": "",
+      "inputType": "textarea",
+      "rows": 3
+    }
+  ],
+  "events": ["值被改变"]
+}

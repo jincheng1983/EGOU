@@ -1,0 +1,128 @@
+{
+  "contractVersion": "1.0",
+  "library": "krnln",
+  "libraryDisplayName": "系统核心支持库",
+  "libraryVersion": "0.1.0",
+  "description": "EGOU 内核支持库：流程控制、算术运算、文本/数组/字节集等基础命令的占位集合。后续会按 ycIDE krnln.commands.ycmd.json 的规模逐步补全。",
+  "author": "EGOU",
+  "platforms": ["windows", "linux", "macos"],
+  "commands": [
+    {
+      "commandId": "krnln.Ife",
+      "displayName": "如果",
+      "englishName": "Ife",
+      "summary": "本命令根据提供的逻辑参数的值决定是否改变程序的执行位置；如果提供的逻辑参数值为真，程序继续顺序向下执行，否则跳转到对应的』如果结束』位置。",
+      "params": [
+        { "name": "条件", "type": "逻辑型", "optional": false, "description": "本条件值的结果决定下一步程序执行位置。" }
+      ],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "isVariable": false,
+      "isArray": false,
+      "callSyntax": "如果 (条件)"
+    },
+    {
+      "commandId": "krnln.If",
+      "displayName": "如果真",
+      "englishName": "If",
+      "summary": "本命令根据提供的逻辑参数的值决定是否改变程序的执行位置；如果为真则顺序执行，否则跳转到本命令所对应的』如果真结束』位置。",
+      "params": [
+        { "name": "条件", "type": "逻辑型", "optional": false, "description": "本条件值的结果决定下一步程序执行位置。" }
+      ],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "如果真 (条件)"
+    },
+    {
+      "commandId": "krnln.While",
+      "displayName": "判断循环首",
+      "englishName": "While",
+      "summary": "本命令根据提供的逻辑参数的值决定是否进入循环；如果为真则顺序执行下一条命令进入循环，否则跳转到对应的『判断循环尾』的下一条命令。",
+      "params": [
+        { "name": "条件", "type": "逻辑型", "optional": false, "description": "本条件值的结果决定是否进入循环。" }
+      ],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "判断循环首 (条件)"
+    },
+    {
+      "commandId": "krnln.Counter",
+      "displayName": "计次循环首",
+      "englishName": "Counter",
+      "summary": "执行本命令将把循环体内的命令重复执行指定的次数。",
+      "params": [
+        { "name": "循环次数", "type": "整数型", "optional": false, "description": "本数值指定执行计次循环体内所有命令的次数，必须大于等于零。" },
+        { "name": "已循环次数记录变量", "type": "整数型", "optional": true, "isVariable": true, "description": "可以被省略。本数值型变量用作记录当前循环首已经被进入过的次数（从 1 开始）。" }
+      ],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "计次循环首 (循环次数, [已循环次数记录变量])"
+    },
+    {
+      "commandId": "krnln.For",
+      "displayName": "变量循环首",
+      "englishName": "For",
+      "summary": "执行本命令将利用变量对循环体内的命令进行循环执行。",
+      "params": [
+        { "name": "变量起始值", "type": "整数型", "optional": false, "description": "初始值为 1。定义循环变量的起始数值。" },
+        { "name": "变量目标值", "type": "整数型", "optional": false, "description": "定义循环变量的目标数值。" },
+        { "name": "变量递增值", "type": "整数型", "optional": false, "description": "初始值为 1。每次执行到循环尾部时都把此值加到循环变量中。" },
+        { "name": "循环变量", "type": "整数型", "optional": true, "isVariable": true, "description": "可以被省略。本数值型变量用作控制循环执行次数。" }
+      ],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "变量循环首 (变量起始值, 变量目标值, 变量递增值, [循环变量])"
+    },
+    {
+      "commandId": "krnln.Continue",
+      "displayName": "到循环尾",
+      "englishName": "Continue",
+      "summary": "本命令转移当前程序执行位置到当前所处循环体的循环尾语句处。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "到循环尾 ()"
+    },
+    {
+      "commandId": "krnln.Break",
+      "displayName": "跳出循环",
+      "englishName": "Break",
+      "summary": "本命令转移当前程序执行位置到当前所处循环体循环尾语句的下一条语句处。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "跳出循环 ()"
+    },
+    {
+      "commandId": "krnln.Return",
+      "displayName": "返回",
+      "englishName": "Return",
+      "summary": "本命令结束当前函数的运行，可根据需要返回一个值到函数调用处。",
+      "params": [
+        { "name": "返回到调用方的值", "type": "通用型", "optional": true, "description": "可以被省略。" }
+      ],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "返回 ([返回到调用方的值])"
+    },
+    {
+      "commandId": "krnln.End",
+      "displayName": "结束",
+      "englishName": "End",
+      "summary": "本命令结束当前程序的运行。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "流程控制",
+      "platforms": ["windows", "linux", "macos"],
+      "callSyntax": "结束 ()"
+    }
+  ]
+}

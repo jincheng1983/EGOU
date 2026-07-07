@@ -1,0 +1,37 @@
+{
+  "contractVersion": "1.0",
+  "library": "egou.net",
+  "libraryDisplayName": "egou/net",
+  "libraryVersion": "0.1.0",
+  "description": "网络请求相关命令。",
+  "platforms": ["windows"],
+  "commands": [
+    {
+      "commandId": "egou.HttpGet",
+      "displayName": "HTTP GET",
+      "englishName": "HttpGet",
+      "summary": "发送 GET 请求并返回响应文本。",
+      "params": [
+        { "name": "地址", "type": "文本型", "optional": false, "description": "请求 URL。" }
+      ],
+      "returnType": "文本型",
+      "category": "网络",
+      "platforms": ["windows"],
+      "callSyntax": "HTTP GET(地址)"
+    },
+    {
+      "commandId": "egou.HttpPost",
+      "displayName": "HTTP POST",
+      "englishName": "HttpPost",
+      "summary": "发送 POST 请求并返回响应文本。",
+      "params": [
+        { "name": "地址", "type": "文本型", "optional": false, "description": "请求 URL。" },
+        { "name": "数据", "type": "文本型", "optional": false, "description": "请求体内容。" }
+      ],
+      "returnType": "文本型",
+      "category": "网络",
+      "platforms": ["windows"],
+      "callSyntax": "HTTP POST(地址, 数据)"
+    }
+  ]
+}

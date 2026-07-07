@@ -1,0 +1,7 @@
+{
+  "name": "stringx",
+  "version": "1.0.0",
+  "author": "EGOU",
+  "description": "字符串扩展示例库（首次运行自动释放到 libs/examples/）",
+  "main": "source.eg"
+}

@@ -1,0 +1,520 @@
+{
+  "contractVersion": "1.0",
+  "library": "egou.ui",
+  "libraryDisplayName": "egou/ui",
+  "libraryVersion": "0.1.0",
+  "description": "窗口、控件、剪贴板、屏幕、对话框等 UI 相关命令。",
+  "platforms": ["windows"],
+  "commands": [
+    {
+      "commandId": "egou.NewWindow",
+      "displayName": "创建窗口",
+      "englishName": "NewWindow",
+      "summary": "创建指定大小的窗口对象。",
+      "params": [
+        { "name": "标题", "type": "文本型", "optional": false, "description": "窗口标题。" },
+        { "name": "宽度", "type": "整数型", "optional": false, "description": "窗口宽度（像素）。" },
+        { "name": "高度", "type": "整数型", "optional": false, "description": "窗口高度（像素）。" }
+      ],
+      "returnType": "窗口型",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "创建窗口(标题, 宽度, 高度)"
+    },
+    {
+      "commandId": "egou.LoadWindow",
+      "displayName": "加载窗口",
+      "englishName": "LoadWindow",
+      "summary": "从项目目录下的 .ew 文件加载窗口及其控件。",
+      "params": [
+        { "name": "窗口名", "type": "文本型", "optional": false, "description": "窗口名（不含扩展名）。" }
+      ],
+      "returnType": "窗口型",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "加载窗口(窗口名)"
+    },
+    {
+      "commandId": "egou.MessageLoop",
+      "displayName": "消息循环",
+      "englishName": "MessageLoop",
+      "summary": "启动当前线程的消息循环，使窗口保持响应直到关闭。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "消息循环()"
+    },
+    {
+      "commandId": "egou.SetWindowPosition",
+      "displayName": "设置窗口位置",
+      "englishName": "SetWindowPosition",
+      "summary": "设置当前窗口位置。",
+      "params": [
+        { "name": "X", "type": "整数型", "optional": false, "description": "X 坐标。" },
+        { "name": "Y", "type": "整数型", "optional": false, "description": "Y 坐标。" }
+      ],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "设置窗口位置(X, Y)"
+    },
+    {
+      "commandId": "egou.SetWindowSize",
+      "displayName": "设置窗口大小",
+      "englishName": "SetWindowSize",
+      "summary": "设置当前窗口尺寸。",
+      "params": [
+        { "name": "宽度", "type": "整数型", "optional": false, "description": "新宽度。" },
+        { "name": "高度", "type": "整数型", "optional": false, "description": "新高度。" }
+      ],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "设置窗口大小(宽度, 高度)"
+    },
+    {
+      "commandId": "egou.SetWindowTitle",
+      "displayName": "设置窗口标题",
+      "englishName": "SetWindowTitle",
+      "summary": "设置当前窗口标题。",
+      "params": [
+        { "name": "标题", "type": "文本型", "optional": false, "description": "新标题文本。" }
+      ],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "设置窗口标题(标题)"
+    },
+    {
+      "commandId": "egou.SetWindowOpacity",
+      "displayName": "设置窗口透明度",
+      "englishName": "SetWindowOpacity",
+      "summary": "设置窗口透明度（0~1）。",
+      "params": [
+        { "name": "透明度", "type": "双精度小数型", "optional": false, "description": "0=完全透明，1=不透明。" }
+      ],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "设置窗口透明度(透明度)"
+    },
+    {
+      "commandId": "egou.SetAlwaysOnTop",
+      "displayName": "设置窗口置顶",
+      "englishName": "SetAlwaysOnTop",
+      "summary": "设置当前窗口是否置顶。",
+      "params": [
+        { "name": "是否置顶", "type": "逻辑型", "optional": false, "description": "真=置顶，假=取消置顶。" }
+      ],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "设置窗口置顶(是否置顶)"
+    },
+    {
+      "commandId": "egou.CenterWindow",
+      "displayName": "窗口居中",
+      "englishName": "CenterWindow",
+      "summary": "将当前窗口居中。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "窗口居中()"
+    },
+    {
+      "commandId": "egou.MinimizeWindow",
+      "displayName": "最小化窗口",
+      "englishName": "MinimizeWindow",
+      "summary": "最小化当前窗口。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "最小化窗口()"
+    },
+    {
+      "commandId": "egou.MaximizeWindow",
+      "displayName": "最大化窗口",
+      "englishName": "MaximizeWindow",
+      "summary": "最大化当前窗口。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "最大化窗口()"
+    },
+    {
+      "commandId": "egou.RestoreWindow",
+      "displayName": "恢复窗口",
+      "englishName": "RestoreWindow",
+      "summary": "恢复当前窗口。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "恢复窗口()"
+    },
+    {
+      "commandId": "egou.FullScreenWindow",
+      "displayName": "全屏窗口",
+      "englishName": "FullScreenWindow",
+      "summary": "当前窗口进入全屏。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "全屏窗口()"
+    },
+    {
+      "commandId": "egou.CloseWindow",
+      "displayName": "关闭窗口",
+      "englishName": "CloseWindow",
+      "summary": "关闭当前窗口。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "关闭窗口()"
+    },
+    {
+      "commandId": "egou.HideWindow",
+      "displayName": "隐藏窗口",
+      "englishName": "HideWindow",
+      "summary": "隐藏当前窗口。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "隐藏窗口()"
+    },
+    {
+      "commandId": "egou.ShowWindow",
+      "displayName": "显示窗口",
+      "englishName": "ShowWindow",
+      "summary": "显示当前窗口。",
+      "params": [],
+      "returnType": "无返回值",
+      "category": "窗口",
+      "platforms": ["windows"],
+      "callSyntax": "显示窗口()"
+    },
+    {
+      "commandId": "egou.ScreenWidth",
+      "displayName": "取屏幕宽度",
+      "englishName": "ScreenWidth",
+      "summary": "返回主屏幕宽度。",
+      "params": [],
+      "returnType": "整数型",
+      "category": "屏幕",
+      "platforms": ["windows"],
+      "callSyntax": "取屏幕宽度()"
+    },
+    {
+      "commandId": "egou.ScreenHeight",
+      "displayName": "取屏幕高度",
+      "englishName": "ScreenHeight",
+      "summary": "返回主屏幕高度。",
+      "params": [],
+      "returnType": "整数型",
+      "category": "屏幕",
+      "platforms": ["windows"],
+      "callSyntax": "取屏幕高度()"
+    },
+    {
+      "commandId": "egou.ClipboardGetText",
+      "displayName": "取剪贴板文本",
+      "englishName": "ClipboardGetText",
+      "summary": "返回剪贴板文本。",
+      "params": [],
+      "returnType": "文本型",
+      "category": "剪贴板",
+      "platforms": ["windows"],
+      "callSyntax": "取剪贴板文本()"
+    },
+    {
+      "commandId": "egou.ClipboardSetText",
+      "displayName": "置剪贴板文本",
+      "englishName": "ClipboardSetText",
+      "summary": "设置剪贴板文本。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "要写入剪贴板的文本。" }
+      ],
+      "returnType": "逻辑型",
+      "category": "剪贴板",
+      "platforms": ["windows"],
+      "callSyntax": "置剪贴板文本(文本)"
+    },
+    {
+      "commandId": "egou.NewButton",
+      "displayName": "创建按钮",
+      "englishName": "NewButton",
+      "summary": "在窗口上创建按钮。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false, "description": "按钮所在窗口。" },
+        { "name": "文本", "type": "文本型", "optional": false, "description": "按钮文字。" },
+        { "name": "X", "type": "整数型", "optional": false, "description": "X 坐标。" },
+        { "name": "Y", "type": "整数型", "optional": false, "description": "Y 坐标。" },
+        { "name": "宽", "type": "整数型", "optional": false, "description": "宽度。" },
+        { "name": "高", "type": "整数型", "optional": false, "description": "高度。" }
+      ],
+      "returnType": "按钮型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建按钮(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewEdit",
+      "displayName": "创建编辑框",
+      "englishName": "NewEdit",
+      "summary": "在窗口上创建编辑框。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false, "description": "编辑框所在窗口。" },
+        { "name": "文本", "type": "文本型", "optional": false, "description": "初始文本。" },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "编辑框型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建编辑框(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewLabel",
+      "displayName": "创建标签",
+      "englishName": "NewLabel",
+      "summary": "在窗口上创建静态标签。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "标签型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建标签(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewCheckbox",
+      "displayName": "创建复选框",
+      "englishName": "NewCheckbox",
+      "summary": "在窗口上创建复选框。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "复选框型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建复选框(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewRadio",
+      "displayName": "创建单选框",
+      "englishName": "NewRadio",
+      "summary": "在窗口上创建单选框。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "单选框型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建单选框(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewListbox",
+      "displayName": "创建列表框",
+      "englishName": "NewListbox",
+      "summary": "在窗口上创建列表框。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "列表框型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建列表框(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewCombobox",
+      "displayName": "创建组合框",
+      "englishName": "NewCombobox",
+      "summary": "在窗口上创建组合框。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "组合框型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建组合框(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewSwitch",
+      "displayName": "创建开关",
+      "englishName": "NewSwitch",
+      "summary": "在窗口上创建开关。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "开关型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建开关(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewSlider",
+      "displayName": "创建滑动条",
+      "englishName": "NewSlider",
+      "summary": "在窗口上创建滑动条。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "滑动条型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建滑动条(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewProgress",
+      "displayName": "创建进度条",
+      "englishName": "NewProgress",
+      "summary": "在窗口上创建进度条。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "进度条型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建进度条(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewImage",
+      "displayName": "创建图片",
+      "englishName": "NewImage",
+      "summary": "在窗口上创建图片。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "地址", "type": "文本型", "optional": false, "description": "图片路径或 URL。" },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "图片型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建图片(父窗口, 地址, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewTextarea",
+      "displayName": "创建多行编辑框",
+      "englishName": "NewTextarea",
+      "summary": "在窗口上创建多行编辑框。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "文本", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "编辑框型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建多行编辑框(父窗口, 文本, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewTabs",
+      "displayName": "创建标签页",
+      "englishName": "NewTabs",
+      "summary": "在窗口上创建标签页。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "标签列表", "type": "文本数组", "optional": false, "description": "标签标题数组。" },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "标签页型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建标签页(父窗口, 标签列表, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewCard",
+      "displayName": "创建卡片",
+      "englishName": "NewCard",
+      "summary": "在窗口上创建卡片容器。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "标题", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "卡片型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建卡片(父窗口, 标题, X, Y, 宽, 高)"
+    },
+    {
+      "commandId": "egou.NewDivider",
+      "displayName": "创建分割线",
+      "englishName": "NewDivider",
+      "summary": "在窗口上创建分割线。",
+      "params": [
+        { "name": "父窗口", "type": "窗口型", "optional": false },
+        { "name": "标题", "type": "文本型", "optional": false },
+        { "name": "X", "type": "整数型", "optional": false },
+        { "name": "Y", "type": "整数型", "optional": false },
+        { "name": "宽", "type": "整数型", "optional": false },
+        { "name": "高", "type": "整数型", "optional": false }
+      ],
+      "returnType": "分割线型",
+      "category": "控件",
+      "platforms": ["windows"],
+      "callSyntax": "创建分割线(父窗口, 标题, X, Y, 宽, 高)"
+    }
+  ]
+}

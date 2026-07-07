@@ -1,0 +1,6 @@
+{
+  "name": "demo-components",
+  "version": "0.1.0",
+  "author": "EGOU",
+  "description": "示例外置组件包，验证 P3 插件窗口设计器组件机制"
+}

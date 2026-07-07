@@ -1,0 +1,308 @@
+{
+  "contractVersion": "1.0",
+  "library": "egou.core",
+  "libraryDisplayName": "egou/core",
+  "libraryVersion": "0.1.0",
+  "description": "通用基础：消息框、文本/字节集/数组基础运算、类型转换、延时等。",
+  "platforms": ["windows"],
+  "commands": [
+    {
+      "commandId": "egou.MessageBox",
+      "displayName": "信息框",
+      "englishName": "MessageBox",
+      "summary": "弹出信息提示框。",
+      "params": [
+        { "name": "内容", "type": "文本型", "optional": false, "description": "要显示的提示内容。" },
+        { "name": "标题", "type": "文本型", "optional": true, "description": "提示框的标题，可以被省略。" }
+      ],
+      "returnType": "逻辑型",
+      "category": "对话框",
+      "platforms": ["windows"],
+      "callSyntax": "信息框(内容, [标题])"
+    },
+    {
+      "commandId": "egou.QuestionBox",
+      "displayName": "确认框",
+      "englishName": "QuestionBox",
+      "summary": "弹出是/否确认框，返回是否点击『是』。",
+      "params": [
+        { "name": "内容", "type": "文本型", "optional": false, "description": "要显示的提问内容。" },
+        { "name": "标题", "type": "文本型", "optional": true, "description": "提示框的标题。" }
+      ],
+      "returnType": "逻辑型",
+      "category": "对话框",
+      "platforms": ["windows"],
+      "callSyntax": "确认框(内容, [标题])"
+    },
+    {
+      "commandId": "egou.InputBox",
+      "displayName": "输入框",
+      "englishName": "InputBox",
+      "summary": "弹出输入框，返回用户输入的文本。",
+      "params": [
+        { "name": "提示", "type": "文本型", "optional": false, "description": "输入框中的提示文字。" },
+        { "name": "标题", "type": "文本型", "optional": true, "description": "输入框的标题。" }
+      ],
+      "returnType": "文本型",
+      "category": "对话框",
+      "platforms": ["windows"],
+      "callSyntax": "输入框(提示, [标题])"
+    },
+    {
+      "commandId": "egou.OpenFileDialog",
+      "displayName": "打开文件",
+      "englishName": "OpenFileDialog",
+      "summary": "弹出打开文件对话框，返回选中文件的路径。",
+      "params": [
+        { "name": "标题", "type": "文本型", "optional": true, "description": "对话框标题。" },
+        { "name": "过滤器名称", "type": "文本型", "optional": true, "description": "如：』文本文件』。" },
+        { "name": "过滤模式", "type": "文本型", "optional": true, "description": "如：』*.txt;*.md『。" }
+      ],
+      "returnType": "文本型",
+      "category": "对话框",
+      "platforms": ["windows"],
+      "callSyntax": "打开文件([标题], [过滤器名称], [过滤模式])"
+    },
+    {
+      "commandId": "egou.SaveFileDialog",
+      "displayName": "保存文件",
+      "englishName": "SaveFileDialog",
+      "summary": "弹出保存文件对话框，返回保存路径。",
+      "params": [
+        { "name": "标题", "type": "文本型", "optional": true, "description": "对话框标题。" },
+        { "name": "过滤器名称", "type": "文本型", "optional": true, "description": "过滤器显示名。" },
+        { "name": "过滤模式", "type": "文本型", "optional": true, "description": "如：』*.ew『。" },
+        { "name": "默认文件名", "type": "文本型", "optional": true, "description": "默认填入的文件名。" }
+      ],
+      "returnType": "文本型",
+      "category": "对话框",
+      "platforms": ["windows"],
+      "callSyntax": "保存文件([标题], [过滤器名称], [过滤模式], [默认文件名])"
+    },
+    {
+      "commandId": "egou.ToString",
+      "displayName": "到文本",
+      "englishName": "ToString",
+      "summary": "将任意值转换为文本。",
+      "params": [
+        { "name": "值", "type": "通用型", "optional": false, "description": "要转换的值。" }
+      ],
+      "returnType": "文本型",
+      "category": "类型转换",
+      "platforms": ["windows"],
+      "callSyntax": "到文本(值)"
+    },
+    {
+      "commandId": "egou.ToInt",
+      "displayName": "到整数",
+      "englishName": "ToInt",
+      "summary": "将文本转换为整数。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "要被转换的文本。" }
+      ],
+      "returnType": "整数型",
+      "category": "类型转换",
+      "platforms": ["windows"],
+      "callSyntax": "到整数(文本)"
+    },
+    {
+      "commandId": "egou.ToFloat64",
+      "displayName": "到小数",
+      "englishName": "ToFloat64",
+      "summary": "将文本转换为双精度小数。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "要被转换的文本。" }
+      ],
+      "returnType": "双精度小数型",
+      "category": "类型转换",
+      "platforms": ["windows"],
+      "callSyntax": "到小数(文本)"
+    },
+    {
+      "commandId": "egou.Println",
+      "displayName": "打印",
+      "englishName": "Println",
+      "summary": "在控制台输出信息并换行。",
+      "params": [
+        { "name": "值", "type": "通用型", "optional": false, "description": "要打印的值。" },
+        { "name": "更多", "type": "通用型", "optional": true, "isArray": true, "repeatable": true, "description": "继续打印更多值。" }
+      ],
+      "returnType": "无返回值",
+      "category": "控制台",
+      "platforms": ["windows"],
+      "callSyntax": "打印(值, [更多, ...])"
+    },
+    {
+      "commandId": "egou.Len",
+      "displayName": "取长度",
+      "englishName": "Len",
+      "summary": "返回数组、文本或映射的长度。",
+      "params": [
+        { "name": "容器", "type": "通用型", "optional": false, "description": "数组/文本/映射。" }
+      ],
+      "returnType": "整数型",
+      "category": "数组操作",
+      "platforms": ["windows"],
+      "callSyntax": "取长度(容器)"
+    },
+    {
+      "commandId": "egou.Sleep",
+      "displayName": "延时",
+      "englishName": "Sleep",
+      "summary": "休眠指定毫秒数。",
+      "params": [
+        { "name": "毫秒", "type": "整数型", "optional": false, "description": "休眠时长，单位毫秒。" }
+      ],
+      "returnType": "无返回值",
+      "category": "系统",
+      "platforms": ["windows"],
+      "callSyntax": "延时(毫秒)"
+    },
+    {
+      "commandId": "egou.TextLen",
+      "displayName": "取文本长度",
+      "englishName": "TextLen",
+      "summary": "返回文本的字符数。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "目标文本。" }
+      ],
+      "returnType": "整数型",
+      "category": "文本操作",
+      "platforms": ["windows"],
+      "callSyntax": "取文本长度(文本)"
+    },
+    {
+      "commandId": "egou.TextLeft",
+      "displayName": "取文本左边",
+      "englishName": "TextLeft",
+      "summary": "返回文本左边指定数量的字符。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "源文本。" },
+        { "name": "数量", "type": "整数型", "optional": false, "description": "要取的字符数。" }
+      ],
+      "returnType": "文本型",
+      "category": "文本操作",
+      "platforms": ["windows"],
+      "callSyntax": "取文本左边(文本, 数量)"
+    },
+    {
+      "commandId": "egou.TextRight",
+      "displayName": "取文本右边",
+      "englishName": "TextRight",
+      "summary": "返回文本右边指定数量的字符。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "源文本。" },
+        { "name": "数量", "type": "整数型", "optional": false, "description": "要取的字符数。" }
+      ],
+      "returnType": "文本型",
+      "category": "文本操作",
+      "platforms": ["windows"],
+      "callSyntax": "取文本右边(文本, 数量)"
+    },
+    {
+      "commandId": "egou.FindText",
+      "displayName": "寻找文本",
+      "englishName": "FindText",
+      "summary": "在文本中查找子文本位置，找不到返回 0。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "源文本。" },
+        { "name": "子文本", "type": "文本型", "optional": false, "description": "要查找的子文本。" },
+        { "name": "起始位置", "type": "整数型", "optional": true, "description": "从 1 开始的起始位置，省略时从头开始。" }
+      ],
+      "returnType": "整数型",
+      "category": "文本操作",
+      "platforms": ["windows"],
+      "callSyntax": "寻找文本(文本, 子文本, [起始位置])"
+    },
+    {
+      "commandId": "egou.ReplaceAll",
+      "displayName": "替换文本",
+      "englishName": "ReplaceAll",
+      "summary": "替换文本中所有匹配的子串。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "源文本。" },
+        { "name": "旧文本", "type": "文本型", "optional": false, "description": "要被替换的子串。" },
+        { "name": "新文本", "type": "文本型", "optional": false, "description": "替换成的新内容。" }
+      ],
+      "returnType": "文本型",
+      "category": "文本操作",
+      "platforms": ["windows"],
+      "callSyntax": "替换文本(文本, 旧文本, 新文本)"
+    },
+    {
+      "commandId": "egou.Split",
+      "displayName": "分割文本",
+      "englishName": "Split",
+      "summary": "按分隔符分割文本。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "源文本。" },
+        { "name": "分隔符", "type": "文本型", "optional": false, "description": "分隔符。" }
+      ],
+      "returnType": "文本数组",
+      "category": "文本操作",
+      "platforms": ["windows"],
+      "callSyntax": "分割文本(文本, 分隔符)"
+    },
+    {
+      "commandId": "egou.LoadAsset",
+      "displayName": "载入资源",
+      "englishName": "LoadAsset",
+      "summary": "从嵌入资源中读取指定路径的原始字节。路径相对 assets/ 目录（正斜杠分隔），如 images/logo.png。",
+      "params": [
+        { "name": "路径", "type": "文本型", "optional": false, "description": "相对 assets/ 目录的路径，正斜杠分隔。" }
+      ],
+      "returnType": "字节集",
+      "category": "资源",
+      "platforms": ["windows"],
+      "callSyntax": "载入资源(路径)"
+    },
+    {
+      "commandId": "egou.ReadAssetText",
+      "displayName": "读资源文本",
+      "englishName": "ReadAssetText",
+      "summary": "从嵌入资源中读取指定路径的文本内容。路径相对 assets/ 目录（正斜杠分隔），如 data/config.txt。",
+      "params": [
+        { "name": "路径", "type": "文本型", "optional": false, "description": "相对 assets/ 目录的路径，正斜杠分隔。" }
+      ],
+      "returnType": "文本型",
+      "category": "资源",
+      "platforms": ["windows"],
+      "callSyntax": "读资源文本(路径)"
+    },
+    {
+      "commandId": "egou.ListAssets",
+      "displayName": "列举资源",
+      "englishName": "ListAssets",
+      "summary": "返回所有嵌入资源文件的路径列表（已排序）。路径为相对 assets/ 目录的正斜杠格式。",
+      "params": [],
+      "returnType": "文本型数组",
+      "category": "资源",
+      "platforms": ["windows"],
+      "callSyntax": "列举资源()"
+    },
+    {
+      "commandId": "egou.ListWindows",
+      "displayName": "列举窗口",
+      "englishName": "ListWindows",
+      "summary": "返回所有嵌入窗口设计文件的名称列表（已排序，不含 .ew 扩展名）。",
+      "params": [],
+      "returnType": "文本型数组",
+      "category": "资源",
+      "platforms": ["windows"],
+      "callSyntax": "列举窗口()"
+    },
+    {
+      "commandId": "egou.HasAsset",
+      "displayName": "资源是否存在",
+      "englishName": "HasAsset",
+      "summary": "判断指定路径的嵌入资源是否存在。路径相对 assets/ 目录（正斜杠分隔）。",
+      "params": [
+        { "name": "路径", "type": "文本型", "optional": false, "description": "相对 assets/ 目录的路径，正斜杠分隔。" }
+      ],
+      "returnType": "逻辑型",
+      "category": "资源",
+      "platforms": ["windows"],
+      "callSyntax": "资源是否存在(路径)"
+    }
+  ]
+}

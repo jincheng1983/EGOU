@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.0.1"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.0.1",
+			"CompanyName": "EGOU",
+			"FileDescription": "EGOU IDE - 类易语言中文 Go IDE",
+			"LegalCopyright": "© 2026, EGOU",
+			"ProductName": "EGOU IDE",
+			"Comments": "类易语言中文 Go IDE"
+		}
+	}
+}

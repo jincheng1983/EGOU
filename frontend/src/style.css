@@ -1,0 +1,535 @@
+* {
+  box-sizing: border-box;
+}
+
+/* 编译选项对话框左右两栏布局（n-modal 渲染到 body，需放全局）*/
+.bc-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+.bc-col {
+  min-width: 0;
+}
+.bc-col .n-form-item {
+  margin-bottom: 8px;
+}
+.bc-section {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 4px 0 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent-color);
+  line-height: 1.4;
+}
+.bc-section:first-child {
+  margin-top: 0;
+}
+
+/* ============================================================
+   字体定义
+   egou.ttf 是 EGOU 第八版统一字体（中文等宽风格，适用于 UI 和代码编辑器）
+   ============================================================ */
+@font-face {
+  font-family: 'IdeFont';
+  src: url('/fonts/egou.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   Design Token 系统（参考 NxEGO4 磨砂风格 + NxEGO6 Token 分层）
+   【回退用】真实主题变量由 themes.js 统一管理（单一数据源）。
+   此处 :root 暗色 + [data-theme="light"] 仅作初始加载回退，
+   修改时务必与 themes.js 的 dark/light 主题保持同步。
+   ============================================================ */
+:root, [data-theme="dark"] {
+  /* 背景色阶 — 纯深灰色调，半透明叠加，营造磨砂层次 */
+  --bg-primary:     rgba(30, 30, 30, 0.85);   /* 主背景 */
+  --bg-secondary:   rgba(37, 37, 37, 0.82);   /* 次背景（侧边栏等） */
+  --bg-tertiary:    rgba(45, 45, 45, 0.78);   /* 第三背景（输入框等） */
+  --bg-hover:       rgba(50, 50, 50, 0.88);   /* hover 态 */
+  --bg-active:      rgba(56, 56, 56, 0.88);   /* active/selected 态 */
+  --bg-sidebar:     rgba(25, 25, 25, 0.88);   /* 侧边栏背景 */
+  --bg-output:      rgba(20, 20, 20, 0.90);   /* 输出面板背景 */
+  --bg-input:       rgba(30, 30, 30, 0.85);   /* 输入框背景 */
+
+  /* 渐变背景 */
+  --toolbar-gradient: linear-gradient(180deg, rgba(45,45,45,0.72) 0%, rgba(37,37,37,0.68) 100%);
+  --card-gradient:    linear-gradient(135deg, rgba(50,50,50,0.8) 0%, rgba(56,56,56,0.8) 100%);
+
+  /* 边框 */
+  --border-color:    rgba(255, 255, 255, 0.08);
+  --border-light:    rgba(255, 255, 255, 0.04);
+  --accent-border:   rgba(99, 226, 183, 0.3);
+
+  /* 文字色阶 — 6 档灰阶，信息密度高时层次清晰 */
+  --text-primary:    #e0e0e0;                 /* 主要内容 */
+  --text-secondary:  #cccccc;                 /* 次要内容 */
+  --text-muted:      #888888;                 /* 标签、说明 */
+  --text-dim:        #666666;                 /* 路径、备注 */
+  --text-faint:      #555555;                 /* 占位、底部状态 */
+  --text-darker:     #444444;                 /* 最低对比度元素 */
+
+  /* 强调色 */
+  --accent-color:    #63e2b7;
+  --accent-hover:    #4fd6a8;
+  --accent-light:    #7feed0;
+  --accent-bg:       rgba(99, 226, 183, 0.15);
+
+  /* 语义色 */
+  --color-success:   #22c55e;
+  --color-warning:   #f59e0b;
+  --color-error:     #f87171;
+  --color-info:      #06b6d4;
+  --color-purple:    #a855f7;
+
+  /* 滚动条 */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-hover: rgba(255, 255, 255, 0.2);
+
+  /* 阴影 */
+  --shadow-color:    rgba(0, 0, 0, 0.5);
+  --shadow-1:        0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-2:        0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-pop:      0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* 字体 — egou.ttf 统一字体，UI 与编辑器共用 */
+  --ide-font: 'IdeFont', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ide-code-font: 'IdeFont', 'Consolas', 'Courier New', monospace;
+
+  /* 圆角分级 — NxEGO4 风格，柔和但不失锐利 */
+  --radius-sm: 4px;    /* 小元素：标签、输入框 */
+  --radius-md: 6px;    /* 中元素：按钮、卡片 */
+  --radius-lg: 8px;    /* 大元素：面板、下拉菜单 */
+  --radius-xl: 12px;   /* 超大：模态框、抽屉 */
+  --radius-2xl: 16px;  /* 容器：起始页、大卡片 */
+
+  /* 能力徽章标识色（固定，不随主题变；规约 §2 要求用 CSS 变量替代硬编码） */
+  --cap-chat:      #63b3ed;
+  --cap-code_gen:  #9f7aea;
+  --cap-debug:     #f56565;
+  --cap-explain:   #48bb78;
+  --cap-plan:      #ecc94b;
+  --cap-ui_design: #ed89c1;
+}
+
+/* ============================================================
+   浅色主题
+   ============================================================ */
+[data-theme="light"] {
+  --bg-primary:     rgba(255, 255, 255, 0.88);
+  --bg-secondary:   rgba(248, 250, 252, 0.85);
+  --bg-tertiary:    rgba(241, 245, 249, 0.82);
+  --bg-hover:       rgba(241, 245, 249, 0.95);
+  --bg-active:      rgba(226, 232, 240, 0.95);
+  --bg-sidebar:     rgba(248, 250, 252, 0.88);
+  --bg-output:      rgba(241, 245, 249, 0.9);
+  --bg-input:       rgba(255, 255, 255, 0.9);
+
+  --toolbar-gradient: linear-gradient(180deg, rgba(248,250,252,0.72) 0%, rgba(241,245,249,0.68) 100%);
+  --card-gradient:    linear-gradient(135deg, rgba(241,245,249,0.8) 0%, rgba(226,232,240,0.8) 100%);
+
+  --border-color:    rgba(0, 0, 0, 0.08);
+  --border-light:    rgba(0, 0, 0, 0.04);
+  --accent-border:   rgba(24, 160, 88, 0.3);
+
+  --text-primary:    #1e293b;
+  --text-secondary:  #475569;
+  --text-muted:      #64748b;
+  --text-dim:        #94a3b8;
+  --text-faint:      #cbd5e1;
+  --text-darker:     #e2e8f0;
+
+  --accent-color:    #18a058;
+  --accent-hover:    #16a34a;
+  --accent-light:    #22c55e;
+  --accent-bg:       rgba(24, 160, 88, 0.12);
+
+  --color-success:   #16a34a;
+  --color-warning:   #d97706;
+  --color-error:     #dc2626;
+  --color-info:      #0891b2;
+  --color-purple:    #9333ea;
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-hover: rgba(0, 0, 0, 0.25);
+
+  --shadow-color:    rgba(0, 0, 0, 0.15);
+  --shadow-1:        0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-2:        0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-pop:      0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================================
+   全局基础样式
+   ============================================================ */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--ide-font);
+}
+
+/* 统一快速过渡 — NxEGO4 风格 0.15s，丝滑但不拖沓 */
+* {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* ============================================================
+   滚动条美化（6px 极细 + 透明轨道）
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* ============================================================
+   蓝色高光线 — EGOU 风格，用于激活态标签/选中项顶部
+   ============================================================ */
+.eg-accent-line {
+  position: relative;
+}
+.eg-accent-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+  border-radius: var(--radius-sm);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ============================================================
+   磨砂玻璃效果工具类
+   ============================================================ */
+.eg-glass {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+/* ============================================================
+   3D 按钮工具类（渐变+发光阴影+抬起）
+   ============================================================ */
+.eg-btn-3d {
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.eg-btn-3d:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.eg-btn-3d:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* 编译按钮 — 强调色调 */
+.eg-btn-compile {
+  background: linear-gradient(135deg, var(--accent-bg), transparent);
+  border: 1px solid var(--accent-color);
+  color: var(--color-info);
+}
+.eg-btn-compile:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-bg));
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px var(--accent-bg);
+}
+
+/* 运行按钮 — 成功色调 */
+.eg-btn-run {
+  background: linear-gradient(135deg, var(--color-success), transparent);
+  border: 1px solid var(--color-success);
+  font-weight: 700;
+  color: var(--color-success);
+}
+.eg-btn-run:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-success), var(--bg-secondary));
+  border-color: var(--color-success);
+  box-shadow: 0 2px 10px var(--accent-bg);
+}
+
+/* ============================================================
+   双环聚焦样式
+   ============================================================ */
+.eg-focus:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+/* ============================================================
+   脉冲动画（运行状态指示器）
+   ============================================================ */
+@keyframes eg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.eg-pulse {
+  animation: eg-pulse 1.5s infinite;
+}
+
+/* ============================================================
+   淡入动画（设置面板切换）
+   ============================================================ */
+@keyframes eg-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.eg-fade-in {
+  animation: eg-fade-in 0.2s ease;
+}
+
+/* ============================================================
+   输入指示器（AI 助手三点跳动）
+   ============================================================ */
+@keyframes eg-typing {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1); }
+}
+.eg-typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  animation: eg-typing 1.2s infinite;
+}
+.eg-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.eg-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ============================================================
+   Naive UI 全局磨砂覆盖（参考 NxEGO4 风格）
+   让 n-modal/n-card/n-drawer 等组件也用上磨砂玻璃效果
+   ============================================================ */
+
+/* n-modal 容器（透明背景，让卡片自身的磨砂起作用） */
+.n-modal-container {
+  background: transparent !important;
+}
+
+/* n-card 通用 — 半透明背景 + 磨砂 */
+.n-card {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-pop) !important;
+}
+
+/* n-modal preset=card 的卡片 — 强化磨砂效果 */
+.n-modal.n-modal-card.n-modal--mask-closable .n-card,
+.n-modal-card .n-card {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-pop), 0 0 0 1px var(--border-light) inset !important;
+}
+
+/* n-card 各子区域透明化，让磨砂背景透出 */
+.n-card-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+.n-card__content {
+  background: transparent !important;
+}
+.n-card__footer {
+  background: transparent !important;
+  border-top: 1px solid var(--border-light) !important;
+}
+.n-card-header__main {
+  color: var(--text-primary) !important;
+  font-weight: 600;
+}
+
+/* n-modal 遮罩 — 加深半透明 */
+.n-modal-mask {
+  background-color: var(--modal-mask-bg) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* n-drawer 抽屉 — 磨砂 */
+.n-drawer {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-pop) !important;
+}
+.n-drawer-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+.n-drawer-body-content-wrapper {
+  background: transparent !important;
+}
+
+/* n-input / n-input-number — 半透明背景 */
+.n-input,
+.n-base-selection {
+  background-color: var(--bg-input) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color) !important;
+  transition: all 0.15s ease;
+}
+.n-input:hover,
+.n-base-selection:hover {
+  border-color: var(--accent-color) !important;
+}
+.n-input--focus,
+.n-base-selection--focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px var(--accent-bg) !important;
+}
+
+/* n-button — 默认按钮半透明（排除 text 类型，text 按钮保持无边框无背景） */
+.n-button:not(.n-button--primary-type):not(.n-button--error-type):not(.n-button--warning-type):not(.n-button--success-type):not(.n-button--info-type):not(.n-button--text-type) {
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  transition: all 0.15s ease;
+}
+.n-button:not(.n-button--primary-type):not(.n-button--error-type):not(.n-button--warning-type):not(.n-button--success-type):not(.n-button--info-type):not(.n-button--text-type):hover {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--accent-color) !important;
+  color: var(--accent-color) !important;
+}
+
+/* n-tag — 半透明 */
+.n-tag {
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* n-list / n-list-item — 半透明 */
+.n-list {
+  background-color: transparent !important;
+}
+.n-list-item {
+  background-color: var(--bg-tertiary) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--border-light) !important;
+  border-radius: 6px !important;
+  margin-bottom: 4px;
+  transition: all 0.15s ease;
+}
+.n-list-item:hover {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--accent-color) !important;
+}
+
+/* n-tabs — tab 标签半透明 */
+.n-tabs-tab {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.15s ease;
+}
+.n-tabs-tab--active {
+  color: var(--accent-color) !important;
+}
+.n-tabs-bar {
+  background-color: var(--accent-color) !important;
+}
+
+/* n-empty — 文字颜色 */
+.n-empty__description {
+  color: var(--text-muted) !important;
+}
+
+/* n-form-item-label — 文字颜色 */
+.n-form-item-label__text {
+  color: var(--text-secondary) !important;
+}
+
+/* n-dropdown 菜单 — 磨砂 */
+.n-dropdown-menu {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-pop) !important;
+  border-radius: 8px !important;
+}
+.n-dropdown-option {
+  color: var(--text-primary) !important;
+}
+.n-dropdown-option:hover {
+  background-color: var(--bg-hover) !important;
+  color: var(--accent-color) !important;
+}
+
+/* n-message — 磨砂 */
+.n-message {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-2) !important;
+  border-radius: 8px !important;
+}
+
+/* n-tooltip — 磨砂 */
+.n-tooltip {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* n-popover — 磨砂 */
+.n-popover {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-pop) !important;
+}
+
+/* ============================================================
+   旧变量名别名（向后兼容）
+   让历史代码中引用的旧变量名自动映射到 Design Token
+   ============================================================ */
+:root {
+  --text-tertiary: var(--text-dim);
+  --hover-color: var(--bg-hover);
+  --primary-color: var(--accent-color);
+  --text-color-3: var(--text-muted);
+  --card-bg: var(--bg-secondary);
+}

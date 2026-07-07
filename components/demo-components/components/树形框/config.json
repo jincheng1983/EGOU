@@ -1,0 +1,38 @@
+{
+  "type": "treeview",
+  "label": "树形框",
+  "icon": "",
+  "width": 160,
+  "height": 120,
+  "text": "",
+  "props": [
+    {
+      "key": "showLines",
+      "label": "显示连线",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "key": "checkable",
+      "label": "可勾选",
+      "type": "bool",
+      "default": false
+    },
+    {
+      "key": "expandAll",
+      "label": "默认展开",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "key": "indent",
+      "label": "缩进",
+      "type": "number",
+      "default": 16,
+      "min": 0,
+      "max": 60,
+      "step": 2
+    }
+  ],
+  "events": ["节点被点击", "节点被展开", "节点被收缩", "勾选被改变"]
+}

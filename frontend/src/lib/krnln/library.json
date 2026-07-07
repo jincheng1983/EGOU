@@ -1,0 +1,15 @@
+{
+  "contractVersion": "1.0",
+  "library": "krnln",
+  "guid": "D09F2340818511D396F6AE4C17150413",
+  "displayName": "系统核心支持库",
+  "version": "0.1.0",
+  "description": "EGOU 内核支持库。流程控制等基础命令的占位集合。",
+  "author": "EGOU",
+  "platforms": ["windows", "linux", "macos"],
+  "implementation": {
+    "language": "go",
+    "entry": "internal/krnln/commands.go",
+    "abiVersion": "v1"
+  }
+}

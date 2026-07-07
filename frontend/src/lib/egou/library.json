@@ -1,0 +1,15 @@
+{
+  "contractVersion": "1.0",
+  "library": "egou",
+  "guid": "7A2E94C1B6D34F08A5E1C9F2D7B30462",
+  "displayName": "EGOU 应用支持库",
+  "version": "0.1.0",
+  "description": "EGOU 桌面应用运行时支持库：消息对话框、文本/字节集/数组操作、窗口/控件、剪贴板、屏幕、网络等。",
+  "author": "EGOU",
+  "platforms": ["windows"],
+  "implementation": {
+    "language": "go",
+    "entry": "internal/egou/commands.go",
+    "abiVersion": "v1"
+  }
+}

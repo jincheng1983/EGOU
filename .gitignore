@@ -1,0 +1,52 @@
+# EGOU IDE .gitignore
+
+# 构建产物
+bin/
+build/gen/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go 构建缓存
+*.test
+*.out
+go.work.sum
+
+# Wails 生成
+frontend/bindings/
+frontend/node_modules/
+frontend/dist/
+
+# 运行时缓存
+*.syso
+icon.rc
+
+# wails-template vendor 目录（由 scripts/vendor_template.py 自动生成，不入库）
+runtime/wails-template/vendor/
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志
+*.log
+nxgruntime.log
+egruntime.log
+
+# 本地仓库备份（如有）
+*.bak
+*.backup
+
+# 临时文件
+tmp/
+temp/

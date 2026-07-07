@@ -1,0 +1,31 @@
+{
+  "commands": [
+    {
+      "commandId": "stringx.Reverse",
+      "displayName": "反转文本",
+      "englishName": "Reverse",
+      "summary": "把文本字符顺序反转，如 \"abc\" → \"cba\"。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "要反转的文本。" }
+      ],
+      "returnType": "文本型",
+      "category": "文本",
+      "platforms": ["windows"],
+      "callSyntax": "反转文本(文本)"
+    },
+    {
+      "commandId": "stringx.Repeat",
+      "displayName": "重复文本",
+      "englishName": "Repeat",
+      "summary": "把文本重复 N 次，如 Repeat(\"ab\", 3) → \"ababab\"。",
+      "params": [
+        { "name": "文本", "type": "文本型", "optional": false, "description": "要重复的文本。" },
+        { "name": "次数", "type": "整数型", "optional": false, "description": "重复次数。" }
+      ],
+      "returnType": "文本型",
+      "category": "文本",
+      "platforms": ["windows"],
+      "callSyntax": "重复文本(文本, 次数)"
+    }
+  ]
+}
