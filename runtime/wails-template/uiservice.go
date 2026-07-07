@@ -17,6 +17,12 @@ import (
 
 // Component 描述窗口中的一个组件。
 // 坐标与尺寸使用 float64，兼容设计器可能输出的浮点数值。
+
+// titlebarHeight 是前端自定义标题栏的像素高度。
+// 创建窗口时需要把客户区高度加上此值，确保运行时客户区尺寸与设计器一致（WYSIWYG）。
+// 必须与 runtime/wails-template/frontend/src/App.vue 中 .custom-titlebar 高度保持同步。
+const titlebarHeight = 32
+
 type Component struct {
 	Type     string                 `json:"type"`
 	Name     string                 `json:"name"`
@@ -222,16 +228,32 @@ func (u *UIService) LoadWindow(name string) *WindowState {
 
 // createWindowFromState 根据当前 WindowState 创建 Wails 窗口。
 func (u *UIService) createWindowFromState() *application.WebviewWindow {
+	// WYSIWYG：state.Width/Height 是客户区尺寸（设计器中网格区域的大小），
+	// 但 Wails Frameless 窗口的 Width/Height 是整个 WebView 的尺寸（包含自定义标题栏）。
+	// 因此创建窗口时 Height 需要加上标题栏高度，使运行时客户区与设计器一致。
+	winW := int(u.state.Width)
+	winH := int(u.state.Height) + titlebarHeight
+	winMinW := int(u.state.MinWidth)
+	winMinH := int(u.state.MinHeight)
+	if winMinH > 0 {
+		winMinH += titlebarHeight
+	}
+	winMaxW := int(u.state.MaxWidth)
+	winMaxH := int(u.state.MaxHeight)
+	if winMaxH > 0 {
+		winMaxH += titlebarHeight
+	}
+
 	opts := application.WebviewWindowOptions{
 		Title:            u.state.Title,
-		Width:            int(u.state.Width),
-		Height:           int(u.state.Height),
+		Width:            winW,
+		Height:           winH,
 		X:                int(u.state.X),
 		Y:                int(u.state.Y),
-		MinWidth:         int(u.state.MinWidth),
-		MinHeight:        int(u.state.MinHeight),
-		MaxWidth:         int(u.state.MaxWidth),
-		MaxHeight:        int(u.state.MaxHeight),
+		MinWidth:         winMinW,
+		MinHeight:        winMinH,
+		MaxWidth:         winMaxW,
+		MaxHeight:        winMaxH,
 		DisableResize:    !u.state.Resizable,
 		AlwaysOnTop:      u.state.AlwaysOnTop,
 		Frameless:        true, // 始终使用 Frameless，前端自定义标题栏
@@ -256,7 +278,7 @@ func (u *UIService) createWindowFromState() *application.WebviewWindow {
 		opts.StartState = application.WindowStateFullscreen
 	}
 
-	log.Printf("[runtime] 创建窗口对象: %s %dx%d", opts.Title, opts.Width, opts.Height)
+	log.Printf("[runtime] 创建窗口对象: %s %dx%d (客户区 %dx%d, 标题栏 %dpx)", opts.Title, winW, winH, int(u.state.Width), int(u.state.Height), titlebarHeight)
 	win := u.app.Window.NewWithOptions(opts)
 	if win == nil {
 		log.Printf("[runtime] NewWithOptions 返回 nil")

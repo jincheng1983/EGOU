@@ -5102,8 +5102,10 @@ function onShowHelp(info) {
 .output-toolbar {
   display: flex;
   align-items: stretch;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   gap: 4px;
+  overflow: hidden;
 }
 .output-actions {
   display: flex;
@@ -5122,6 +5124,23 @@ function onShowHelp(info) {
   word-break: break-word;
   color: var(--text-primary);
 }
+/* 确保 n-tabs 内部 flex 容器正确传递高度约束，避免 tab 内容溢出面板 */
+.output-toolbar .n-tabs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.output-toolbar .n-tabs .n-tabs-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.output-toolbar .n-tabs .n-tab-pane {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
 .error-text {
   color: var(--color-error);
 }
@@ -5137,6 +5156,9 @@ function onShowHelp(info) {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  height: 100%;
+  overflow: auto;
+  min-height: 0;
 }
 .refs-header {
   display: flex;

@@ -535,7 +535,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue', 'open-event', 'update:showGrid', 'update:snapEnabled', 'update:tabOrderMode', 'update:gridSize'])
 
-const TITLE_HEIGHT = 30
+const TITLE_HEIGHT = 32
 
 const backdropOptions = [
   { label: '自动', value: 'auto' },
@@ -3110,7 +3110,7 @@ onUnmounted(() => {
   border-color: var(--accent-color);
 }
 .form-titlebar {
-  height: 30px;
+  height: 32px;
   background: linear-gradient(180deg, #ffffff 0%, #e5e5e5 100%);
   border-bottom: 1px solid #d0d0d0;
   display: flex;
