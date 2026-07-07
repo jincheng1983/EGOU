@@ -8,6 +8,7 @@
 package runner
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -32,6 +33,7 @@ type ToolchainReport struct {
 	Garble  ToolchainInfo `json:"garble"`  // Go 源码混淆工具（v0.8.0 替代 UPX）
 	Rsrc    ToolchainInfo `json:"rsrc"`    // Go 原生 syso 生成工具（回退方案）
 	Wails3  ToolchainInfo `json:"wails3"`  // Wails v3 CLI
+	Delve   ToolchainInfo `json:"delve"`   // Delve 调试器（dlv，P2 调试器用）
 }
 
 // commonGoPaths 是 Go 编译器在 Windows 上的常见安装路径。
@@ -133,6 +135,34 @@ func findWindres() string {
 			candidate := filepath.Join(dir, "windres.exe")
 			if fileExists(candidate) {
 				return candidate
+			}
+		}
+	}
+	return ""
+}
+
+// findDelve 查找 Delve 调试器（dlv）路径。
+// 查找顺序：PATH → GOPATH/bin（go install 默认位置）。
+// dlv 是 P2 调试器的依赖，未安装时调试功能不可用。
+func findDelve() string {
+	candidates := []string{"dlv"}
+	if runtime.GOOS == "windows" {
+		candidates = []string{"dlv.exe", "dlv"}
+	}
+	for _, name := range candidates {
+		if p, err := exec.LookPath(name); err == nil {
+			return p
+		}
+	}
+	// GOPATH/bin 是 go install 的默认位置
+	gp := os.Getenv("GOPATH")
+	if gp == "" && runtime.GOOS == "windows" {
+		gp = os.Getenv("USERPROFILE") + "/go"
+	}
+	if gp != "" {
+		for _, c := range []string{filepath.Join(gp, "bin", "dlv.exe"), filepath.Join(gp, "bin", "dlv")} {
+			if fileExists(c) {
+				return c
 			}
 		}
 	}
@@ -249,6 +279,13 @@ func DetectToolchains() ToolchainReport {
 		wails3Info.Version = detectVersion(wails3Path, "version")
 	}
 
+	// delve（P2 调试器依赖）
+	delvePath := findDelve()
+	delveInfo := ToolchainInfo{Name: "dlv", Path: delvePath}
+	if delvePath != "" {
+		delveInfo.Version = detectVersion(delvePath, "version")
+	}
+
 	return ToolchainReport{
 		Go:      goInfo,
 		CGO:     cgoInfo,
@@ -257,5 +294,6 @@ func DetectToolchains() ToolchainReport {
 		Garble:  garbleInfo,
 		Rsrc:    rsrcInfo,
 		Wails3:  wails3Info,
+		Delve:   delveInfo,
 	}
 }

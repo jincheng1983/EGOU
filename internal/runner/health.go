@@ -28,6 +28,7 @@ func HealthCheck() HealthReport {
 	rpt.CCompiler = tc.CGO.Path
 	rpt.CGOVersion = tc.CGO.Version
 	rpt.Windres = tc.Windres.Path
+	rpt.Delve = tc.Delve.Path
 
 	// 2. 运行时模板已通过 go:embed 嵌入到 exe 中，无需检查文件系统
 	rpt.TemplateDir = "(embedded)"

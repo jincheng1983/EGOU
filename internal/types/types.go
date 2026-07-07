@@ -107,4 +107,6 @@ type HealthReport struct {
 	CCompiler  string `json:"cCompiler"`  // C 编译器路径，空表示未找到
 	CGOVersion string `json:"cgoVersion"` // C 编译器版本号
 	Windres    string `json:"windres"`    // windres 路径（生成 .syso 资源用），空表示未找到
+	// P2 调试器：Delve（dlv）路径，空表示未安装（调试功能不可用）
+	Delve string `json:"delve"` // dlv 路径，空表示未找到
 }

@@ -2577,6 +2577,7 @@ const healthDetailRows = computed(() => {
   rows.push({ label: '前端缓存', value: r.cacheReady ? '就绪' : '未就绪', ok: r.cacheReady })
   rows.push({ label: 'npm', value: r.npm || '未找到', ok: !!r.npm })
   rows.push({ label: 'Wails3 CLI', value: r.wails3Cli || '未配置', ok: !!r.wails3Cli })
+  rows.push({ label: 'Delve 调试器', value: r.delve || '未安装（go install github.com/go-delve/delve/cmd/dlv@latest）', ok: !!r.delve })
   rows.push({ label: '系统', value: `${r.os}/${r.arch}`, ok: true })
   return rows
 })
