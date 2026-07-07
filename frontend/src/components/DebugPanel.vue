@@ -135,7 +135,10 @@ onMounted(() => {
     emit('debug-log', ev.data.line)
   })
   offError = Events.On('debug:error', (ev) => {
-    debugStatus.value = '错误: ' + ev.data.error
+    const errMsg = ev?.data?.error || '未知错误'
+    debugStatus.value = '错误: ' + errMsg
+    // v0.9.7：错误也输出到调试日志面板，让用户看到完整错误信息
+    emit('debug-log', '✗ 调试错误: ' + errMsg)
   })
 })
 
@@ -193,19 +196,35 @@ async function stopDebug() {
 
 async function continueDebug() {
   debugStatus.value = '运行中...'
-  try { await IDEService.DebugContinue() } catch (e) { debugStatus.value = '错误: ' + e }
+  try { await IDEService.DebugContinue() } catch (e) {
+    const msg = e?.message || String(e)
+    debugStatus.value = '错误: ' + msg
+    emit('debug-log', '✗ 继续执行失败: ' + msg)
+  }
 }
 async function stepOver() {
   debugStatus.value = '单步跳过...'
-  try { await IDEService.DebugNext() } catch (e) { debugStatus.value = '错误: ' + e }
+  try { await IDEService.DebugNext() } catch (e) {
+    const msg = e?.message || String(e)
+    debugStatus.value = '错误: ' + msg
+    emit('debug-log', '✗ 单步跳过失败: ' + msg)
+  }
 }
 async function stepInto() {
   debugStatus.value = '单步进入...'
-  try { await IDEService.DebugStep() } catch (e) { debugStatus.value = '错误: ' + e }
+  try { await IDEService.DebugStep() } catch (e) {
+    const msg = e?.message || String(e)
+    debugStatus.value = '错误: ' + msg
+    emit('debug-log', '✗ 单步进入失败: ' + msg)
+  }
 }
 async function stepOut() {
   debugStatus.value = '单步跳出...'
-  try { await IDEService.DebugStepOut() } catch (e) { debugStatus.value = '错误: ' + e }
+  try { await IDEService.DebugStepOut() } catch (e) {
+    const msg = e?.message || String(e)
+    debugStatus.value = '错误: ' + msg
+    emit('debug-log', '✗ 单步跳出失败: ' + msg)
+  }
 }
 
 async function refreshStackAndVars() {
