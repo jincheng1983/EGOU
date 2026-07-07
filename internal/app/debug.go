@@ -97,11 +97,11 @@ func (s *IDEService) StartDebug(projectPath string, breakpoints []BreakpointSpec
 		}
 	}
 
-	// v0.9.8：如果用户没有设置断点，自动在 main.eg 第 1 行设置断点。
-	// dlv 会自动调整到最近的可执行行（通常是主函数入口）。
-	// 这样程序不会停在 runtime 代码中（导致单步时 "no source for PC"）。
+	// v0.9.9：如果用户没有设置断点，自动在主函数入口设置断点。
+	// 转译器把 .eg 的"主函数"转译为 Go 的 main.mainImpl（见 transpiler 主函数处理）。
+	// 用函数名断点避免在不可执行行（如 # 程序集 注释）设置断点失败。
 	if !hasUserBreakpoint {
-		if _, err := client.CreateBreakpoint("main.eg", 1); err != nil {
+		if _, err := client.CreateBreakpointAtFunction("main.mainImpl"); err != nil {
 			s.emitDebugLog("自动设置入口断点失败: " + err.Error())
 		} else {
 			hasUserBreakpoint = true

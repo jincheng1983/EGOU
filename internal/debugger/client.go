@@ -270,6 +270,22 @@ func (c *Client) CreateBreakpoint(file string, line int) (*Breakpoint, error) {
 	return &resp.Breakpoint, nil
 }
 
+// CreateBreakpointAtFunction 在指定函数入口设置断点。
+// functionName 是完整的 Go 函数名（如 "main.mainImpl"）。
+// v0.9.9：用于自动设置入口断点，避免在不可执行行（如 # 程序集 注释）设置断点失败。
+func (c *Client) CreateBreakpointAtFunction(functionName string) (*Breakpoint, error) {
+	req := struct {
+		Breakpoint Breakpoint `json:"breakpoint"`
+	}{Breakpoint: Breakpoint{FunctionName: functionName}}
+	var resp struct {
+		Breakpoint Breakpoint `json:"Breakpoint"`
+	}
+	if err := c.call("RPCServer.CreateBreakpoint", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp.Breakpoint, nil
+}
+
 // ClearBreakpoint 按 ID 删除断点。
 func (c *Client) ClearBreakpoint(id int) error {
 	req := struct {
