@@ -44,7 +44,8 @@ const props = defineProps({
 const emit = defineEmits([
   'update:modelValue', 'cursor-change', 'show-help',
   'goto-def', 'find-refs', 'rename-symbol', 'font-size-change',
-  'open-file-at'  // 跨文件跳转：{ file, line, col, word }
+  'open-file-at',  // 跨文件跳转：{ file, line, col, word }
+  'toggle-breakpoint'  // 调试断点切换：line
 ])
 
 const hostRef = ref(null)
@@ -217,12 +218,93 @@ onMounted(() => {
   editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.F2, () => nextBookmark())
   editor.addCommand(monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.F2, () => prevBookmark())
 
-  // glyph margin 点击切换书签
+  // glyph margin 点击：Shift+点击切换断点，普通点击切换书签
   editor.onMouseDown((e) => {
     if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
       const line = e.target.position.lineNumber
-      if (line) toggleBookmark(line)
+      if (!line) return
+      if (e.event.shiftKey) {
+        emit('toggle-breakpoint', line)
+      } else {
+        toggleBookmark(line)
+      }
     }
+  })
+
+  // ===== 断点 + 当前执行行（P2 调试器集成）=====
+  // 断点行号集合（由 App.vue 通过 setBreakpoints 设置）
+  // 当前执行行（由 App.vue 通过 setCurrentLine 设置，调试暂停时高亮）
+  let bpDecorations = []
+  let currentLineDecoration = []
+  let debugBreakpoints = new Set()
+  let debugCurrentLine = 0
+
+  function updateBreakpointDecorations() {
+    if (!editor) return
+    bpDecorations = editor.deltaDecorations(bpDecorations,
+      [...debugBreakpoints].map(line => ({
+        range: new monaco.Range(line, 1, line, 1),
+        options: {
+          isWholeLine: false,
+          glyphMarginClassName: 'eg-breakpoint-glyph',
+          glyphMarginHoverMessage: { value: '断点 (行 ' + line + ')' },
+          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+        }
+      }))
+    )
+  }
+
+  function updateCurrentLineDecoration() {
+    if (!editor) return
+    if (debugCurrentLine > 0) {
+      currentLineDecoration = editor.deltaDecorations(currentLineDecoration, [{
+        range: new monaco.Range(debugCurrentLine, 1, debugCurrentLine, 1),
+        options: {
+          isWholeLine: true,
+          className: 'eg-debug-current-line',
+          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+        }
+      }])
+    } else {
+      currentLineDecoration = editor.deltaDecorations(currentLineDecoration, [])
+    }
+  }
+
+  function setBreakpoints(lines) {
+    debugBreakpoints = new Set(lines || [])
+    updateBreakpointDecorations()
+  }
+
+  function toggleBreakpointLine(line) {
+    if (debugBreakpoints.has(line)) {
+      debugBreakpoints.delete(line)
+    } else {
+      debugBreakpoints.add(line)
+    }
+    updateBreakpointDecorations()
+    return debugBreakpoints.has(line)
+  }
+
+  function setCurrentLine(line) {
+    debugCurrentLine = line || 0
+    updateCurrentLineDecoration()
+    if (debugCurrentLine > 0) {
+      editor?.revealLineInCenter(debugCurrentLine)
+    }
+  }
+
+  function clearDebugState() {
+    debugBreakpoints.clear()
+    debugCurrentLine = 0
+    updateBreakpointDecorations()
+    updateCurrentLineDecoration()
+  }
+
+  // F9 切换断点（标准调试快捷键）
+  editor.addCommand(monaco.KeyCode.F9, () => {
+    const line = editor.getPosition().lineNumber
+    toggleBreakpointLine(line)
+    emit('toggle-breakpoint', line)
   })
 
   // ===== 代码片段 + 补全提示（关键字/类型/代码片段/支持库命令）=====
@@ -826,6 +908,13 @@ defineExpose({
   nextBookmark: () => editor?._nextBookmark?.(),
   prevBookmark: () => editor?._prevBookmark?.(),
   clearBookmarks: () => editor?._clearAllBookmarks?.(),
+  // 调试器：断点 + 当前执行行
+  setBreakpoints: (lines) => setBreakpoints?.(lines),
+  toggleBreakpointLine: (line) => toggleBreakpointLine?.(line),
+  setCurrentLine: (line) => setCurrentLine?.(line),
+  clearDebugState: () => clearDebugState?.(),
+  getBreakpoints: () => [...debugBreakpoints],
+  getCurrentLine: () => editor ? editor.getPosition().lineNumber : 0,
   flashLine: () => {},
   runAction: (id) => {
     if (!editor) return
@@ -863,5 +952,24 @@ defineExpose({
 .eg-bookmark-glyph:hover {
   background: var(--accent-hover, #1f8ad2);
   transform: scale(1.2);
+}
+/* 断点 glyph（红色实心圆） */
+.eg-breakpoint-glyph {
+  background: var(--error-color, #f14c4c);
+  border-radius: 50%;
+  margin-left: 3px;
+  width: 10px !important;
+  height: 10px !important;
+  margin-top: 5px;
+  cursor: pointer;
+  box-shadow: 0 0 3px rgba(241, 76, 76, 0.5);
+}
+.eg-breakpoint-glyph:hover {
+  transform: scale(1.15);
+}
+/* 调试当前执行行高亮（黄色背景） */
+.eg-debug-current-line {
+  background: rgba(255, 213, 79, 0.25) !important;
+  border-left: 2px solid #ffd54f;
 }
 </style>

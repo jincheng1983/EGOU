@@ -132,6 +132,27 @@ func BuildSourceRelease(src string, projectPath string, sink EventSink) (string,
 	return buildSourceEx(src, projectPath, sink, true)
 }
 
+// BuildForDebug 编译源码到临时目录的二进制文件（debug 模式，保留 DWARF 调试符号），
+// 返回二进制路径和临时目录路径。调用方负责清理临时目录（defer os.RemoveAll(tmpDir)）。
+// 用于调试器：编译完成后启动 dlv 附加到返回的二进制。
+//
+// 与 BuildSource/RunSource 的区别：
+//   - 不运行二进制（由 dlv 启动）
+//   - 不清理临时目录（dlv 需要读取二进制，调试结束后才清理）
+//   - 强制 debug 模式（release=false），保留 DWARF 供 dlv 使用
+func BuildForDebug(src, projectPath string, sink EventSink) (binaryPath, tmpDir string, err error) {
+	tmpDir, err = prepareRuntimeBuild(src, projectPath, sink)
+	if err != nil {
+		return "", "", err
+	}
+	outFile := filepath.Join(tmpDir, "egruntime-debug.exe")
+	if err := buildRuntime(tmpDir, outFile, sink, false, readProjectVersion(projectPath)); err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", err
+	}
+	return outFile, tmpDir, nil
+}
+
 func buildSourceEx(src string, projectPath string, sink EventSink, release bool) (string, error) {
 	if projectPath == "" {
 		return "", fmt.Errorf("未打开项目，无法编译（产物必须输出到项目目录，避免污染 IDE 目录）")
@@ -920,30 +941,33 @@ func copyNativeLibsFromDir(tmpDir, srcDir string, copied map[string]bool, sink E
 }
 
 // buildRuntime 在指定目录编译运行时 Go 后端。
-// release=true 时通过 -X main.Version=xxx 注入版本号。
-// 无论 debug/release 都启用 -s -w -trimpath 去除调试信息和路径，减小产物体积。
-// Garble 源码混淆：garbleEnabled=true 且 tools/garble.exe 存在时，用 `garble -literals -tiny build`
-// 替代 `go build`，混淆变量名/函数名/字符串字面量，显著增加逆向难度（v0.8.0 起 UPX 移除，Garble 为唯一防逆向手段）。
+//
+// 编译模式差异（v0.8.6 调试器支持）：
+//   - release=false（debug）：保留 DWARF 调试符号 + 不用 -trimpath，供 dlv 源码级调试
+//   - release=true（release）：-s -w -trimpath 去除符号和路径，减小产物体积
+//
 // version 非空时通过 -X main.Version=xxx 注入到运行时二进制。
+// Garble 源码混淆：garbleLevel != "off" 且 tools/garble.exe 存在时，用 garble 替代 go build。
 //
 // 离线编译支持：检测到 dir/vendor/ 目录时自动添加 -mod=vendor 标志，
 // 让 Go 直接从本地 vendor 读取依赖源码，无需联网下载。
-// vendor 目录由 scripts/vendor_template.py 生成，build.py 复制到 bin/wails-template/vendor/，
-// extractTemplate 复制 wails-template 到用户临时构建目录时 vendor/ 一并被复制。
-// 这样用户程序编译时完全离线，无需访问 GOPROXY（解决中国网络环境 proxy.golang.org 不可达问题）。
 func buildRuntime(dir, outFile string, sink EventSink, release bool, version string) error {
 	emit(sink, "build", "开始编译运行时...", false)
-	// 统一用 -s -w 去除调试符号和 DWARF 信息（debug/release 都启用，减小产物体积）
-	ldflags := "-s -w -H=windowsgui"
+	// debug 模式保留 DWARF 调试符号（供 dlv 调试器使用），不用 -trimpath 保留源码路径映射。
+	// release 模式用 -s -w -trimpath 去除符号和路径，减小产物体积。
+	ldflags := "-H=windowsgui"
+	if release {
+		ldflags = "-s -w -H=windowsgui"
+	}
 	if version != "" {
 		ldflags += " -X main.Version=" + version
 	}
-	args := []string{"build",
-		"-trimpath",
-		"-buildvcs=false",
-		"-tags", "netgo,osusergo",
-		"-ldflags", ldflags,
+	var args []string
+	args = append(args, "build")
+	if release {
+		args = append(args, "-trimpath")
 	}
+	args = append(args, "-buildvcs=false", "-tags", "netgo,osusergo", "-ldflags", ldflags)
 	// 检测到 vendor/ 目录时启用 -mod=vendor 离线编译
 	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
 		args = append(args, "-mod=vendor")

@@ -221,6 +221,7 @@
                           @rename-symbol="onRenameSymbol"
                           @font-size-change="onFontSizeChange"
                           @open-file-at="onOpenFileAt"
+                          @toggle-breakpoint="onToggleBreakpoint"
                         />
                       </div>
                       <div
@@ -259,7 +260,7 @@
                     @mousedown="onSplitterMouseDown($event, 'output')"
                   />
                   <div class="output-toolbar">
-                    <n-tabs v-model:value="outputTabName" type="line" size="small" style="flex: 1; height: 100%;">
+                    <n-tabs v-model:value="outputTabName" type="line" size="small" display-directive="show" style="flex: 1; height: 100%;">
                     <n-tab-pane name="output" tab="输出" style="height: 100%;">
                       <pre ref="outputPreRef" class="output-pre" @scroll="onOutputScroll">{{ output }}</pre>
                     </n-tab-pane>
@@ -348,6 +349,14 @@
                           <span class="ref-preview" style="word-break: break-all; width: 100%;">{{ h.artifact }}</span>
                         </div>
                       </div>
+                    </n-tab-pane>
+                    <n-tab-pane name="debug" tab="调试" style="height: 100%;">
+                      <DebugPanel
+                        ref="debugPanelRef"
+                        :project-path="projectPath"
+                        @jump-to="gotoDebugLocation"
+                        @debug-log="onDebugLog"
+                      />
                     </n-tab-pane>
                   </n-tabs>
                   <div class="output-actions">
@@ -937,6 +946,7 @@ import { loadProjectLibs, unloadProjectLibs, getProjectLibsSummary, getMergedTre
 import SettingsPanel from './components/SettingsPanel.vue'
 import WindowDesigner from './components/WindowDesigner.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
+import DebugPanel from './components/DebugPanel.vue'
 
 const themes = getThemes()
 const themeNames = getThemeNames()
@@ -1186,6 +1196,7 @@ function getCommandList() {
   const hasFile = activeFileIndex.value >= 0 && files.value.length > 0
   const hasProject = projectOpen.value
   const hasEditor = hasFile
+  const dbg = isDebugging.value
   return [
     // 文件操作
     { id: 'newFile', label: '新建代码文件', shortcut: 'Ctrl+N', category: '文件', action: () => newCodeFile(), enabled: hasProject },
@@ -1206,6 +1217,14 @@ function getCommandList() {
     { id: 'run', label: '编译运行', shortcut: 'F5', category: '运行', action: () => runCode(), enabled: hasProject },
     { id: 'build', label: '生成可执行文件', shortcut: '', category: '运行', action: () => buildExecutable(), enabled: hasProject },
     { id: 'buildOptions', label: '编译选项...', shortcut: '', category: '运行', action: () => openBuildOptions(), enabled: hasProject },
+    // 调试
+    { id: 'startDebug', label: '开始调试', shortcut: '', category: '调试', action: () => debugPanelRef.value?.startDebug?.(), enabled: hasProject && !dbg },
+    { id: 'stopDebug', label: '停止调试', shortcut: '', category: '调试', action: () => debugPanelRef.value?.stopDebug?.(), enabled: dbg },
+    { id: 'debugContinue', label: '继续执行', shortcut: 'F5', category: '调试', action: () => IDEService.DebugContinue().catch(() => {}), enabled: dbg },
+    { id: 'debugStepOver', label: '单步跳过', shortcut: 'F10', category: '调试', action: () => IDEService.DebugNext().catch(() => {}), enabled: dbg },
+    { id: 'debugStepInto', label: '单步进入', shortcut: 'F11', category: '调试', action: () => IDEService.DebugStep().catch(() => {}), enabled: dbg },
+    { id: 'debugStepOut', label: '单步跳出', shortcut: 'Shift+F11', category: '调试', action: () => IDEService.DebugStepOut().catch(() => {}), enabled: dbg },
+    { id: 'toggleBreakpoint', label: '切换断点', shortcut: 'F9', category: '调试', action: () => { const ln = editorRef.value?.getCurrentLine?.(); if (ln) onToggleBreakpoint(ln) }, enabled: hasEditor },
     // 视图
     { id: 'fullscreen', label: '切换全屏', shortcut: 'F11', category: '视图', action: () => IDEService.ToggleFullscreen(), enabled: true },
     { id: 'toggleOutput', label: '切换输出面板', shortcut: 'Ctrl+`', category: '视图', action: () => { outputCollapsed.value = !outputCollapsed.value }, enabled: true },
@@ -1347,6 +1366,17 @@ const shortcutGroups = [
     name: '运行',
     items: [
       { key: 'run', desc: '编译运行', keys: ['F5'] },
+    ]
+  },
+  {
+    name: '调试',
+    items: [
+      { key: 'debug-continue', desc: '继续执行（调试中）/ 编译运行', keys: ['F5'] },
+      { key: 'debug-step-over', desc: '单步跳过', keys: ['F10'] },
+      { key: 'debug-step-into', desc: '单步进入', keys: ['F11'] },
+      { key: 'debug-step-out', desc: '单步跳出', keys: ['Shift', 'F11'] },
+      { key: 'toggle-bp', desc: '切换断点', keys: ['F9'] },
+      { key: 'toggle-bp-glyph', desc: '切换断点（行号栏）', keys: ['Shift', '点击行号栏'] },
     ]
   },
   {
@@ -2297,8 +2327,29 @@ function onKeyDown(e) {
   }
   if (e.key === 'F11') {
     e.preventDefault()
-    IDEService.ToggleFullscreen()
+    // 调试中：F11 = 单步进入；否则 F11 = 全屏切换
+    if (isDebugging.value) {
+      IDEService.DebugStep().catch(() => {})
+    } else {
+      IDEService.ToggleFullscreen()
+    }
     return
+  }
+  if (e.key === 'F10') {
+    // 调试中：F10 = 单步跳过
+    if (isDebugging.value) {
+      e.preventDefault()
+      IDEService.DebugNext().catch(() => {})
+      return
+    }
+  }
+  if (e.shiftKey && e.key === 'F11') {
+    // 调试中：Shift+F11 = 单步跳出
+    if (isDebugging.value) {
+      e.preventDefault()
+      IDEService.DebugStepOut().catch(() => {})
+      return
+    }
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
     e.preventDefault()
@@ -2317,8 +2368,12 @@ function onKeyDown(e) {
   }
   if (e.key === 'F5') {
     e.preventDefault()
-    if (!projectOpen.value) return
-    runCode()
+    // 调试中：F5 = 继续执行；否则 F5 = 编译运行
+    if (isDebugging.value) {
+      IDEService.DebugContinue().catch(() => {})
+    } else if (projectOpen.value) {
+      runCode()
+    }
     return
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
@@ -2578,6 +2633,15 @@ onMounted(() => {
   watch(gotoSymbolItems, () => {
     gotoSymbolSelected.value = 0
   })
+  // P2 调试器：监听 debug:exit 清除编辑器的当前执行行高亮
+  offDebugExit = Events.On('debug:exit', () => {
+    isDebugging.value = false
+    editorRef.value?.clearDebugState?.()
+  })
+  // P2 调试器：监听 debug:halt 同步调试状态
+  offDebugHalt = Events.On('debug:halt', () => {
+    isDebugging.value = true
+  })
 })
 
 // G10：加载 exe 同级 templates/ 全局项目模板
@@ -2602,6 +2666,9 @@ onUnmounted(() => {
   for (const slot in scrollTimers) {
     if (scrollTimers[slot]) { clearTimeout(scrollTimers[slot]); scrollTimers[slot] = null }
   }
+  // P2 调试器：清理事件订阅
+  if (offDebugExit) { offDebugExit(); offDebugExit = null }
+  if (offDebugHalt) { offDebugHalt(); offDebugHalt = null }
 })
 
 const DEFAULT_SOURCE = `# 程序集 main
@@ -2767,6 +2834,10 @@ function setStatusMsg(msg, duration = 3000) {
 const cursorText = ref('')
 const editorRef = ref(null)
 const designerRef = ref(null)
+const debugPanelRef = ref(null)
+const isDebugging = ref(false)
+let offDebugExit = null
+let offDebugHalt = null
 // G9：插件组件注册后同步到 WindowDesigner（通过 defineExpose 的方法）
 watch(pluginComponents, (list) => {
   const d = designerRef.value
@@ -4050,6 +4121,64 @@ async function gotoRefItem(r) {
     editorRef.value?.gotoLine(r.line)
   })
 }
+
+// ===== P2 调试器：前端集成 =====
+
+// gotoDebugLocation: 点击调用栈/断点 → 跳转到编辑器对应行
+// file 可能是 basename（dlv //line 指令返回的），需要匹配项目中的 .eg 文件
+async function gotoDebugLocation(file, line) {
+  if (!file || !line) return
+  // file 是 basename（如 main.eg），在已打开文件中找匹配
+  const fileName = file.includes('/') || file.includes('\\') ? fileNameFromPath(file) : file
+  const idx = files.value.findIndex(f => f.name === fileName)
+  if (idx >= 0) {
+    switchFile(idx)
+    nextTick(() => {
+      editorRef.value?.gotoLine(line)
+      editorRef.value?.setCurrentLine?.(line)
+    })
+  } else if (projectPath.value) {
+    // 尝试从项目目录打开
+    const candidates = [
+      projectPath.value + '/' + fileName,
+      projectPath.value + '/src/' + fileName
+    ]
+    for (const p of candidates) {
+      try {
+        await openProjectFile(p)
+        nextTick(() => {
+          editorRef.value?.gotoLine(line)
+          editorRef.value?.setCurrentLine?.(line)
+        })
+        return
+      } catch {}
+    }
+  }
+}
+
+// onDebugLog: 调试输出转发到"输出"tab（已有 watch(output) 自动滚动）
+function onDebugLog(line) {
+  output.value += line + '\n'
+  // 调试输出总是切到输出tab（不切到调试tab，避免打断用户查看变量）
+  if (outputTabName.value !== 'debug' && outputTabName.value !== 'output') {
+    outputTabName.value = 'output'
+  }
+}
+
+// onToggleBreakpoint: 编辑器 F9/Shift+点击 → 通知 DebugPanel
+function onToggleBreakpoint(line) {
+  const f = activeFile.value
+  if (!f) return
+  const fileName = f.name
+  debugPanelRef.value?.addBreakpoint?.(fileName, line)
+  // 同步到编辑器装饰
+  editorRef.value?.toggleBreakpointLine?.(line)
+  // 如果调试器正在运行，通过 IDEService 切换 dlv 断点
+  if (isDebugging.value) {
+    IDEService.DebugToggleBreakpoint(fileName, line).catch(() => {})
+  }
+}
+
 
 // 在文本中扫描 `<word>(` 的调用位置（排除定义行），返回 [{line, col}]
 function scanReferencesInText(text, word) {

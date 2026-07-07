@@ -17,8 +17,10 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"egou/internal/ai"
+	"egou/internal/debugger"
 	"egou/internal/runner"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -38,6 +40,11 @@ type IDEService struct {
 	goBinary    string
 	toolManager *ai.ToolManager
 	resourceDir string
+
+	// 调试器状态（P2 Delve 集成）
+	debugMu     sync.Mutex
+	debugClient *debugger.Client
+	debugTmpDir string // 调试编译的临时目录，调试结束后清理
 }
 
 // NewIDEService 构造一个 IDEService 实例。
