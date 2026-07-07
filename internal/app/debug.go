@@ -84,6 +84,7 @@ func (s *IDEService) StartDebug(projectPath string, breakpoints []BreakpointSpec
 	s.debugMu.Unlock()
 
 	// 设置初始断点（//line 指令用 basename，所以这里转 basename）
+	hasUserBreakpoint := false
 	for _, bp := range breakpoints {
 		if bp.Line <= 0 {
 			continue
@@ -91,13 +92,45 @@ func (s *IDEService) StartDebug(projectPath string, breakpoints []BreakpointSpec
 		file := filepath.Base(bp.File)
 		if _, err := client.CreateBreakpoint(file, bp.Line); err != nil {
 			s.emitDebugLog("设置断点失败 " + file + ":" + strconv.Itoa(bp.Line) + " " + err.Error())
+		} else {
+			hasUserBreakpoint = true
 		}
 	}
 
-	// 获取初始状态（dlv exec 启动后程序停在入口）
-	state, err := client.State()
-	if err == nil && state != nil {
-		s.emitDebugHalt(state)
+	// v0.9.8：如果用户没有设置断点，自动在 main.eg 第 1 行设置断点。
+	// dlv 会自动调整到最近的可执行行（通常是主函数入口）。
+	// 这样程序不会停在 runtime 代码中（导致单步时 "no source for PC"）。
+	if !hasUserBreakpoint {
+		if _, err := client.CreateBreakpoint("main.eg", 1); err != nil {
+			s.emitDebugLog("自动设置入口断点失败: " + err.Error())
+		} else {
+			hasUserBreakpoint = true
+		}
+	}
+
+	// v0.9.8：自动 Continue 到第一个断点。
+	// dlv exec 启动后程序停在 runtime 入口（非用户代码），
+	// 如果用户此时点击单步，会在 runtime 中单步，导致 "no source for PC 0x..." 错误。
+	// 自动 Continue 让程序运行到用户代码断点处停止。
+	if hasUserBreakpoint {
+		go func() {
+			state, err := client.Continue()
+			if err != nil {
+				// Continue 返回错误（可能是连接关闭，程序已退出）
+				s.emitDebugError(err)
+				return
+			}
+			if state != nil && state.Exited {
+				s.emitDebugExit(state)
+			}
+			// Continue 成功停止时 onHalt 回调已触发，这里不需要再处理
+		}()
+	} else {
+		// 没有断点时获取初始状态（程序停在 runtime 入口）
+		state, err := client.State()
+		if err == nil && state != nil {
+			s.emitDebugHalt(state)
+		}
 	}
 	return nil
 }

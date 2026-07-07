@@ -168,7 +168,7 @@ async function startDebug() {
     const bps = breakpoints.value.map(bp => ({ file: bp.file, line: bp.line }))
     await IDEService.StartDebug(props.projectPath, bps)
     isDebugging.value = true
-    debugStatus.value = '已就绪'
+    debugStatus.value = '运行到入口断点...' // v0.9.8：后端自动 Continue 到 main.eg 入口
     emit('debug-started')
   } catch (e) {
     const msg = e?.message || String(e) || '未知错误'
