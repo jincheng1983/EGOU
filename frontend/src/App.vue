@@ -14,8 +14,6 @@
         @run="runCode"
         @build="onBuild"
         @debug="debugCode"
-        @step="stepCode"
-        @breakpoint="toggleBreakpoint"
         @about="showAbout"
         @select-theme="currentThemeName = $event"
         @settings="showSettings"
@@ -5083,23 +5081,6 @@ async function buildExecutable() {
   } finally {
     offEvent && offEvent()
     // F6：不再调用 Events.Off('ide:run-event')，那会清除所有订阅者（含其他调用点）。
-  }
-}
-// v0.9.5：TitleBar 单步按钮连接到真实调试器（F10 单步跳过行为）
-function stepCode() {
-  if (isDebugging.value) {
-    debugPanelRef.value?.stepOver?.()
-  } else {
-    setStatusMsg('未在调试中，无法单步执行', 3000)
-  }
-}
-// v0.9.5：TitleBar 断点按钮 = 切换当前行断点（F9 行为）
-function toggleBreakpoint() {
-  const ln = editorRef.value?.getCurrentLine?.()
-  if (ln) {
-    onToggleBreakpoint(ln)
-  } else {
-    setStatusMsg('请先点击编辑器选择行号', 3000)
   }
 }
 function showAbout() {

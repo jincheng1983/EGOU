@@ -35,12 +35,6 @@
       <button class="title-btn" :title="t('titlebar.debug')" @click="$emit('debug')">
         <n-icon :component="BugOutline" />
       </button>
-      <button class="title-btn" :title="t('titlebar.step')" @click="$emit('step')">
-        <n-icon :component="PlaySkipForwardOutline" />
-      </button>
-      <button class="title-btn" :title="t('titlebar.breakpoint')" @click="$emit('breakpoint')">
-        <n-icon :component="StopCircleOutline" />
-      </button>
     </div>
 
     <div class="title-bar-right">
@@ -90,8 +84,6 @@ import {
   PlayOutline,
   BuildOutline,
   BugOutline,
-  PlaySkipForwardOutline,
-  StopCircleOutline,
   InformationCircleOutline,
   MoonOutline,
   SunnyOutline,
@@ -112,7 +104,7 @@ const props = defineProps({
   currentTheme: { type: String, default: 'dark' }
 })
 
-const emit = defineEmits(['save', 'quick-save', 'undo', 'redo', 'run', 'build', 'debug', 'step', 'breakpoint', 'about', 'select-theme', 'settings', 'snippets'])
+const emit = defineEmits(['save', 'quick-save', 'undo', 'redo', 'run', 'build', 'debug', 'about', 'select-theme', 'settings', 'snippets'])
 
 const buildOptions = [
   { label: '生成可执行文件 (Windows/Linux/macOS)', key: 'build-all' },
