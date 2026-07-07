@@ -2858,8 +2858,12 @@ const currentFunctionName = ref(null)
 // 滚动一个 ref 指向的 <pre> 到底部；在内容变化时通过 watcher 触发。
 // 智能滚动：仅当用户之前在底部时才自动滚动，用户上滚查看历史时不强制跳转。
 function scrollPreToBottom(refInstance, force = false) {
-  if (!refInstance) return
-  const el = refInstance.$el || refInstance
+  let el = refInstance ? (refInstance.$el || refInstance) : null
+  // 兜底：ref 为 null 时（如 tab-pane 刚切换），用 querySelector 查找当前可见的 pre
+  if (!el) {
+    const selector = force ? '.output-pre' : null
+    if (selector) el = document.querySelector(selector)
+  }
   if (el && typeof el.scrollHeight === 'number') {
     el.scrollTop = el.scrollHeight
   }
@@ -2868,15 +2872,18 @@ function scrollPreToBottom(refInstance, force = false) {
 // L8：输出面板滚动节流，运行时快速输出多行（如循环打印）时
 // 50ms 窗口内合并多次滚动请求，避免频繁 nextTick + DOM 读写。
 const scrollTimers = { output: null, error: null, tip: null }
+// 每次调用都更新最新的 ref，避免闭包捕获陈旧的 null ref
+const pendingScrollRef = { output: null, error: null, tip: null }
 function scheduleScroll(slot, refInstance) {
+  pendingScrollRef[slot] = refInstance
   if (scrollTimers[slot]) return
   scrollTimers[slot] = setTimeout(() => {
     scrollTimers[slot] = null
-    const autoKey = slot + 'AutoScroll'
     const shouldScroll = slot === 'output' ? outputAutoScroll.value
       : slot === 'error' ? errorAutoScroll.value
       : tipAutoScroll.value
-    if (shouldScroll) scrollPreToBottom(refInstance)
+    if (shouldScroll) scrollPreToBottom(pendingScrollRef[slot])
+    pendingScrollRef[slot] = null
   }, 50)
 }
 
@@ -4289,6 +4296,9 @@ async function runCode() {
       default:          prefix = `[${stage}] `
     }
     output.value += prefix + text + '\n'
+    // 运行时实时输出重置自动滚动，确保用户始终看到最新消息
+    // （用户可能在编译间隙滚动输出栏查看历史，但新的运行输出应强制滚到底部）
+    outputAutoScroll.value = true
   })
   try {
     const data = await IDEService.RunProject(projectPath.value)
