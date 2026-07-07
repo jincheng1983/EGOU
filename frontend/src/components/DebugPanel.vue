@@ -151,7 +151,15 @@ function toggleSection(key) {
 }
 
 async function startDebug() {
-  if (!props.projectPath) return
+  if (!props.projectPath) {
+    debugStatus.value = '未打开项目，无法调试'
+    emit('debug-log', '⚠ 未打开项目，无法启动调试')
+    return
+  }
+  if (isDebugging.value) {
+    debugStatus.value = '已在调试中'
+    return
+  }
   debugStatus.value = '编译中...'
   try {
     const bps = breakpoints.value.map(bp => ({ file: bp.file, line: bp.line }))
@@ -160,7 +168,16 @@ async function startDebug() {
     debugStatus.value = '已就绪'
     emit('debug-started')
   } catch (e) {
-    debugStatus.value = '启动失败: ' + (e.message || e)
+    const msg = e?.message || String(e) || '未知错误'
+    debugStatus.value = '启动失败: ' + msg
+    // dlv 未安装时给出友好提示
+    if (msg.includes('未找到 dlv') || msg.includes('Delve')) {
+      emit('debug-log', '⚠ 调试启动失败: 未安装 Delve 调试器')
+      emit('debug-log', '  请在命令行执行: go install github.com/go-delve/delve/cmd/dlv@latest')
+      emit('debug-log', '  或在「设置 → 编译 → 工具链路径」配置 dlv 路径')
+    } else {
+      emit('debug-log', '⚠ 调试启动失败: ' + msg)
+    }
   }
 }
 

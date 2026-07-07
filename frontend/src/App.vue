@@ -4967,6 +4967,9 @@ function debugCode() {
   if (isDebugging.value) {
     debugPanelRef.value?.continueDebug?.()
   } else {
+    // 先展开输出面板并切到"调试"tab，让用户看到编译进度和反馈
+    outputCollapsed.value = false
+    outputTabName.value = 'debug'
     debugPanelRef.value?.startDebug?.()
   }
 }
