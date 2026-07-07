@@ -372,6 +372,7 @@
             <div class="status-bar">
               <div class="status-bar-left">
                 <span v-if="zenMode" class="status-bar-item status-bar-clickable sb-zen" @click="toggleZenMode" title="点击退出禅模式">禅模式</span>
+                <span v-if="isDebugging" class="status-bar-item sb-debug" title="调试器正在运行">调试中</span>
                 <span v-if="statusMessage" class="status-bar-msg">{{ statusMessage }}</span>
               </div>
               <div class="status-bar-right">
@@ -2674,6 +2675,11 @@ onMounted(() => {
   offDebugHalt = Events.On('debug:halt', () => {
     isDebugging.value = true
   })
+  // v0.9.5：监听 debug:error 同步到全局状态栏（之前仅 DebugPanel 内部显示，用户切 tab 后看不到）
+  offDebugError = Events.On('debug:error', (ev) => {
+    const errMsg = ev?.data?.error || '调试器发生未知错误'
+    setStatusMsg('调试错误: ' + errMsg, 5000)
+  })
 })
 
 // G10：加载 exe 同级 templates/ 全局项目模板
@@ -2701,6 +2707,7 @@ onUnmounted(() => {
   // P2 调试器：清理事件订阅
   if (offDebugExit) { offDebugExit(); offDebugExit = null }
   if (offDebugHalt) { offDebugHalt(); offDebugHalt = null }
+  if (offDebugError) { offDebugError(); offDebugError = null }
 })
 
 const DEFAULT_SOURCE = `# 程序集 main
@@ -2870,6 +2877,7 @@ const debugPanelRef = ref(null)
 const isDebugging = ref(false)
 let offDebugExit = null
 let offDebugHalt = null
+let offDebugError = null
 // G9：插件组件注册后同步到 WindowDesigner（通过 defineExpose 的方法）
 watch(pluginComponents, (list) => {
   const d = designerRef.value
@@ -4953,9 +4961,14 @@ async function redo() {
   await performRedo(op)
   fileUndoStack.value.push(op)
 }
+// v0.9.5：TitleBar 调试按钮连接到真实调试器功能（之前是 STUB）
+// 调试中 → 继续执行（F5 行为）；非调试中 → 开始调试
 function debugCode() {
-  output.value = '调试功能开发中'
-  outputTabName.value = 'output'
+  if (isDebugging.value) {
+    debugPanelRef.value?.continueDebug?.()
+  } else {
+    debugPanelRef.value?.startDebug?.()
+  }
 }
 function onBuild(key) {
   if (key === 'build-all') {
@@ -5069,13 +5082,22 @@ async function buildExecutable() {
     // F6：不再调用 Events.Off('ide:run-event')，那会清除所有订阅者（含其他调用点）。
   }
 }
+// v0.9.5：TitleBar 单步按钮连接到真实调试器（F10 单步跳过行为）
 function stepCode() {
-  output.value = '单步执行功能开发中'
-  outputTabName.value = 'output'
+  if (isDebugging.value) {
+    debugPanelRef.value?.stepOver?.()
+  } else {
+    setStatusMsg('未在调试中，无法单步执行', 3000)
+  }
 }
+// v0.9.5：TitleBar 断点按钮 = 切换当前行断点（F9 行为）
 function toggleBreakpoint() {
-  output.value = '断点功能开发中'
-  outputTabName.value = 'output'
+  const ln = editorRef.value?.getCurrentLine?.()
+  if (ln) {
+    onToggleBreakpoint(ln)
+  } else {
+    setStatusMsg('请先点击编辑器选择行号', 3000)
+  }
 }
 function showAbout() {
   output.value = '易狗 IDE (EGOU) - 类易语言中文 Go IDE'
@@ -5791,6 +5813,28 @@ function onShowHelp(info) {
 }
 .sb-zen {
   color: var(--accent-color) !important;
+}
+.sb-debug {
+  color: var(--accent-color);
+  font-weight: 600;
+  position: relative;
+  padding-left: 14px;
+}
+.sb-debug::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  animation: sb-debug-pulse 1.2s ease-in-out infinite;
+}
+@keyframes sb-debug-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 .sb-letter {
   font-size: 11px;

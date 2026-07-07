@@ -230,7 +230,7 @@ function removeBreakpoint(index) {
   }
 }
 
-defineExpose({ addBreakpoint, removeBreakpoint, isDebugging, startDebug, stopDebug })
+defineExpose({ addBreakpoint, removeBreakpoint, isDebugging, startDebug, stopDebug, continueDebug, stepOver, stepInto, stepOut })
 </script>
 
 <style scoped>
