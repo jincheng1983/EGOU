@@ -1,7 +1,7 @@
 <template>
   <div class="window-designer">
     <aside class="designer-toolbox">
-      <div class="panel-header">组件箱</div>
+      <div class="panel-header">{{ t('designer.toolbox') }}</div>
       <div class="toolbox-list">
         <div
           v-for="item in toolbox"
@@ -17,12 +17,12 @@
       </div>
       <template v-if="sidePanel === 'templates'">
       <div class="panel-header layer-header template-header">
-        <span>模板</span>
+        <span>{{ t('designer.template') }}</span>
         <div class="template-actions">
-          <button class="tpl-action-btn" title="导出自定义模板" @click="exportTemplates">
+          <button class="tpl-action-btn" :title="t('designer.exportTemplate')" @click="exportTemplates">
             <n-icon :component="DownloadOutline" size="14" />
           </button>
-          <button class="tpl-action-btn" title="导入自定义模板" @click="importTemplates">
+          <button class="tpl-action-btn" :title="t('designer.importTemplate')" @click="importTemplates">
             <n-icon :component="CloudUploadOutline" size="14" />
           </button>
         </div>
@@ -34,7 +34,7 @@
           class="toolbox-item template-item"
           :class="{ 'custom-template': tpl.custom }"
           draggable="true"
-          :title="`拖入：${tpl.name}（含 ${tpl.components.length} 个组件）${tpl.custom ? '（右键删除）' : ''}`"
+          :title="t('designer.dragHint', { name: tpl.name + `（${tpl.components.length}）` + (tpl.custom ? '（右键删除）' : '') })"
           @dragstart="onTemplateDragStart($event, idx)"
           @contextmenu.stop="onTemplateContextMenu($event, idx)"
         >
@@ -45,7 +45,7 @@
       <input ref="importInputRef" type="file" accept=".json" style="display:none" @change="onImportFileChange" />
       </template>
       <template v-else>
-      <div class="panel-header layer-header">层级</div>
+      <div class="panel-header layer-header">{{ t('designer.layers') }}</div>
       <div class="layer-list">
         <div
           v-for="comp in layersList"
@@ -63,27 +63,27 @@
           <span v-if="iconSvgForType(comp.type)" class="layer-icon-svg" v-html="iconSvgForType(comp.type)"></span>
           <n-icon v-else :component="iconForType(comp.type)" size="14" />
           <span class="layer-name">{{ comp.name || labelForType(comp.type) }}</span>
-          <span v-if="comp.locked" class="layer-flag locked">锁</span>
-          <span v-if="comp.visible === false" class="layer-flag">隐</span>
-          <span v-if="comp.enabled === false" class="layer-flag">禁</span>
+          <span v-if="comp.locked" class="layer-flag locked">{{ t('designer.lock') }}</span>
+          <span v-if="comp.visible === false" class="layer-flag">{{ t('designer.hide') }}</span>
+          <span v-if="comp.enabled === false" class="layer-flag">{{ t('designer.disable') }}</span>
         </div>
-        <div v-if="layersList.length === 0" class="layer-empty">暂无组件</div>
+        <div v-if="layersList.length === 0" class="layer-empty">{{ t('designer.emptyLayers') }}</div>
       </div>
       </template>
     </aside>
 
     <main class="designer-canvas" @click="selectForm">
       <div v-if="selectedIds.size >= 2" class="align-toolbar">
-        <button class="align-btn" title="左对齐" @click="alignComponents('left')">⤛</button>
-        <button class="align-btn" title="水平居中" @click="alignComponents('hcenter')">↔</button>
-        <button class="align-btn" title="右对齐" @click="alignComponents('right')">⤜</button>
+        <button class="align-btn" :title="t('designer.alignLeft')" @click="alignComponents('left')">⤛</button>
+        <button class="align-btn" :title="t('designer.alignHCenter')" @click="alignComponents('hcenter')">↔</button>
+        <button class="align-btn" :title="t('designer.alignRight')" @click="alignComponents('right')">⤜</button>
         <span class="align-sep" />
-        <button class="align-btn" title="顶对齐" @click="alignComponents('top')">⤈</button>
-        <button class="align-btn" title="垂直居中" @click="alignComponents('vcenter')">↕</button>
-        <button class="align-btn" title="底对齐" @click="alignComponents('bottom')">⤉</button>
+        <button class="align-btn" :title="t('designer.alignTop')" @click="alignComponents('top')">⤈</button>
+        <button class="align-btn" :title="t('designer.alignVCenter')" @click="alignComponents('vcenter')">↕</button>
+        <button class="align-btn" :title="t('designer.alignBottom')" @click="alignComponents('bottom')">⤉</button>
         <span class="align-sep" />
-        <button class="align-btn" title="水平等距分布" :disabled="selectedIds.size < 3" @click="distributeComponents('horizontal')">⇔</button>
-        <button class="align-btn" title="垂直等距分布" :disabled="selectedIds.size < 3" @click="distributeComponents('vertical')">⇕</button>
+        <button class="align-btn" :title="t('designer.distH')" :disabled="selectedIds.size < 3" @click="distributeComponents('horizontal')">⇔</button>
+        <button class="align-btn" :title="t('designer.distV')" :disabled="selectedIds.size < 3" @click="distributeComponents('vertical')">⇕</button>
       </div>
       <div
         ref="formRef"
@@ -101,7 +101,7 @@
               v-if="form.minimizable"
               type="button"
               class="ctrl-btn ctrl-min"
-              title="最小化"
+              :title="t('designer.minimize')"
               @mousedown.stop
             >
               <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="7" width="8" height="1" fill="currentColor"/></svg>
@@ -110,7 +110,7 @@
               v-if="form.maximizable"
               type="button"
               class="ctrl-btn ctrl-max"
-              title="最大化"
+              :title="t('designer.maximize')"
               @mousedown.stop
             >
               <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" fill="none" stroke="currentColor"/></svg>
@@ -119,7 +119,7 @@
               v-if="form.closable !== false"
               type="button"
               class="ctrl-btn ctrl-close"
-              title="关闭"
+              :title="t('designer.close')"
               @mousedown.stop
             >
               <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1 L9 9 M9 1 L1 9" stroke="currentColor" stroke-width="1" fill="none"/></svg>
@@ -165,7 +165,7 @@
               @dragover.prevent="onTabOrderDragOver($event, comp)"
               @drop.stop="onTabOrderDrop($event, comp)"
             >{{ comp.tabOrder || 0 }}</div>
-            <div v-if="comp.locked" class="lock-badge" title="已锁定"><n-icon :component="LockClosedOutline" size="10" /></div>
+            <div v-if="comp.locked" class="lock-badge" :title="t('designer.locked')"><n-icon :component="LockClosedOutline" size="10" /></div>
           </div>
 
           <div
@@ -270,131 +270,131 @@
     </main>
 
     <aside class="designer-props">
-      <div class="panel-header">属性</div>
+      <div class="panel-header">{{ t('designer.properties') }}</div>
       <div class="props-form">
         <template v-if="selectedType === 'form'">
-          <div class="prop-section">基本</div>
+          <div class="prop-section">{{ t('designer.secBasic') }}</div>
           <div class="prop-row">
-            <span class="prop-label">标题</span>
+            <span class="prop-label">{{ t('designer.propTitle') }}</span>
             <n-input v-model:value="form.title" size="small" @update:value="emitChange" />
           </div>
           <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">宽</span><n-input-number v-model:value="form.width" size="small" :min="120" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">高</span><n-input-number v-model:value="form.height" size="small" :min="80" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propWidth') }}</span><n-input-number v-model:value="form.width" size="small" :min="120" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propHeight') }}</span><n-input-number v-model:value="form.height" size="small" :min="80" @update:value="emitChange" /></div>
           </div>
           <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">X</span><n-input-number v-model:value="form.x" size="small" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">Y</span><n-input-number v-model:value="form.y" size="small" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propX') }}</span><n-input-number v-model:value="form.x" size="small" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propY') }}</span><n-input-number v-model:value="form.y" size="small" @update:value="emitChange" /></div>
           </div>
           <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">最小宽</span><n-input-number v-model:value="form.minWidth" size="small" :min="0" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">最小高</span><n-input-number v-model:value="form.minHeight" size="small" :min="0" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMinW') }}</span><n-input-number v-model:value="form.minWidth" size="small" :min="0" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMinH') }}</span><n-input-number v-model:value="form.minHeight" size="small" :min="0" @update:value="emitChange" /></div>
           </div>
           <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">最大宽</span><n-input-number v-model:value="form.maxWidth" size="small" :min="0" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">最大高</span><n-input-number v-model:value="form.maxHeight" size="small" :min="0" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMaxW') }}</span><n-input-number v-model:value="form.maxWidth" size="small" :min="0" @update:value="emitChange" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMaxH') }}</span><n-input-number v-model:value="form.maxHeight" size="small" :min="0" @update:value="emitChange" /></div>
           </div>
-          <div class="prop-section">外观</div>
+          <div class="prop-section">{{ t('designer.secAppearance') }}</div>
           <div class="prop-row">
-            <span class="prop-label">图标</span>
+            <span class="prop-label">{{ t('designer.propIcon') }}</span>
             <n-input-group style="width: 100%;">
-              <n-input v-model:value="form.icon" size="small" placeholder="留空用默认图标" @update:value="emitChange" style="flex: 1;" />
-              <n-button size="small" @click="browseFormIcon" title="浏览选择图标文件">...</n-button>
-              <n-button size="small" quaternary @click="form.icon = ''; emitChange()" title="清除图标">清</n-button>
+              <n-input v-model:value="form.icon" size="small" :placeholder="t('designer.iconPlaceholder')" @update:value="emitChange" style="flex: 1;" />
+              <n-button size="small" @click="browseFormIcon" :title="t('designer.browseIcon')">...</n-button>
+              <n-button size="small" quaternary @click="form.icon = ''; emitChange()" :title="t('designer.clearIcon')">{{ t('designer.clearIconShort') }}</n-button>
             </n-input-group>
           </div>
           <div class="prop-row">
-            <span class="prop-label">背景色</span>
+            <span class="prop-label">{{ t('designer.propBgColor') }}</span>
             <n-color-picker v-model:value="form.bgColor" :show-alpha="true" :show-preview="true" size="small" class="color-block-only" @update:value="emitChange" />
           </div>
           <div class="prop-row">
-            <span class="prop-label">效果强度</span>
+            <span class="prop-label">{{ t('designer.propEffect') }}</span>
             <n-input-number v-model:value="form.opacity" size="small" :min="1" :max="100" :step="1" @update:value="emitChange" />
           </div>
           <div class="prop-row">
-            <span class="prop-label">背景效果</span>
+            <span class="prop-label">{{ t('designer.propBgEffect') }}</span>
             <n-select v-model:value="form.backdrop" size="small" :options="backdropOptions" @update:value="emitChange" />
           </div>
-          <div class="prop-section">行为</div>
+          <div class="prop-section">{{ t('designer.secBehavior') }}</div>
           <div class="prop-row row-checks">
-            <n-checkbox v-model:checked="form.resizable" @update:checked="emitChange">可调整</n-checkbox>
-            <n-checkbox v-model:checked="form.centered" @update:checked="emitChange">居中</n-checkbox>
+            <n-checkbox v-model:checked="form.resizable" @update:checked="emitChange">{{ t('designer.propResizable') }}</n-checkbox>
+            <n-checkbox v-model:checked="form.centered" @update:checked="emitChange">{{ t('designer.propCenter') }}</n-checkbox>
           </div>
           <div class="prop-row row-checks">
-            <n-checkbox v-model:checked="form.minimizable" @update:checked="emitChange">最小化</n-checkbox>
-            <n-checkbox v-model:checked="form.maximizable" @update:checked="emitChange">最大化</n-checkbox>
+            <n-checkbox v-model:checked="form.minimizable" @update:checked="emitChange">{{ t('designer.propMinBtn') }}</n-checkbox>
+            <n-checkbox v-model:checked="form.maximizable" @update:checked="emitChange">{{ t('designer.propMaxBtn') }}</n-checkbox>
           </div>
           <div class="prop-row row-checks">
-            <n-checkbox :checked="form.closable !== false" @update:checked="v => { form.closable = v; emitChange() }">允许关闭</n-checkbox>
-            <n-checkbox v-model:checked="form.fullScreen" @update:checked="emitChange">全屏</n-checkbox>
+            <n-checkbox :checked="form.closable !== false" @update:checked="v => { form.closable = v; emitChange() }">{{ t('designer.propCloseBtn') }}</n-checkbox>
+            <n-checkbox v-model:checked="form.fullScreen" @update:checked="emitChange">{{ t('designer.propFullscreen') }}</n-checkbox>
           </div>
           <div class="prop-row row-checks">
-            <n-checkbox v-model:checked="form.alwaysOnTop" @update:checked="emitChange">置顶</n-checkbox>
+            <n-checkbox v-model:checked="form.alwaysOnTop" @update:checked="emitChange">{{ t('designer.propTopmost') }}</n-checkbox>
           </div>
-          <div class="prop-section">窗口效果</div>
+          <div class="prop-section">{{ t('designer.secWindowEffect') }}</div>
           <div class="prop-row row-checks">
-            <n-checkbox v-model:checked="form.rounded" @update:checked="emitChange">圆角</n-checkbox>
-            <n-checkbox v-model:checked="form.shadow" @update:checked="emitChange">阴影</n-checkbox>
+            <n-checkbox v-model:checked="form.rounded" @update:checked="emitChange">{{ t('designer.propRadius') }}</n-checkbox>
+            <n-checkbox v-model:checked="form.shadow" @update:checked="emitChange">{{ t('designer.propShadow') }}</n-checkbox>
           </div>
         </template>
 
         <template v-else-if="firstSelectedComponent">
-          <div class="prop-section">组件</div>
+          <div class="prop-section">{{ t('designer.secComponent') }}</div>
           <div v-if="selectedIds.size === 1" class="prop-row">
-            <span class="prop-label">名称</span>
+            <span class="prop-label">{{ t('designer.propName') }}</span>
             <n-input v-model:value="firstSelectedComponent.name" size="small" @update:value="emitChange" />
           </div>
           <div v-if="selectedIds.size > 1" class="prop-row">
-            <span class="prop-label">已选</span>
-            <span class="prop-value">{{ selectedIds.size }} 个组件</span>
+            <span class="prop-label">{{ t('designer.propSelected') }}</span>
+            <span class="prop-value">{{ t('designer.componentsCount', { count: selectedIds.size }) }}</span>
           </div>
           <div v-if="showTextProp" class="prop-row">
             <span class="prop-label">{{ textPropLabel }}</span>
             <n-input v-model:value="firstSelectedComponent.text" size="small" @update:value="emitChange" />
           </div>
           <div v-if="showItemsProp" class="prop-row">
-            <span class="prop-label">选项</span>
+            <span class="prop-label">{{ t('designer.propOptions') }}</span>
             <n-input
               v-model:value="firstSelectedComponent.items"
               size="small"
               type="textarea"
               :rows="3"
-              placeholder="每行一个选项"
+              :placeholder="t('designer.optionsPlaceholder')"
               @update:value="emitChange"
             />
           </div>
           <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">X</span><n-input-number :value="multiValue('x')" size="small" :placeholder="multiPlaceholder('x')" @update:value="v => setMulti('x', v)" /></div>
-            <div class="prop-col"><span class="prop-label-sm">Y</span><n-input-number :value="multiValue('y')" size="small" :placeholder="multiPlaceholder('y')" @update:value="v => setMulti('y', v)" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propX') }}</span><n-input-number :value="multiValue('x')" size="small" :placeholder="multiPlaceholder('x')" @update:value="v => setMulti('x', v)" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propY') }}</span><n-input-number :value="multiValue('y')" size="small" :placeholder="multiPlaceholder('y')" @update:value="v => setMulti('y', v)" /></div>
           </div>
           <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">宽</span><n-input-number :value="multiValue('width')" size="small" :min="10" :placeholder="multiPlaceholder('width')" @update:value="v => setMulti('width', v)" /></div>
-            <div class="prop-col"><span class="prop-label-sm">高</span><n-input-number :value="multiValue('height')" size="small" :min="10" :placeholder="multiPlaceholder('height')" @update:value="v => setMulti('height', v)" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propWidth') }}</span><n-input-number :value="multiValue('width')" size="small" :min="10" :placeholder="multiPlaceholder('width')" @update:value="v => setMulti('width', v)" /></div>
+            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propHeight') }}</span><n-input-number :value="multiValue('height')" size="small" :min="10" :placeholder="multiPlaceholder('height')" @update:value="v => setMulti('height', v)" /></div>
           </div>
           <div v-if="selectedIds.size === 1" class="prop-row">
-            <span class="prop-label">Tab顺序</span>
+            <span class="prop-label">{{ t('designer.propTabOrder') }}</span>
             <n-input-number v-model:value="firstSelectedComponent.tabOrder" size="small" :min="0" @update:value="emitChange" />
           </div>
-          <div class="prop-section">样式</div>
+          <div class="prop-section">{{ t('designer.secStyle') }}</div>
           <div class="prop-row">
-            <span class="prop-label">字体</span>
+            <span class="prop-label">{{ t('designer.propFont') }}</span>
             <n-input-number :value="multiValue('fontSize')" size="small" :min="8" :placeholder="multiPlaceholder('fontSize')" @update:value="v => setMulti('fontSize', v)" />
           </div>
           <div class="prop-row">
-            <span class="prop-label">颜色</span>
+            <span class="prop-label">{{ t('designer.propColor') }}</span>
             <n-color-picker :value="multiValue('color')" :show-alpha="true" :show-preview="true" size="small" class="color-block-only" @update:value="v => setMulti('color', v)" />
           </div>
           <div class="prop-row">
-            <span class="prop-label">背景</span>
+            <span class="prop-label">{{ t('designer.propBg') }}</span>
             <n-color-picker :value="multiValue('bgColor')" :show-alpha="true" :show-preview="true" size="small" class="color-block-only" @update:value="v => setMulti('bgColor', v)" />
           </div>
           <div class="prop-row row-checks">
-            <n-checkbox :checked="multiValue('visible') === true" :indeterminate="multiValue('visible') === null" @update:checked="v => setMulti('visible', v)">可见</n-checkbox>
-            <n-checkbox :checked="multiValue('enabled') === true" :indeterminate="multiValue('enabled') === null" @update:checked="v => setMulti('enabled', v)">启用</n-checkbox>
+            <n-checkbox :checked="multiValue('visible') === true" :indeterminate="multiValue('visible') === null" @update:checked="v => setMulti('visible', v)">{{ t('designer.propVisible') }}</n-checkbox>
+            <n-checkbox :checked="multiValue('enabled') === true" :indeterminate="multiValue('enabled') === null" @update:checked="v => setMulti('enabled', v)">{{ t('designer.propEnabled') }}</n-checkbox>
           </div>
 
           <template v-if="selectedIds.size === 1 && currentSchema.length">
-            <div class="prop-section">详细属性</div>
+            <div class="prop-section">{{ t('designer.secAdvanced') }}</div>
             <div v-for="s in currentSchema" :key="s.key" class="prop-row">
               <span class="prop-label">{{ s.label }}</span>
               <n-select
@@ -446,7 +446,7 @@
                 :options="fontOptions"
                 filterable
                 clearable
-                placeholder="默认字体"
+                :placeholder="t('designer.defaultFont')"
                 @update:value="v => setProp(s.key, v)"
               />
               <!-- 图片选择器：输入框 + 浏览按钮，可粘贴路径或选择本地文件 -->
@@ -457,20 +457,20 @@
                 <n-input
                   :value="propValue(s.key, s.default)"
                   size="small"
-                  placeholder="图片路径或 URL"
+                  :placeholder="t('designer.imagePath')"
                   @update:value="v => setProp(s.key, v)"
                   style="flex: 1;"
                 />
-                <n-button size="small" @click="browseImage(s.key)" title="浏览选择图片">...</n-button>
+                <n-button size="small" @click="browseImage(s.key)" :title="t('designer.browseImage')">...</n-button>
               </n-input-group>
             </div>
           </template>
 
           <div v-if="selectedIds.size === 1 && compEvents[firstSelectedComponent.type]?.length" class="prop-row events-row">
-            <span class="prop-label">事件</span>
+            <span class="prop-label">{{ t('designer.propEvent') }}</span>
             <n-select
               size="small"
-              placeholder="选择事件"
+              :placeholder="t('designer.selectEvent')"
               :options="eventOptions"
               @update:value="openEvent"
             />
@@ -478,7 +478,7 @@
         </template>
 
         <div v-else class="props-empty">
-          <n-empty description="点击窗口或组件查看属性" size="small" />
+          <n-empty :description="t('designer.selectHint')" size="small" />
         </div>
       </div>
     </aside>
@@ -526,6 +526,7 @@ import {
 } from '@vicons/ionicons5'
 import { GROUP_COLORS } from '../utils/colors.js'
 import ComponentPreview from './ComponentPreview.vue'
+import { t } from '../i18n/index.js'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => null },
@@ -539,17 +540,17 @@ const emit = defineEmits(['update:modelValue', 'open-event', 'update:showGrid', 
 
 const TITLE_HEIGHT = 32
 
-const backdropOptions = [
-  { label: '自动', value: 'auto' },
-  { label: '无', value: 'none' },
-  { label: '云母', value: 'mica' },
-  { label: '亚克力', value: 'acrylic' },
-  { label: '标签式', value: 'tabbed' }
-]
+const backdropOptions = computed(() => [
+  { label: t('designer.backdropAuto'), value: 'auto' },
+  { label: t('designer.backdropNone'), value: 'none' },
+  { label: t('designer.backdropMica'), value: 'mica' },
+  { label: t('designer.backdropAcrylic'), value: 'acrylic' },
+  { label: t('designer.backdropTabbed'), value: 'tabbed' }
+])
 
 // 字体选择器常用中文字体（可搜索过滤）
-const fontOptions = [
-  { label: '默认', value: '' },
+const fontOptions = computed(() => [
+  { label: t('designer.optDefault'), value: '' },
   { label: '微软雅黑', value: 'Microsoft YaHei' },
   { label: '宋体', value: 'SimSun' },
   { label: '黑体', value: 'SimHei' },
@@ -564,14 +565,14 @@ const fontOptions = [
   { label: 'Segoe UI', value: 'Segoe UI' },
   { label: '苹方', value: 'PingFang SC' },
   { label: '华文细黑', value: 'STXihei' }
-]
+])
 
 // 图片浏览：通过 IDEService.PickFilePath 选择本地图片文件
 async function browseImage(propKey) {
   try {
     if (window.IDEService && typeof window.IDEService.PickFilePath === 'function') {
       const path = await window.IDEService.PickFilePath(
-        '选择图片',
+        t('designer.selectImage'),
         '图片文件|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.svg;*.webp|所有文件|*.*'
       )
       if (path) setProp(propKey, path)
@@ -585,7 +586,7 @@ async function browseImage(propKey) {
 async function browseFormIcon() {
   try {
     const path = await IDEService.PickFilePath(
-      '选择窗口图标',
+      t('designer.selectIcon'),
       '图标文件|*.ico;*.png;*.bmp|所有文件|*.*'
     )
     if (path) {
@@ -597,23 +598,23 @@ async function browseFormIcon() {
   }
 }
 
-const builtinToolbox = [
-  { type: 'button', label: '按钮', icon: SquareOutline, width: 80, height: 28, text: '按钮' },
-  { type: 'edit', label: '编辑框', icon: TextOutline, width: 120, height: 24, text: '' },
-  { type: 'textarea', label: '多行编辑框', icon: CodeSlashOutline, width: 160, height: 80, text: '' },
-  { type: 'label', label: '标签', icon: TextOutline, width: 80, height: 20, text: '标签' },
-  { type: 'checkbox', label: '复选框', icon: CheckboxOutline, width: 80, height: 24, text: '复选框' },
-  { type: 'radio', label: '单选框', icon: RadioButtonOffOutline, width: 80, height: 24, text: '单选框' },
-  { type: 'switch', label: '开关', icon: ToggleOutline, width: 56, height: 24, text: '' },
-  { type: 'slider', label: '滑动条', icon: OptionsOutline, width: 120, height: 28, text: '' },
-  { type: 'progress', label: '进度条', icon: PulseOutline, width: 120, height: 20, text: '' },
-  { type: 'image', label: '图片', icon: ImageOutline, width: 100, height: 80, text: '' },
-  { type: 'listbox', label: '列表框', icon: ListOutline, width: 120, height: 80, text: '列表框' },
-  { type: 'combobox', label: '组合框', icon: ChevronDownCircleOutline, width: 120, height: 24, text: '组合框' },
-  { type: 'tabs', label: '标签页', icon: AlbumsOutline, width: 200, height: 120, text: '标签1\n标签2' },
-  { type: 'card', label: '卡片', icon: CardOutline, width: 200, height: 120, text: '卡片标题' },
-  { type: 'divider', label: '分割线', icon: RemoveOutline, width: 120, height: 2, text: '' }
-]
+const builtinToolbox = computed(() => [
+  { type: 'button', label: t('designer.compButton'), icon: SquareOutline, width: 80, height: 28, text: t('designer.compButton') },
+  { type: 'edit', label: t('designer.compEdit'), icon: TextOutline, width: 120, height: 24, text: '' },
+  { type: 'textarea', label: t('designer.compTextarea'), icon: CodeSlashOutline, width: 160, height: 80, text: '' },
+  { type: 'label', label: t('designer.compLabel'), icon: TextOutline, width: 80, height: 20, text: t('designer.compLabel') },
+  { type: 'checkbox', label: t('designer.compCheckbox'), icon: CheckboxOutline, width: 80, height: 24, text: t('designer.compCheckbox') },
+  { type: 'radio', label: t('designer.compRadio'), icon: RadioButtonOffOutline, width: 80, height: 24, text: t('designer.compRadio') },
+  { type: 'switch', label: t('designer.compSwitch'), icon: ToggleOutline, width: 56, height: 24, text: '' },
+  { type: 'slider', label: t('designer.compSlider'), icon: OptionsOutline, width: 120, height: 28, text: '' },
+  { type: 'progress', label: t('designer.compProgress'), icon: PulseOutline, width: 120, height: 20, text: '' },
+  { type: 'image', label: t('designer.compImage'), icon: ImageOutline, width: 100, height: 80, text: '' },
+  { type: 'listbox', label: t('designer.compListbox'), icon: ListOutline, width: 120, height: 80, text: t('designer.compListbox') },
+  { type: 'combobox', label: t('designer.compCombobox'), icon: ChevronDownCircleOutline, width: 120, height: 24, text: t('designer.compCombobox') },
+  { type: 'tabs', label: t('designer.compTabs'), icon: AlbumsOutline, width: 200, height: 120, text: '标签1\n标签2' },
+  { type: 'card', label: t('designer.compCard'), icon: CardOutline, width: 200, height: 120, text: t('designer.compCard') },
+  { type: 'divider', label: t('designer.compDivider'), icon: RemoveOutline, width: 120, height: 2, text: '' }
+])
 
 // G9：合并内置组件 + 插件注册的组件 + 外置组件包（components/ 目录）
 // 外置组件结构：{ type, label, icon(SVG字符串或null), width, height, text, props, events, preview, packageDir, isExternal }
@@ -629,7 +630,7 @@ const toolbox = computed(() => {
     text: p.text || p.label || p.type,
     preview: p.preview || null // G9：预览 HTML 模板
   }))
-  return [...builtinToolbox, ...pluginItems]
+  return [...builtinToolbox.value, ...pluginItems]
 })
 
 // G9：注册插件/外置组件（供 loader.js 和 App.vue 调用）
@@ -670,9 +671,9 @@ const compEventsExternal = ref({})
 // ===== 组件模板库 =====
 // 预设常用 UI 组合，一键拖入即可使用。每个模板定义一组组件及其相对位置/尺寸。
 // 拖入时以鼠标位置为左上角原点，按相对偏移批量创建组件。
-const componentTemplates = [
+const componentTemplates = computed(() => [
   {
-    name: '登录表单',
+    name: t('designer.tplLogin'),
     icon: PersonOutline,
     components: [
       { type: 'label', text: '用户名：', dx: 0, dy: 0, width: 60, height: 20 },
@@ -684,7 +685,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '搜索框+按钮',
+    name: t('designer.tplSearch'),
     icon: SearchOutline,
     components: [
       { type: 'edit', text: '', dx: 0, dy: 0, width: 200, height: 24 },
@@ -692,7 +693,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '确认对话框',
+    name: t('designer.tplConfirmDlg'),
     icon: ChatboxOutline,
     components: [
       { type: 'label', text: '提示内容', dx: 0, dy: 0, width: 200, height: 20 },
@@ -701,7 +702,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '表单行（标签+输入）',
+    name: t('designer.tplFormRow'),
     icon: TextOutline,
     components: [
       { type: 'label', text: '标签：', dx: 0, dy: 0, width: 60, height: 20 },
@@ -709,7 +710,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '复选框组',
+    name: t('designer.tplCheckboxGroup'),
     icon: CheckboxOutline,
     components: [
       { type: 'checkbox', text: '选项1', dx: 0, dy: 0, width: 70, height: 24 },
@@ -718,7 +719,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '单选框组',
+    name: t('designer.tplRadioGroup'),
     icon: RadioButtonOffOutline,
     components: [
       { type: 'radio', text: '选项1', dx: 0, dy: 0, width: 70, height: 24 },
@@ -727,7 +728,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '进度条+标签',
+    name: t('designer.tplProgressLabel'),
     icon: PulseOutline,
     components: [
       { type: 'label', text: '进度：', dx: 0, dy: 0, width: 50, height: 20 },
@@ -735,7 +736,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '工具栏（3按钮）',
+    name: t('designer.tplToolbar'),
     icon: OptionsOutline,
     components: [
       { type: 'button', text: '新建', dx: 0, dy: 0, width: 50, height: 24 },
@@ -744,7 +745,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '输入组（带单位）',
+    name: t('designer.tplInputGroup'),
     icon: CardOutline,
     components: [
       { type: 'label', text: '宽度：', dx: 0, dy: 0, width: 50, height: 20 },
@@ -753,7 +754,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '状态栏（左+右）',
+    name: t('designer.tplStatusbar'),
     icon: InformationCircleOutline,
     components: [
       { type: 'label', text: '就绪', dx: 0, dy: 0, width: 100, height: 20 },
@@ -761,7 +762,7 @@ const componentTemplates = [
     ]
   },
   {
-    name: '列表+标题',
+    name: t('designer.tplListTitle'),
     icon: ListOutline,
     components: [
       { type: 'label', text: '项目列表：', dx: 0, dy: 0, width: 80, height: 20 },
@@ -769,14 +770,14 @@ const componentTemplates = [
     ]
   },
   {
-    name: '图片+说明',
+    name: t('designer.tplImageDesc'),
     icon: ImageOutline,
     components: [
       { type: 'image', text: '', dx: 0, dy: 0, width: 80, height: 80 },
       { type: 'label', text: '图片说明', dx: 0, dy: 84, width: 80, height: 20 }
     ]
   }
-]
+])
 
 // ===== 自定义模板（localStorage 持久化）=====
 // 用户可右键选中组件 → 「保存为模板…」→ 输入名称 → 存入 localStorage。
@@ -784,7 +785,7 @@ const componentTemplates = [
 const CUSTOM_TPL_KEY = 'eg-designer-custom-templates'
 const customTemplates = ref(loadCustomTemplates())
 // 合并后的模板列表：内置 + 自定义，供模板分区渲染
-const allTemplates = computed(() => [...componentTemplates, ...customTemplates.value])
+const allTemplates = computed(() => [...componentTemplates.value, ...customTemplates.value])
 
 function loadCustomTemplates() {
   try {
@@ -801,7 +802,7 @@ function saveCustomTemplates() {
 function saveSelectionAsTemplate() {
   const sel = selectedList.value
   if (sel.length === 0) return
-  const name = window.prompt('请输入模板名称：', `自定义模板${customTemplates.value.length + 1}`)
+  const name = window.prompt(t('designer.tplPromptName'), t('designer.tplPromptDefault', { n: customTemplates.value.length + 1 }))
   if (!name || !name.trim()) return
   const minX = Math.min(...sel.map(c => c.x || 0))
   const minY = Math.min(...sel.map(c => c.y || 0))
@@ -823,9 +824,9 @@ function saveSelectionAsTemplate() {
 }
 function deleteCustomTemplate(idx) {
   // idx 是在 allTemplates 中的索引，需转为 customTemplates 中的索引
-  const customIdx = idx - componentTemplates.length
+  const customIdx = idx - componentTemplates.value.length
   if (customIdx < 0 || customIdx >= customTemplates.value.length) return
-  if (!window.confirm(`确定删除自定义模板「${customTemplates.value[customIdx].name}」？`)) return
+  if (!window.confirm(t('designer.tplConfirmDelete', { name: customTemplates.value[customIdx].name }))) return
   customTemplates.value.splice(customIdx, 1)
   saveCustomTemplates()
 }
@@ -835,7 +836,7 @@ const importInputRef = ref(null)
 
 function exportTemplates() {
   if (customTemplates.value.length === 0) {
-    window.alert('暂无自定义模板可导出')
+    window.alert(t('designer.tplNoExport'))
     return
   }
   // 仅导出可序列化字段（去掉 icon 组件引用）
@@ -869,7 +870,7 @@ function onImportFileChange(e) {
     try {
       const data = JSON.parse(reader.result)
       if (!Array.isArray(data)) {
-        window.alert('模板文件格式错误：应为数组')
+        window.alert(t('designer.tplInvalidFormat'))
         return
       }
       let added = 0
@@ -888,12 +889,12 @@ function onImportFileChange(e) {
       }
       saveCustomTemplates()
       if (added > 0) {
-        window.alert(`成功导入 ${added} 个自定义模板${skipped > 0 ? `（跳过 ${skipped} 个重名或无效项）` : ''}`)
+        window.alert(t('designer.tplImported', { count: added, skipped: skipped > 0 ? t('designer.tplImportedSkipped', { count: skipped }) : '' }))
       } else {
-        window.alert(`未导入任何模板（跳过 ${skipped} 个重名或无效项）`)
+        window.alert(t('designer.tplNoneImported', { count: skipped }))
       }
     } catch (err) {
-      window.alert('导入失败：JSON 解析错误')
+      window.alert(t('designer.tplImportFailed'))
     }
     // 重置 input 以便重复导入同一文件
     e.target.value = ''
@@ -901,20 +902,20 @@ function onImportFileChange(e) {
   reader.readAsText(file)
 }
 
-const compEvents = {
-  button: ['被单击'],
-  edit: ['内容被改变', '获得焦点', '失去焦点'],
-  textarea: ['内容被改变', '获得焦点', '失去焦点'],
-  checkbox: ['状态被改变'],
-  radio: ['状态被改变'],
-  switch: ['状态被改变'],
-  slider: ['值被改变'],
-  image: ['被单击'],
-  listbox: ['选项被改变'],
-  combobox: ['选项被改变'],
-  tabs: ['选项被改变'],
-  card: ['被单击']
-}
+const compEvents = computed(() => ({
+  button: [t('designer.eventClick')],
+  edit: [t('designer.eventChange'), t('designer.eventFocus'), t('designer.eventBlur')],
+  textarea: [t('designer.eventChange'), t('designer.eventFocus'), t('designer.eventBlur')],
+  checkbox: [t('designer.eventStateChange')],
+  radio: [t('designer.eventStateChange')],
+  switch: [t('designer.eventStateChange')],
+  slider: [t('designer.eventValueChange')],
+  image: [t('designer.eventClick')],
+  listbox: [t('designer.eventOptionChange')],
+  combobox: [t('designer.eventOptionChange')],
+  tabs: [t('designer.eventOptionChange')],
+  card: [t('designer.eventClick')]
+}))
 
 const resizeHandles = [
   { dir: 'nw' }, { dir: 'n' }, { dir: 'ne' },
@@ -922,131 +923,131 @@ const resizeHandles = [
   { dir: 'sw' }, { dir: 's' }, { dir: 'se' }
 ]
 
-const propSchemas = {
+const propSchemas = computed(() => ({
   button: [
-    { key: 'type', label: '类型', type: 'select', default: 'default', options: [
-      { label: '默认', value: 'default' }, { label: '主要', value: 'primary' },
-      { label: '成功', value: 'success' }, { label: '警告', value: 'warning' },
-      { label: '错误', value: 'error' }, { label: '信息', value: 'info' }
+    { key: 'type', label: t('designer.propSType'), type: 'select', default: 'default', options: [
+      { label: t('designer.optDefault'), value: 'default' }, { label: t('designer.optPrimary'), value: 'primary' },
+      { label: t('designer.optSuccess'), value: 'success' }, { label: t('designer.optWarning'), value: 'warning' },
+      { label: t('designer.optError'), value: 'error' }, { label: t('designer.optInfo'), value: 'info' }
     ] },
-    { key: 'size', label: '尺寸', type: 'select', default: 'medium', options: [
-      { label: '极小', value: 'tiny' }, { label: '小', value: 'small' },
-      { label: '中', value: 'medium' }, { label: '大', value: 'large' }
+    { key: 'size', label: t('designer.propSSize'), type: 'select', default: 'medium', options: [
+      { label: t('designer.optTiny'), value: 'tiny' }, { label: t('designer.optSmall'), value: 'small' },
+      { label: t('designer.optMedium'), value: 'medium' }, { label: t('designer.optLarge'), value: 'large' }
     ] },
-    { key: 'ghost', label: '幽灵', type: 'bool', default: false },
-    { key: 'dashed', label: '虚线', type: 'bool', default: false },
-    { key: 'round', label: '圆角', type: 'bool', default: false },
-    { key: 'circle', label: '圆形', type: 'bool', default: false },
-    { key: 'borderRadius', label: '圆角半径', type: 'number', default: 0, min: 0 },
-    { key: 'borderWidth', label: '边框宽', type: 'number', default: 1, min: 0 },
-    { key: 'fontWeight', label: '字重', type: 'select', default: 'normal', options: [
-      { label: '常规', value: 'normal' }, { label: '加粗', value: 'bold' }, { label: '细体', value: 'lighter' }
+    { key: 'ghost', label: t('designer.propSGhost'), type: 'bool', default: false },
+    { key: 'dashed', label: t('designer.propSDashed'), type: 'bool', default: false },
+    { key: 'round', label: t('designer.propSRound'), type: 'bool', default: false },
+    { key: 'circle', label: t('designer.propSCircle'), type: 'bool', default: false },
+    { key: 'borderRadius', label: t('designer.propSBorderRadius'), type: 'number', default: 0, min: 0 },
+    { key: 'borderWidth', label: t('designer.propSBorderWidth'), type: 'number', default: 1, min: 0 },
+    { key: 'fontWeight', label: t('designer.propSFontWeight'), type: 'select', default: 'normal', options: [
+      { label: t('designer.optNormal'), value: 'normal' }, { label: t('designer.optBold'), value: 'bold' }, { label: t('designer.optLighter'), value: 'lighter' }
     ] }
   ],
   edit: [
-    { key: 'placeholder', label: '占位符', type: 'text', default: '' },
-    { key: 'inputType', label: '类型', type: 'select', default: 'text', options: [
-      { label: '文本', value: 'text' }, { label: '密码', value: 'password' }, { label: '多行文本', value: 'textarea' }
+    { key: 'placeholder', label: t('designer.propSPlaceholder'), type: 'text', default: '' },
+    { key: 'inputType', label: t('designer.propSInputType'), type: 'select', default: 'text', options: [
+      { label: t('designer.optText'), value: 'text' }, { label: t('designer.optPassword'), value: 'password' }, { label: t('designer.optTextarea'), value: 'textarea' }
     ] },
-    { key: 'readonly', label: '只读', type: 'bool', default: false },
-    { key: 'clearable', label: '可清空', type: 'bool', default: false },
-    { key: 'maxlength', label: '最大长度', type: 'number', default: undefined }
+    { key: 'readonly', label: t('designer.propSReadonly'), type: 'bool', default: false },
+    { key: 'clearable', label: t('designer.propSClearable'), type: 'bool', default: false },
+    { key: 'maxlength', label: t('designer.propSMaxlength'), type: 'number', default: undefined }
   ],
   textarea: [
-    { key: 'placeholder', label: '占位符', type: 'text', default: '' },
-    { key: 'readonly', label: '只读', type: 'bool', default: false },
-    { key: 'maxlength', label: '最大长度', type: 'number', default: undefined },
-    { key: 'rows', label: '行数', type: 'number', default: 3, min: 1 }
+    { key: 'placeholder', label: t('designer.propSPlaceholder'), type: 'text', default: '' },
+    { key: 'readonly', label: t('designer.propSReadonly'), type: 'bool', default: false },
+    { key: 'maxlength', label: t('designer.propSMaxlength'), type: 'number', default: undefined },
+    { key: 'rows', label: t('designer.propSRows'), type: 'number', default: 3, min: 1 }
   ],
   label: [
-    { key: 'textAlign', label: '对齐', type: 'select', default: 'left', options: [
-      { label: '左对齐', value: 'left' }, { label: '居中', value: 'center' }, { label: '右对齐', value: 'right' }
+    { key: 'textAlign', label: t('designer.propSTextAlign'), type: 'select', default: 'left', options: [
+      { label: t('designer.optAlignLeft'), value: 'left' }, { label: t('designer.optAlignCenter'), value: 'center' }, { label: t('designer.optAlignRight'), value: 'right' }
     ] },
-    { key: 'fontWeight', label: '字重', type: 'select', default: 'normal', options: [
-      { label: '常规', value: 'normal' }, { label: '加粗', value: 'bold' }, { label: '细体', value: 'lighter' }
+    { key: 'fontWeight', label: t('designer.propSFontWeight'), type: 'select', default: 'normal', options: [
+      { label: t('designer.optNormal'), value: 'normal' }, { label: t('designer.optBold'), value: 'bold' }, { label: t('designer.optLighter'), value: 'lighter' }
     ] },
-    { key: 'fontFamily', label: '字体', type: 'font', default: '' },
-    { key: 'lineHeight', label: '行高', type: 'text', default: '' }
+    { key: 'fontFamily', label: t('designer.propSFontFamily'), type: 'font', default: '' },
+    { key: 'lineHeight', label: t('designer.propSLineHeight'), type: 'text', default: '' }
   ],
   checkbox: [
-    { key: 'checked', label: '选中', type: 'bool', default: false },
-    { key: 'size', label: '尺寸', type: 'select', default: 'medium', options: [
-      { label: '小', value: 'small' }, { label: '中', value: 'medium' }, { label: '大', value: 'large' }
+    { key: 'checked', label: t('designer.propSChecked'), type: 'bool', default: false },
+    { key: 'size', label: t('designer.propSSize'), type: 'select', default: 'medium', options: [
+      { label: t('designer.optSmall'), value: 'small' }, { label: t('designer.optMedium'), value: 'medium' }, { label: t('designer.optLarge'), value: 'large' }
     ] }
   ],
   radio: [
-    { key: 'checked', label: '选中', type: 'bool', default: false },
-    { key: 'size', label: '尺寸', type: 'select', default: 'medium', options: [
-      { label: '小', value: 'small' }, { label: '中', value: 'medium' }, { label: '大', value: 'large' }
+    { key: 'checked', label: t('designer.propSChecked'), type: 'bool', default: false },
+    { key: 'size', label: t('designer.propSSize'), type: 'select', default: 'medium', options: [
+      { label: t('designer.optSmall'), value: 'small' }, { label: t('designer.optMedium'), value: 'medium' }, { label: t('designer.optLarge'), value: 'large' }
     ] }
   ],
   listbox: [
-    { key: 'bordered', label: '边框', type: 'bool', default: true },
-    { key: 'multiple', label: '多选', type: 'bool', default: false }
+    { key: 'bordered', label: t('designer.propSBordered'), type: 'bool', default: true },
+    { key: 'multiple', label: t('designer.propSMultiple'), type: 'bool', default: false }
   ],
   combobox: [
-    { key: 'filterable', label: '可搜索', type: 'bool', default: false },
-    { key: 'clearable', label: '可清空', type: 'bool', default: false },
-    { key: 'multiple', label: '多选', type: 'bool', default: false },
-    { key: 'bordered', label: '边框', type: 'bool', default: true }
+    { key: 'filterable', label: t('designer.propSFilterable'), type: 'bool', default: false },
+    { key: 'clearable', label: t('designer.propSClearable'), type: 'bool', default: false },
+    { key: 'multiple', label: t('designer.propSMultiple'), type: 'bool', default: false },
+    { key: 'bordered', label: t('designer.propSBordered'), type: 'bool', default: true }
   ],
   switch: [
-    { key: 'checked', label: '选中', type: 'bool', default: false },
-    { key: 'size', label: '尺寸', type: 'select', default: 'medium', options: [
-      { label: '小', value: 'small' }, { label: '中', value: 'medium' }, { label: '大', value: 'large' }
+    { key: 'checked', label: t('designer.propSChecked'), type: 'bool', default: false },
+    { key: 'size', label: t('designer.propSSize'), type: 'select', default: 'medium', options: [
+      { label: t('designer.optSmall'), value: 'small' }, { label: t('designer.optMedium'), value: 'medium' }, { label: t('designer.optLarge'), value: 'large' }
     ] },
-    { key: 'round', label: '圆角', type: 'bool', default: true }
+    { key: 'round', label: t('designer.propSRound'), type: 'bool', default: true }
   ],
   slider: [
-    { key: 'value', label: '值', type: 'number', default: 0 },
-    { key: 'min', label: '最小', type: 'number', default: 0 },
-    { key: 'max', label: '最大', type: 'number', default: 100 },
-    { key: 'step', label: '步长', type: 'number', default: 1 },
-    { key: 'vertical', label: '垂直', type: 'bool', default: false }
+    { key: 'value', label: t('designer.propSValue'), type: 'number', default: 0 },
+    { key: 'min', label: t('designer.propSMin'), type: 'number', default: 0 },
+    { key: 'max', label: t('designer.propSMax'), type: 'number', default: 100 },
+    { key: 'step', label: t('designer.propSStep'), type: 'number', default: 1 },
+    { key: 'vertical', label: t('designer.propSVertical'), type: 'bool', default: false }
   ],
   progress: [
-    { key: 'percentage', label: '百分比', type: 'number', default: 0, min: 0, max: 100 },
-    { key: 'progressType', label: '类型', type: 'select', default: 'line', options: [
-      { label: '条形', value: 'line' }, { label: '环形', value: 'circle' }, { label: '仪表盘', value: 'dashboard' }
+    { key: 'percentage', label: t('designer.propSPercentage'), type: 'number', default: 0, min: 0, max: 100 },
+    { key: 'progressType', label: t('designer.propSProgressType'), type: 'select', default: 'line', options: [
+      { label: t('designer.optProgressLine'), value: 'line' }, { label: t('designer.optProgressCircle'), value: 'circle' }, { label: t('designer.optProgressDashboard'), value: 'dashboard' }
     ] },
-    { key: 'status', label: '状态', type: 'select', default: 'default', options: [
-      { label: '默认', value: 'default' }, { label: '成功', value: 'success' },
-      { label: '警告', value: 'warning' }, { label: '错误', value: 'error' }
+    { key: 'status', label: t('designer.propSStatus'), type: 'select', default: 'default', options: [
+      { label: t('designer.optDefault'), value: 'default' }, { label: t('designer.optSuccess'), value: 'success' },
+      { label: t('designer.optWarning'), value: 'warning' }, { label: t('designer.optError'), value: 'error' }
     ] },
-    { key: 'color', label: '颜色', type: 'color', default: '' }
+    { key: 'color', label: t('designer.propColor'), type: 'color', default: '' }
   ],
   image: [
-    { key: 'src', label: '图片', type: 'image', default: '' },
-    { key: 'objectFit', label: '适应方式', type: 'select', default: 'contain', options: [
-      { label: '填充', value: 'fill' }, { label: '包含', value: 'contain' },
-      { label: '覆盖', value: 'cover' }, { label: '无', value: 'none' }, { label: '缩小', value: 'scale-down' }
+    { key: 'src', label: t('designer.propSSrc'), type: 'image', default: '' },
+    { key: 'objectFit', label: t('designer.propSObjectFit'), type: 'select', default: 'contain', options: [
+      { label: t('designer.optFitFill'), value: 'fill' }, { label: t('designer.optFitContain'), value: 'contain' },
+      { label: t('designer.optFitCover'), value: 'cover' }, { label: t('designer.optFitNone'), value: 'none' }, { label: t('designer.optFitScaleDown'), value: 'scale-down' }
     ] },
-    { key: 'borderRadius', label: '圆角', type: 'number', default: 0, min: 0 }
+    { key: 'borderRadius', label: t('designer.propSBorderRadius'), type: 'number', default: 0, min: 0 }
   ],
   tabs: [
-    { key: 'tabsType', label: '类型', type: 'select', default: 'line', options: [
-      { label: '线条', value: 'line' }, { label: '卡片', value: 'card' }, { label: '分段', value: 'segment' }
+    { key: 'tabsType', label: t('designer.propSTabsType'), type: 'select', default: 'line', options: [
+      { label: t('designer.optTabsLine'), value: 'line' }, { label: t('designer.optTabsCard'), value: 'card' }, { label: t('designer.optTabsSegment'), value: 'segment' }
     ] },
-    { key: 'animated', label: '动画', type: 'bool', default: true }
+    { key: 'animated', label: t('designer.propSAnimated'), type: 'bool', default: true }
   ],
   card: [
-    { key: 'bordered', label: '边框', type: 'bool', default: true },
-    { key: 'hoverable', label: '悬停', type: 'bool', default: false },
-    { key: 'size', label: '尺寸', type: 'select', default: 'medium', options: [
-      { label: '小', value: 'small' }, { label: '中', value: 'medium' },
-      { label: '大', value: 'large' }, { label: '特大', value: 'huge' }
+    { key: 'bordered', label: t('designer.propSBordered'), type: 'bool', default: true },
+    { key: 'hoverable', label: t('designer.propSHoverable'), type: 'bool', default: false },
+    { key: 'size', label: t('designer.propSSize'), type: 'select', default: 'medium', options: [
+      { label: t('designer.optSmall'), value: 'small' }, { label: t('designer.optMedium'), value: 'medium' },
+      { label: t('designer.optLarge'), value: 'large' }, { label: t('designer.optHuge'), value: 'huge' }
     ] },
-    { key: 'headerExtra', label: '头部附加', type: 'text', default: '' }
+    { key: 'headerExtra', label: t('designer.propSHeaderExtra'), type: 'text', default: '' }
   ],
   divider: [
-    { key: 'dashed', label: '虚线', type: 'bool', default: false },
-    { key: 'vertical', label: '垂直', type: 'bool', default: false }
+    { key: 'dashed', label: t('designer.propSDashed'), type: 'bool', default: false },
+    { key: 'vertical', label: t('designer.propSVertical'), type: 'bool', default: false }
   ]
-}
+}))
 
 function defaultProps(type) {
   // 外置组件 schema 优先，回退内置 schema
-  const schema = propSchemasExternal.value[type] || propSchemas[type] || []
+  const schema = propSchemasExternal.value[type] || propSchemas.value[type] || []
   const props = {}
   for (const s of schema) {
     if (s.default !== undefined) {
@@ -1314,13 +1315,13 @@ const currentSchema = computed(() => {
   if (!firstSelectedComponent.value) return []
   const t = firstSelectedComponent.value.type
   // 外置组件 schema 优先（允许覆盖内置同名组件的 schema）
-  return propSchemasExternal.value[t] || propSchemas[t] || []
+  return propSchemasExternal.value[t] || propSchemas.value[t] || []
 })
 
 const eventOptions = computed(() => {
   if (!firstSelectedComponent.value) return []
   const t = firstSelectedComponent.value.type
-  const events = compEventsExternal.value[t] || compEvents[t] || []
+  const events = compEventsExternal.value[t] || compEvents.value[t] || []
   return events.map(evt => ({ label: evt, value: evt }))
 })
 
@@ -1332,10 +1333,10 @@ const showTextProp = computed(() => {
 
 const textPropLabel = computed(() => {
   const comp = firstSelectedComponent.value
-  if (!comp) return '文本'
-  if (comp.type === 'card') return '标题'
-  if (comp.type === 'tabs') return '标签'
-  return '文本'
+  if (!comp) return t('designer.textText')
+  if (comp.type === 'card') return t('designer.textTitle')
+  if (comp.type === 'tabs') return t('designer.textTabs')
+  return t('designer.textText')
 })
 
 const showItemsProp = computed(() => {
@@ -2470,57 +2471,57 @@ const contextMenuOptions = computed(() => {
   const opts = []
   // 层级组
   opts.push({
-    label: '层级', key: 'z-group', children: [
-      { label: '置顶', key: 'z-top' },
-      { label: '前置', key: 'z-forward' },
-      { label: '后置', key: 'z-backward' },
-      { label: '置底', key: 'z-bottom' }
+    label: t('designer.ctxLayer'), key: 'z-group', children: [
+      { label: t('designer.ctxZTop'), key: 'z-top' },
+      { label: t('designer.ctxZForward'), key: 'z-forward' },
+      { label: t('designer.ctxZBackward'), key: 'z-backward' },
+      { label: t('designer.ctxZBottom'), key: 'z-bottom' }
     ]
   })
   // 编辑组
   const editChildren = [
-    { label: '锁定/解锁', key: 'toggle-lock' },
-    { label: '复制组件', key: 'duplicate' },
-    { label: '复制样式', key: 'copy-style' }
+    { label: t('designer.ctxToggleLock'), key: 'toggle-lock' },
+    { label: t('designer.ctxDuplicate'), key: 'duplicate' },
+    { label: t('designer.ctxCopyStyle'), key: 'copy-style' }
   ]
-  if (styleClipboard) editChildren.push({ label: '粘贴样式', key: 'paste-style' })
-  opts.push({ label: '编辑', key: 'edit-group', children: editChildren })
+  if (styleClipboard) editChildren.push({ label: t('designer.ctxPasteStyle'), key: 'paste-style' })
+  opts.push({ label: t('designer.ctxEdit'), key: 'edit-group', children: editChildren })
   // 排列组
   const alignChildren = [
-    { label: '居中于父容器', key: 'center' },
-    { label: '大小匹配内容', key: 'size-to-fit' },
-    { label: '置于网格', key: 'snap-to-grid' }
+    { label: t('designer.ctxCenterParent'), key: 'center' },
+    { label: t('designer.ctxSizeToFit'), key: 'size-to-fit' },
+    { label: t('designer.ctxSnapToGrid'), key: 'snap-to-grid' }
   ]
   if (selectedIds.value.size >= 2) {
-    alignChildren.push({ label: '等宽', key: 'equal-width' })
-    alignChildren.push({ label: '等高', key: 'equal-height' })
-    alignChildren.push({ label: '等大', key: 'equal-size' })
+    alignChildren.push({ label: t('designer.ctxEqualWidth'), key: 'equal-width' })
+    alignChildren.push({ label: t('designer.ctxEqualHeight'), key: 'equal-height' })
+    alignChildren.push({ label: t('designer.ctxEqualSize'), key: 'equal-size' })
   }
-  opts.push({ label: '排列', key: 'align-group', children: alignChildren })
+  opts.push({ label: t('designer.ctxArrange'), key: 'align-group', children: alignChildren })
   // 组合
   if (selectedIds.value.size >= 2 || selectedList.value.some(c => c.groupId)) {
     const grpChildren = []
-    if (selectedIds.value.size >= 2) grpChildren.push({ label: '组合', key: 'group' })
-    if (selectedList.value.some(c => c.groupId)) grpChildren.push({ label: '取消组合', key: 'ungroup' })
-    opts.push({ label: '组合', key: 'grp-group', children: grpChildren })
+    if (selectedIds.value.size >= 2) grpChildren.push({ label: t('designer.ctxGroup'), key: 'group' })
+    if (selectedList.value.some(c => c.groupId)) grpChildren.push({ label: t('designer.ctxUngroup'), key: 'ungroup' })
+    opts.push({ label: t('designer.ctxGroup'), key: 'grp-group', children: grpChildren })
   }
   // Tab 顺序
   if (tabOrderMode.value && selectedIds.value.size >= 2) {
-    opts.push({ label: 'Tab 顺序', key: 'tab-group', children: [
-      { label: '按选中顺序设Tab', key: 'tab-order-by-selection' }
+    opts.push({ label: t('designer.ctxTabOrder'), key: 'tab-group', children: [
+      { label: t('designer.ctxTabOrderBySel'), key: 'tab-order-by-selection' }
     ] })
   }
   // 模板
   if (selectedIds.value.size >= 1) {
-    opts.push({ label: '模板', key: 'tpl-group', children: [
-      { label: '保存为模板…', key: 'save-as-template' }
+    opts.push({ label: t('designer.ctxTemplate'), key: 'tpl-group', children: [
+      { label: t('designer.ctxSaveAsTemplate'), key: 'save-as-template' }
     ] })
   }
   // 操作（一级，常用）
   opts.push({ type: 'divider', key: 'd2' })
-  opts.push({ label: '删除', key: 'delete' })
-  opts.push({ label: '全选', key: 'select-all' })
-  opts.push({ label: '取消选择', key: 'deselect-all' })
+  opts.push({ label: t('designer.ctxDelete'), key: 'delete' })
+  opts.push({ label: t('designer.ctxSelectAll'), key: 'select-all' })
+  opts.push({ label: t('designer.ctxDeselectAll'), key: 'deselect-all' })
   return opts
 })
 
