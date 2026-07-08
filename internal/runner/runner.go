@@ -1265,26 +1265,42 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 	useGarble := false
 	garbleFlags := []string{}
 	garblePath := findGarble()
+	garbleCompat := false
+	garbleCompatDetail := ""
+	if garblePath != "" {
+		if cached, ok := garbleCompatCache.Load(garblePath); ok {
+			garbleCompat = cached.(bool)
+		} else {
+			garbleCompat, garbleCompatDetail = garbleCompatibleDetail(garblePath)
+			garbleCompatCache.Store(garblePath, garbleCompat)
+		}
+	}
 	switch garbleLevel {
 	case "off":
 		emit(sink, "build", "Garble 混淆已关闭（编译选项设置），普通编译", false)
 	case "full":
-		if garblePath != "" && garbleCompatibleCached(garblePath) {
+		if garbleCompat {
 			useGarble = true
 			garbleFlags = []string{"-literals", "-tiny"}
 			emit(sink, "build", "启用 Garble 完整混淆（-literals -tiny，可能触发杀软误报）", false)
 		} else if garblePath != "" {
-			emit(sink, "build", "Garble 版本与当前 Go 不兼容，已自动回退普通编译", false)
+			emit(sink, "build", "Garble 与当前 Go 不兼容，已自动回退普通编译", false)
+			if garbleCompatDetail != "" {
+				emit(sink, "build", "  原因: "+garbleCompatDetail, false)
+			}
 		} else {
 			emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
 		}
 	default: // "basic" 或其他非法值
-		if garblePath != "" && garbleCompatibleCached(garblePath) {
+		if garbleCompat {
 			useGarble = true
 			garbleFlags = []string{"-tiny"}
 			emit(sink, "build", "启用 Garble 基础混淆（-tiny，仅变量名/函数名，无杀软误报）", false)
 		} else if garblePath != "" {
-			emit(sink, "build", "Garble 版本与当前 Go 不兼容，已自动回退普通编译", false)
+			emit(sink, "build", "Garble 与当前 Go 不兼容，已自动回退普通编译", false)
+			if garbleCompatDetail != "" {
+				emit(sink, "build", "  原因: "+garbleCompatDetail, false)
+			}
 		} else {
 			emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
 		}
@@ -2208,16 +2224,35 @@ func copyFile(src, dst string) error {
 // findGarble 查找 garble 可执行文件路径（Go 源码混淆工具，mvdan.cc/garble）。
 // 查找顺序：
 //  1. IDE exe 同级 tools/garble.exe（build.py 预编译并随包分发，离线可用）
-//  2. PATH 查找（用户自行 go install mvdan.cc/garble@latest 安装）
+//  2. 当前工作目录 tools/garble.exe（go run / wails dev 开发模式）
+//  3. IDE exe 上级目录 tools/garble.exe（build 输出在子目录场景）
+//  4. PATH 查找（用户自行 go install 安装）
 //
 // v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一防逆向手段。
+// v0.11.30 固定 garble v0.15.0 兼容 Go 1.25.x。
 func findGarble() string {
-	// 1. 优先从 IDE exe 同级 tools/ 目录查找（随发布包自带）
+	searchDirs := []string{}
 	if exePath, err := os.Executable(); err == nil {
 		exeDir := filepath.Dir(exePath)
+		searchDirs = append(searchDirs, exeDir)
+		searchDirs = append(searchDirs, filepath.Dir(exeDir))
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		already := false
+		for _, d := range searchDirs {
+			if d == cwd {
+				already = true
+				break
+			}
+		}
+		if !already {
+			searchDirs = append(searchDirs, cwd)
+		}
+	}
+	for _, dir := range searchDirs {
 		candidates := []string{
-			filepath.Join(exeDir, "tools", "garble.exe"),
-			filepath.Join(exeDir, "garble.exe"),
+			filepath.Join(dir, "tools", "garble.exe"),
+			filepath.Join(dir, "garble.exe"),
 		}
 		for _, p := range candidates {
 			if _, err := os.Stat(p); err == nil {
@@ -2225,7 +2260,6 @@ func findGarble() string {
 			}
 		}
 	}
-	// 2. 从 PATH 查找
 	if p, err := exec.LookPath("garble"); err == nil {
 		return p
 	}
@@ -2237,10 +2271,10 @@ func findGarble() string {
 	return ""
 }
 
-func garbleCompatible(garblePath string) bool {
+func garbleCompatibleDetail(garblePath string) (bool, string) {
 	tmpDir, err := os.MkdirTemp("", "garble-check-*")
 	if err != nil {
-		return true
+		return true, ""
 	}
 	defer os.RemoveAll(tmpDir)
 	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module gcheck\n\ngo 1.25.0\n"), 0644)
@@ -2251,31 +2285,28 @@ func garbleCompatible(garblePath string) bool {
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		outStr := string(out)
-		// 版本不兼容 → 不兼容，回退普通编译
+		outStr := strings.TrimSpace(string(out))
 		if strings.Contains(outStr, "too old") {
-			return false
+			return false, outStr
 		}
-		// 工具链不可用（找不到 go 等）→ 不兼容，回退普通编译
 		if strings.Contains(outStr, "executable file not found") ||
 			strings.Contains(outStr, "Can't find the Go toolchain") ||
-			strings.Contains(outStr, "no Go files") ||
 			strings.Contains(outStr, "not found in PATH") {
-			return false
+			return false, outStr
 		}
-		// 其他错误（网络、cgo 等）视为兼容，让正式编译时显示具体错误
-		return true
+		if strings.Contains(outStr, "invalid GOTOOLCHAIN") ||
+			strings.Contains(outStr, "go: unknown directive") ||
+			strings.Contains(outStr, "compile: version") {
+			return false, outStr
+		}
+		return true, ""
 	}
-	return true
+	return true, ""
+}
+
+func garbleCompatible(garblePath string) bool {
+	ok, _ := garbleCompatibleDetail(garblePath)
+	return ok
 }
 
 var garbleCompatCache sync.Map
-
-func garbleCompatibleCached(garblePath string) bool {
-	if cached, ok := garbleCompatCache.Load(garblePath); ok {
-		return cached.(bool)
-	}
-	result := garbleCompatible(garblePath)
-	garbleCompatCache.Store(garblePath, result)
-	return result
-}
