@@ -101,7 +101,8 @@ func buildGoEnv() []string {
 			strings.HasPrefix(e, "GONOSUMCHECK=") ||
 			strings.HasPrefix(e, "GONOSUMDB=") ||
 			strings.HasPrefix(e, "GOWORK=") ||
-			strings.HasPrefix(e, "GOTOOLCHAIN=") {
+			strings.HasPrefix(e, "GOTOOLCHAIN=") ||
+			strings.HasPrefix(e, "CGO_ENABLED=") {
 			continue
 		}
 		if strings.HasPrefix(e, "PATH=") {

@@ -200,7 +200,12 @@ def main():
     exe_path = BIN_DIR / "EGOU.exe"
     # IDE 本体防逆向方案：-trimpath（去路径）+ -s -w（去符号表/调试信息），不依赖任何外部混淆工具。
     # v0.11.33 起 Garble 完全移除（需要 git、用户环境兼容性问题多、实际防逆向效果有限）。
-    print("IDE 本体用普通 go build...")
+    # CGO_ENABLED=0 纯静态编译：不依赖系统 C 运行库（ucrt/msvcrt/VC_redist），
+    # 干净 Win10 无 VC 运行库即可直接运行（之前双击无反应就是缺 VC 库导致的）。
+    # Wails v3 Windows 后端走 WebView2 COM（纯 syscall），无需 CGO。
+    print("IDE 本体用纯静态 go build（CGO_ENABLED=0，无 VC 运行库依赖）...")
+    env = os.environ.copy()
+    env["CGO_ENABLED"] = "0"
     run([
         "go", "build",
         "-tags", "production,netgo,osusergo",
@@ -210,7 +215,7 @@ def main():
         "-ldflags", f"-H windowsgui -w -s -X main.Version={version}",
         "-o", str(exe_path),
         "./cmd/egou",
-    ])
+    ], env=env)
 
     # 编译完成后清理 .syso 文件（避免污染源码目录）
     for syso in (ROOT / "cmd" / "egou").glob("windows_*.syso"):
