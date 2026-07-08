@@ -509,6 +509,36 @@ async function executeSkill(skillId, params = {}) {
           return formatSkillResult('获取当前文件', '当前没有打开文件')
         }
         return formatSkillResult('获取当前文件', '无法获取当前文件')
+      case 'get_project_structure':
+        if (!props.projectPath) {
+          return formatSkillResult('获取项目结构', '未打开项目')
+        }
+        try {
+          const tree = await IDEService.ListProjectDir(props.projectPath)
+          if (!Array.isArray(tree) || tree.length === 0) {
+            return formatSkillResult('获取项目结构', '项目目录为空')
+          }
+          const lines = []
+          const walk = (nodes, depth) => {
+            if (!Array.isArray(nodes)) return
+            for (const n of nodes) {
+              const indent = '  '.repeat(depth)
+              const icon = n.IsDir ? '📁' : '📄'
+              lines.push(`${indent}${icon} ${n.Name}`)
+              // 限制深度 3 层，避免大项目输出过长
+              if (n.IsDir && depth < 3 && Array.isArray(n.Children) && n.Children.length > 0) {
+                walk(n.Children, depth + 1)
+              }
+            }
+          }
+          walk(tree, 0)
+          let out = lines.join('\n')
+          // 截断保护，避免占满 AI 上下文
+          if (out.length > 3000) out = out.slice(0, 3000) + '\n... (已截断，项目较大)'
+          return formatSkillResult('获取项目结构', `项目路径: ${props.projectPath}\n${out}`)
+        } catch (e) {
+          return formatSkillResult('获取项目结构', '获取失败: ' + (e.message || String(e)))
+        }
       case 'get_support_libs':
         return formatSkillResult('获取支持库',
           'EGOU 核心内置命令:\n' +
@@ -613,11 +643,27 @@ async function send() {
     const removed = rawMessages.length - keepRecent
     const recentMsgs = rawMessages.slice(-keepRecent)
     const olderMsgs = rawMessages.slice(0, removed)
+    // v0.11.0：本地保留简短摘要 + 异步调用后端 CompactConversation 持久化完整摘要到 .eg/memory/summary.md
     const olderSummary = olderMsgs
       .map(m => (m.role === 'user' ? '用户' : '助手') + '：' + m.content.slice(0, 80) + (m.content.length > 80 ? '...' : ''))
       .join('\n')
     compressNotice = `以下是之前对话的摘要（共 ${removed} 条消息因长度限制被压缩）：\n${olderSummary}\n\n（以下是最近的对话）`
     apiMessages = [{ role: 'system', content: compressNotice }, ...recentMsgs]
+
+    // 异步触发后端 AI 压缩（不阻塞当前对话，失败静默忽略，下次启动会从 summary.md 读取）
+    if (props.projectPath && cfg.endpoint && cfg.apiKey && cfg.model) {
+      try {
+        IDEService.CompactConversation(
+          cfg.endpoint,
+          cfg.apiKey,
+          cfg.model,
+          olderMsgs.map(m => ({ role: m.role, content: m.content })),
+          props.projectPath
+        )
+      } catch (e) {
+        console.warn('[ai] 触发会话压缩失败:', e)
+      }
+    }
   }
 
   // P2-10 按需注入技能 prompt（trigger 匹配时才注入，不占上下文 token）
@@ -638,7 +684,8 @@ async function send() {
       cfg.temperature || 0.7,
       cfg.maxTokens || 4096,
       systemPrompt,
-      projectMemory.value || ''
+      projectMemory.value || '',
+      props.projectPath || ''
     )
   } catch (e) {
     loading.value = false

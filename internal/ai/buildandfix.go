@@ -65,7 +65,14 @@ func extractCodeBlock(output string) string {
 	return strings.TrimSpace(matches[len(matches)-1][1])
 }
 
-// BuildAndFix 执行编译-修复循环
+// BuildAndFix 执行编译-修复循环（无项目记忆注入，向后兼容）。
+// 等价于 BuildAndFixWithContext(..., "")。
+func BuildAndFix(initialSrc, projectPath string, buildFn BuildFn, client *Client, maxRounds int, sink FixSink) (finalSrc, buildOutput string, success bool, err error) {
+	return BuildAndFixWithContext(initialSrc, projectPath, buildFn, client, maxRounds, sink, "")
+}
+
+// BuildAndFixWithContext 执行编译-修复循环，支持注入项目记忆到 Fixer Agent。
+// projectContext 为空时与 BuildAndFix 行为一致。
 //
 // 参数：
 //   - initialSrc: 初始源码
@@ -74,13 +81,14 @@ func extractCodeBlock(output string) string {
 //   - client: AI Client（用于调用 Fixer Agent）
 //   - maxRounds: 最大修复轮数（0 表示用默认值 DefaultMaxRounds）
 //   - sink: 状态回调（可为 nil）
+//   - projectContext: 项目记忆上下文（来自 .eg/memory/），注入到 Fixer 系统提示词
 //
 // 返回：
 //   - finalSrc: 最终源码（可能被修复过）
 //   - buildOutput: 最终编译输出
 //   - success: 是否最终编译成功
 //   - err: 不可恢复的错误
-func BuildAndFix(initialSrc, projectPath string, buildFn BuildFn, client *Client, maxRounds int, sink FixSink) (finalSrc, buildOutput string, success bool, err error) {
+func BuildAndFixWithContext(initialSrc, projectPath string, buildFn BuildFn, client *Client, maxRounds int, sink FixSink, projectContext string) (finalSrc, buildOutput string, success bool, err error) {
 	if maxRounds <= 0 {
 		maxRounds = DefaultMaxRounds
 	}
@@ -132,11 +140,15 @@ func BuildAndFix(initialSrc, projectPath string, buildFn BuildFn, client *Client
 		emit("fix-start", round, lastErrors, "", currentSrc)
 
 		fixerCfg, _ := GetAgentConfig(RoleFixer)
+		sysPrompt := fixerCfg.SystemPrompt
+		if projectContext != "" {
+			sysPrompt = sysPrompt + "\n\n【项目记忆】\n" + projectContext
+		}
 		errMsg := fmt.Sprintf("编译失败，错误如下：\n%s\n\n当前源码：\n```egou\n%s\n```\n\n请分析错误原因，给出修复后的完整代码。",
 			strings.Join(lastErrors, "\n"), currentSrc)
 
 		msgs := []Message{
-			{Role: "system", Content: fixerCfg.SystemPrompt},
+			{Role: "system", Content: sysPrompt},
 			{Role: "user", Content: errMsg},
 		}
 

@@ -33,9 +33,16 @@ type AIMessage struct {
 
 // RunAgent 调用单个 Agent 角色（P2-9 接入）
 // 通过事件 ide:ai-agent-event 回传 agent-start/agent-end 状态
-func (s *IDEService) RunAgent(endpoint, apiKey, model string, role string, userInput string, history []AIMessage) AIAgentResult {
+// projectPath 非空时，自动读取 .eg/memory/ 注入到 Agent 系统提示词。
+func (s *IDEService) RunAgent(endpoint, apiKey, model string, role string, userInput string, history []AIMessage, projectPath string) AIAgentResult {
 	client := ai.NewClient(endpoint, apiKey, model)
 	orch := ai.NewOrchestrator(client)
+	// 注入项目记忆（v0.11.0）
+	if projectPath != "" {
+		if mem := s.ReadProjectMemory(projectPath); mem != "" {
+			orch.SetProjectContext(mem)
+		}
+	}
 	orch.SetSink(func(ev ai.PipelineEvent) {
 		if s.app != nil {
 			s.app.Event.Emit("ide:ai-agent-event", map[string]any{
@@ -74,9 +81,16 @@ func (s *IDEService) RunAgent(endpoint, apiKey, model string, role string, userI
 
 // RunAgentPipeline 串行执行多个 Agent（P2-9 接入）
 // pipeline 是角色 ID 数组，如 ["planner", "coder", "reviewer"]
-func (s *IDEService) RunAgentPipeline(endpoint, apiKey, model string, pipeline []string, userInput string, history []AIMessage) AIAgentResult {
+// projectPath 非空时，自动读取 .eg/memory/ 注入到每个 Agent 系统提示词。
+func (s *IDEService) RunAgentPipeline(endpoint, apiKey, model string, pipeline []string, userInput string, history []AIMessage, projectPath string) AIAgentResult {
 	client := ai.NewClient(endpoint, apiKey, model)
 	orch := ai.NewOrchestrator(client)
+	// 注入项目记忆（v0.11.0）
+	if projectPath != "" {
+		if mem := s.ReadProjectMemory(projectPath); mem != "" {
+			orch.SetProjectContext(mem)
+		}
+	}
 	orch.SetSink(func(ev ai.PipelineEvent) {
 		if s.app != nil {
 			s.app.Event.Emit("ide:ai-agent-event", map[string]any{
@@ -203,7 +217,12 @@ func (s *IDEService) BuildAndFix(endpoint, apiKey, model string, source string, 
 			}
 		}
 
-		finalSrc, output, success, err := ai.BuildAndFix(source, projectPath, buildFn, client, maxRounds, fixSink)
+		// 注入项目记忆到 Fixer Agent（v0.11.0）
+		var projectCtx string
+		if mem := s.ReadProjectMemory(projectPath); mem != "" {
+			projectCtx = mem
+		}
+		finalSrc, output, success, err := ai.BuildAndFixWithContext(source, projectPath, buildFn, client, maxRounds, fixSink, projectCtx)
 		errMsg := ""
 		if err != nil {
 			errMsg = err.Error()
@@ -222,7 +241,9 @@ func (s *IDEService) BuildAndFix(endpoint, apiKey, model string, source string, 
 
 // AIChat 流式调用 OpenAI 兼容 API，通过事件 ide:ai-chunk 回传内容
 // event data: { done: bool, content: string, error: string }
-func (s *IDEService) AIChat(endpoint, apiKey, model string, messages []AIMessage, temperature float64, maxTokens int, systemPrompt string, projectMemory string) {
+// projectPath 参数：传入项目路径时，AI 完整响应 done 后自动提取关键决策追加到 .eg/memory/decisions.md。
+//                  传空串则跳过决策提取（向后兼容旧调用）。
+func (s *IDEService) AIChat(endpoint, apiKey, model string, messages []AIMessage, temperature float64, maxTokens int, systemPrompt string, projectMemory string, projectPath string) {
 	go func() {
 		client := ai.NewClient(endpoint, apiKey, model)
 
@@ -250,37 +271,78 @@ func (s *IDEService) AIChat(endpoint, apiKey, model string, messages []AIMessage
 			maxTokens = 4096
 		}
 
+		// 收集完整响应，done 时用于决策提取
+		var fullResponse strings.Builder
+
 		_, err := client.ChatStream(ctx, allMsgs, temperature, maxTokens, func(chunk string, done bool, err error) {
 			data := map[string]any{"done": done}
 			if err != nil {
 				data["error"] = err.Error()
 			} else {
 				data["content"] = chunk
+				if !done {
+					fullResponse.WriteString(chunk)
+				}
 			}
 			s.app.Event.Emit("ide:ai-chunk", data)
 		})
 		if err != nil {
 			s.app.Event.Emit("ide:ai-chunk", map[string]any{"done": true, "error": err.Error()})
+			return
+		}
+		// AI 响应结束后，启发式提取关键决策并追加到 decisions.md
+		if projectPath != "" {
+			resp := fullResponse.String()
+			if decisions := extractDecisions(resp); len(decisions) > 0 {
+				s.AppendProjectMemorySection(projectPath, "decisions", strings.Join(decisions, "\n"))
+			}
 		}
 	}()
 }
 
-// ReadProjectMemory 读取项目级 AI 记忆（<project>/.eg/memory/memory.md）。
-// 文件不存在时返回空字符串（不视为错误，表示新项目无记忆）。
+// ReadProjectMemory 读取项目级 AI 记忆。
+// 优先读取结构化记忆（summary.md + decisions.md + 用户备注 memory.md 拼接），
+// 向后兼容：若结构化文件不存在但旧 memory.md 存在，直接返回旧文件内容。
 // projectPath 为空或路径无效返回空串。
 func (s *IDEService) ReadProjectMemory(projectPath string) string {
 	if projectPath == "" {
 		return ""
 	}
-	memPath := filepath.Join(projectPath, ".eg", "memory", "memory.md")
-	data, err := os.ReadFile(memPath)
-	if err != nil {
+	memDir := filepath.Join(projectPath, ".eg", "memory")
+	summaryPath := filepath.Join(memDir, "summary.md")
+	decisionsPath := filepath.Join(memDir, "decisions.md")
+	userNotesPath := filepath.Join(memDir, "memory.md")
+
+	var parts []string
+	// 1. 滚动摘要（AI 自动压缩生成）
+	if data, err := os.ReadFile(summaryPath); err == nil {
+		summary := strings.TrimSpace(string(data))
+		if summary != "" {
+			parts = append(parts, "## 滚动摘要\n"+summary)
+		}
+	}
+	// 2. 关键决策（AI 自动提取追加）
+	if data, err := os.ReadFile(decisionsPath); err == nil {
+		decisions := strings.TrimSpace(string(data))
+		if decisions != "" {
+			parts = append(parts, "## 关键决策\n" + decisions)
+		}
+	}
+	// 3. 用户备注（手写，向后兼容旧 memory.md）
+	if data, err := os.ReadFile(userNotesPath); err == nil {
+		notes := strings.TrimSpace(string(data))
+		if notes != "" {
+			parts = append(parts, "## 用户备注\n" + notes)
+		}
+	}
+
+	if len(parts) == 0 {
 		return ""
 	}
-	return string(data)
+	return strings.Join(parts, "\n\n")
 }
 
-// SaveProjectMemory 写入项目级 AI 记忆。
+// SaveProjectMemory 写入项目级 AI 记忆（用户备注部分，memory.md）。
 // 自动创建 .eg/memory/ 目录。返回空字符串表示成功，非空表示错误信息。
 func (s *IDEService) SaveProjectMemory(projectPath string, content string) string {
 	if projectPath == "" {
@@ -295,4 +357,147 @@ func (s *IDEService) SaveProjectMemory(projectPath string, content string) strin
 		return "写入记忆失败: " + err.Error()
 	}
 	return ""
+}
+
+// AppendProjectMemorySection 追加式写入项目记忆的某个分段（summary 或 decisions）。
+// section 为 "summary" 或 "decisions"，content 为要追加的文本（可含多行）。
+// 自动在内容前加时间戳标记。返回空字符串表示成功。
+func (s *IDEService) AppendProjectMemorySection(projectPath, section, content string) string {
+	if projectPath == "" {
+		return "项目路径为空"
+	}
+	if section != "summary" && section != "decisions" {
+		return "无效的记忆分段: " + section
+	}
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return ""
+	}
+	memDir := filepath.Join(projectPath, ".eg", "memory")
+	if err := os.MkdirAll(memDir, 0755); err != nil {
+		return "创建记忆目录失败: " + err.Error()
+	}
+	filePath := filepath.Join(memDir, section+".md")
+	// 读取现有内容（追加模式，不覆盖）
+	existing := ""
+	if data, err := os.ReadFile(filePath); err == nil {
+		existing = string(data)
+	}
+	// 追加时间戳标记 + 新内容
+	stamp := time.Now().Format("2006-01-02 15:04")
+	var b strings.Builder
+	if existing != "" {
+		b.WriteString(existing)
+		if !strings.HasSuffix(existing, "\n") {
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("### @ " + stamp + "\n")
+	b.WriteString(content)
+	b.WriteString("\n")
+	if err := os.WriteFile(filePath, []byte(b.String()), 0644); err != nil {
+		return "写入记忆失败: " + err.Error()
+	}
+	return ""
+}
+
+// CompactConversation 调用 AI 把会话历史压缩成摘要，持久化到 .eg/memory/summary.md。
+// messages 为待压缩的对话历史（通常是超过阈值后被截断的旧消息）。
+// 通过事件 ide:ai-memory-compacted 回传结果：{ success, summary, error }。
+// 压缩失败时不修改已有记忆文件，仅回传错误。
+func (s *IDEService) CompactConversation(endpoint, apiKey, model string, messages []AIMessage, projectPath string) {
+	go func() {
+		if projectPath == "" || len(messages) == 0 {
+			s.app.Event.Emit("ide:ai-memory-compacted", map[string]any{
+				"success": false,
+				"error":   "项目路径或消息为空",
+			})
+			return
+		}
+		client := ai.NewClient(endpoint, apiKey, model)
+
+		// 拼接待压缩的对话为纯文本
+		var b strings.Builder
+		b.WriteString("以下是 EGOU 项目中一段 AI 对话历史，请压缩成不超过 300 字的摘要，保留：\n")
+		b.WriteString("1. 用户的核心需求\n2. 已做出的关键决策\n3. 未解决的问题\n4. 涉及的主要文件/模块\n\n")
+		for _, m := range messages {
+			role := "用户"
+			if m.Role == "assistant" {
+				role = "助手"
+			} else if m.Role == "system" {
+				role = "系统"
+			}
+			// 单条消息截断到 800 字避免过长
+			content := m.Content
+			if len([]rune(content)) > 800 {
+				content = string([]rune(content)[:800]) + "...(截断)"
+			}
+			b.WriteString("【" + role + "】" + content + "\n\n")
+		}
+
+		compactMsgs := []ai.Message{
+			{Role: "system", Content: "你是 EGOU 中文编程语言的 AI 助手，擅长把长对话压缩成结构化摘要。"},
+			{Role: "user", Content: b.String()},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		summary, err := client.Chat(ctx, compactMsgs, 0.3, 800)
+		if err != nil {
+			if s.app != nil {
+				s.app.Event.Emit("ide:ai-memory-compacted", map[string]any{
+					"success": false,
+					"error":   err.Error(),
+				})
+			}
+			return
+		}
+		// 追加到 summary.md（不覆盖已有摘要）
+		errMsg := s.AppendProjectMemorySection(projectPath, "summary", summary)
+		if errMsg != "" {
+			if s.app != nil {
+				s.app.Event.Emit("ide:ai-memory-compacted", map[string]any{
+					"success": false,
+					"error":   errMsg,
+				})
+			}
+			return
+		}
+		if s.app != nil {
+			s.app.Event.Emit("ide:ai-memory-compacted", map[string]any{
+				"success": true,
+				"summary": summary,
+			})
+		}
+	}()
+}
+
+// extractDecisions 从 AI 输出中启发式提取关键决策（含"决定/采用/选择/使用"等关键词的行）。
+// 返回每行一条决策，最多 5 条。无匹配返回空 slice。
+func extractDecisions(output string) []string {
+	keywords := []string{"决定", "采用", "选择", "使用", "确定", "敲定", "敲定为", "最终"}
+	var decisions []string
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) < 4 || len(line) > 200 {
+			continue
+		}
+		for _, kw := range keywords {
+			if strings.Contains(line, kw) {
+				// 去掉 markdown 前缀
+				line = strings.TrimPrefix(line, "- ")
+				line = strings.TrimPrefix(line, "* ")
+				line = strings.TrimPrefix(line, "1. ")
+				decisions = append(decisions, line)
+				if len(decisions) >= 5 {
+					return decisions
+				}
+				break
+			}
+		}
+	}
+	return decisions
 }

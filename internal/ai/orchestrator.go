@@ -161,13 +161,21 @@ func AllAgentConfigs() []AgentConfig {
 
 // Orchestrator 编排器，依赖 Client 实际调用模型
 type Orchestrator struct {
-	client *Client
-	sink   EventSinkFn
+	client         *Client
+	sink           EventSinkFn
+	projectContext string // 项目记忆（结构化 markdown），注入到每个 Agent 的系统提示词
 }
 
 // NewOrchestrator 创建编排器
 func NewOrchestrator(client *Client) *Orchestrator {
 	return &Orchestrator{client: client}
+}
+
+// SetProjectContext 设置项目记忆上下文（来自 .eg/memory/ 的 summary + decisions + 用户备注）。
+// 设置后，RunAgent / RunPipeline 会在每个 Agent 的系统提示词后追加此上下文，
+// 让 Fixer / Reviewer 等 Agent 也能感知项目背景。
+func (o *Orchestrator) SetProjectContext(ctx string) {
+	o.projectContext = ctx
 }
 
 // SetSink 设置事件回调（可选）
@@ -196,7 +204,11 @@ func (o *Orchestrator) RunAgent(ctx context.Context, role AgentRole, userInput s
 		return AgentResult{Role: role, Error: "未知角色"}, fmt.Errorf("未知 Agent 角色: %s", role)
 	}
 
-	msgs := []Message{{Role: "system", Content: cfg.SystemPrompt}}
+	sysPrompt := cfg.SystemPrompt
+	if o.projectContext != "" {
+		sysPrompt = sysPrompt + "\n\n【项目记忆】\n" + o.projectContext
+	}
+	msgs := []Message{{Role: "system", Content: sysPrompt}}
 	msgs = append(msgs, history...)
 	msgs = append(msgs, Message{Role: "user", Content: userInput})
 
@@ -247,7 +259,11 @@ func (o *Orchestrator) RunPipeline(ctx context.Context, pipeline []AgentRole, us
 
 		o.emit("agent-start", role, i, total, nil)
 
-		msgs := []Message{{Role: "system", Content: cfg.SystemPrompt}}
+		sysPrompt := cfg.SystemPrompt
+		if o.projectContext != "" {
+			sysPrompt = sysPrompt + "\n\n【项目记忆】\n" + o.projectContext
+		}
+		msgs := []Message{{Role: "system", Content: sysPrompt}}
 		msgs = append(msgs, currentHistory...)
 		msgs = append(msgs, Message{Role: "user", Content: currentInput})
 
