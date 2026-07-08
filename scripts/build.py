@@ -50,9 +50,10 @@ def ensure_garble():
 
     查找顺序：
       1. tools/garble.exe（已预编译，离线可用）
-      2. PATH 中的 garble（用户自行 go install mvdan.cc/garble@latest）
-      3. 用 `go install mvdan.cc/garble@latest` 在线安装到 GOPATH/bin，再复制到 tools/
+      2. PATH 中的 garble（用户自行 go install）
+      3. 用 `go install mvdan.cc/garble@v0.15.0` 在线安装到 GOPATH/bin，再复制到 tools/
 
+    v0.11.29 修订：固定 garble v0.15.0（与 Go 1.25.x 兼容），v0.16.0 要求 Go ≥ 1.26.0。
     v0.8.0 起 UPX 完全移除，Garble 成为 IDE 本体和用户产物的唯一防逆向手段。
     v0.8.0 修订：IDE 本体固定用 garble -tiny（仅变量名/函数名混淆），
     去掉 -literals（字符串字面量运行时解密会触发杀软误报 TrojanSpy/Stealer.uj）。
@@ -68,23 +69,25 @@ def ensure_garble():
     if found:
         return found
 
-    # 3. 在线 go install（首次构建）
-    print("未找到 garble，尝试 go install mvdan.cc/garble@latest（首次需联网）...")
+    # 3. 在线 go install（首次构建），固定 v0.15.0 兼容 Go 1.25.x，设置 GOTOOLCHAIN=local 防止自动下载新工具链
+    garble_version = "v0.15.0"
+    print(f"未找到 garble，尝试 go install mvdan.cc/garble@{garble_version}（首次需联网）...")
     tools_dir = ROOT / "tools"
     tools_dir.mkdir(parents=True, exist_ok=True)
+    install_env = os.environ.copy()
+    install_env["GOTOOLCHAIN"] = "local"
     result = subprocess.run(
-        ["go", "install", "mvdan.cc/garble@latest"],
-        cwd=ROOT, text=True, capture_output=True,
+        ["go", "install", f"mvdan.cc/garble@{garble_version}"],
+        cwd=ROOT, text=True, capture_output=True, env=install_env,
     )
     if result.returncode != 0:
         print(f"go install garble 失败: {result.stderr}")
-        print("  提示: 检查网络连接，或手动执行 `go install mvdan.cc/garble@latest`")
+        print(f"  提示: 检查网络连接，或手动执行 `go install mvdan.cc/garble@{garble_version}`")
         return None
 
     # 从 GOPATH/bin 复制到 tools/garble.exe
     gopath = os.environ.get("GOPATH", "")
     if not gopath:
-        # 默认 GOPATH 为 ~/go
         gopath = str(Path.home() / "go")
     gopath_garble = Path(gopath) / "bin" / "garble.exe"
     if gopath_garble.exists():
