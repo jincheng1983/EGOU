@@ -155,8 +155,8 @@ async function onCtxMenuSelect(key) {
         onUpdateValue: (v) => { newName = v },
         autofocus: true
       }),
-      positiveText: '确定',
-      negativeText: '取消',
+      positiveText: t('common.ok'),
+      negativeText: t('common.cancel'),
       onPositiveClick: async () => {
         if (!newName || newName === target.name) return
         if (window.IDEService?.RenameElib) {
@@ -175,8 +175,8 @@ async function onCtxMenuSelect(key) {
     dialog.warning({
       title: t('support.deleteTitle'),
       content: t('support.deleteContent', { name: target.name }),
-      positiveText: '删除',
-      negativeText: '取消',
+      positiveText: t('common.delete'),
+      negativeText: t('common.cancel'),
       onPositiveClick: async () => {
         if (window.IDEService?.DeleteElib) {
           const err = await window.IDEService.DeleteElib(root, target.name)
@@ -240,8 +240,8 @@ function nodeProps({ option }) {
   if (option && typeof option.key === 'string' && option.key.startsWith('project:')) {
     const meta = option.projectMeta || {}
     const parts = []
-    if (meta.version) parts.push('版本 ' + meta.version)
-    if (meta.author) parts.push('作者 ' + meta.author)
+    if (meta.version) parts.push(t('support.version') + meta.version)
+    if (meta.author) parts.push(t('support.author') + meta.author)
     if (meta.description) parts.push(meta.description)
     parts.push(t('support.hint'))
     props.title = parts.join(' | ')

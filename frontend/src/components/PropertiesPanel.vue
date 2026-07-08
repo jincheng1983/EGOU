@@ -70,7 +70,7 @@
     <!-- 列表视图（原有） -->
     <div v-else class="outline-content">
       <div v-if="!parsed || parsed.functions.length === 0 && parsed.globalVars.length === 0 && parsed.constants.length === 0" class="outline-empty">
-        <n-empty description="暂无大纲" size="small">
+        <n-empty :description="t('outline.empty')" size="small">
           <template #extra>
             <n-text depth="3" style="font-size: var(--ide-font-size-sm);">{{ t('outline.emptyDesc') }}</n-text>
           </template>
@@ -160,7 +160,7 @@ const allSymbols = computed(() => {
       paramsCount: (fn.params || []).length,
       returnType: fn.returnType || '',
       line: fn.startLine + 1,
-      tooltip: `${isMethod ? '方法' : '函数'} ${fn.name}(${paramSummary})${fn.returnType ? ' → ' + fn.returnType : ''}`,
+      tooltip: `${isMethod ? t('outline.kindMethod') : t('outline.kindFunction')} ${fn.name}(${paramSummary})${fn.returnType ? ' → ' + fn.returnType : ''}`,
       raw: fn
     })
   })
@@ -175,7 +175,7 @@ const allSymbols = computed(() => {
       paramsCount: '—',
       returnType: v.type || '',
       line: v.line + 1,
-      tooltip: `变量 ${v.name}${v.type ? ': ' + v.type : ''}`,
+      tooltip: `${t('outline.kindVariable')} ${v.name}${v.type ? ': ' + v.type : ''}`,
       raw: v,
       isVar: true
     })
@@ -191,7 +191,7 @@ const allSymbols = computed(() => {
       paramsCount: '—',
       returnType: c.type || '',
       line: c.line + 1,
-      tooltip: `常量 ${c.name}${c.type ? ': ' + c.type : ''}`,
+      tooltip: `${t('outline.kindConstant')} ${c.name}${c.type ? ': ' + c.type : ''}`,
       raw: c,
       isConst: true
     })

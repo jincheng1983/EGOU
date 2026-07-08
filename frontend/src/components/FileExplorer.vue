@@ -1,8 +1,8 @@
 <template>
   <div class="file-explorer">
     <div class="explorer-header">
-      <n-text depth="3" class="tree-label">{{ projectName || '项目目录' }}</n-text>
-      <n-button size="tiny" quaternary title="刷新" @click="$emit('refresh')">
+      <n-text depth="3" class="tree-label">{{ projectName || t('fileTree.projectDir') }}</n-text>
+      <n-button size="tiny" quaternary :title="t('common.refresh')" @click="$emit('refresh')">
         <n-icon :component="RefreshOutline" />
       </n-button>
     </div>
@@ -21,7 +21,7 @@
       style="margin-top: 4px;"
       @update:selected-keys="onSelect"
     />
-    <n-empty v-else description="暂无文件" size="small" style="margin-top: 24px;" />
+    <n-empty v-else :description="t('fileTree.empty')" size="small" style="margin-top: 24px;" />
     <n-dropdown
       :show="contextMenuShow"
       :options="contextMenuOptions"
@@ -40,6 +40,7 @@ import { ref, computed } from 'vue'
 import { NTree, NText, NButton, NIcon, NEmpty, NDropdown } from 'naive-ui'
 import { RefreshOutline } from '@vicons/ionicons5'
 import { FLOW_RAINBOW as RAINBOW } from '../utils/colors.js'
+import { t } from '../i18n/index.js'
 
 const props = defineProps({
   files: {
@@ -62,10 +63,10 @@ const contextMenuShow = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 const contextMenuNode = ref(null)
-const contextMenuOptions = [
-  { label: '打开', key: 'open' },
-  { label: '删除', key: 'delete' }
-]
+const contextMenuOptions = computed(() => [
+  { label: t('common.open'), key: 'open' },
+  { label: t('common.delete'), key: 'delete' }
+])
 
 function iconForFile(name) {
   const ext = (name.split('.').pop() || '').toLowerCase()

@@ -733,6 +733,10 @@ registerMessages(DEFAULT_LOCALE, {
     confirmDeleteLib: '确定删除扩展包 "{name}" 吗？',
     inputLibName: '输入新的扩展包名称',
   },
+  fileTree: {
+    projectDir: '项目目录',
+    empty: '暂无文件',
+  },
   support: {
     title: '支持库',
     extPackages: '扩展包 {count}',
@@ -756,6 +760,8 @@ registerMessages(DEFAULT_LOCALE, {
     deleted: '已删除 {name}',
     hint: '双击打开 source.eg | 右键更多操作',
     noDesc: '暂无说明',
+    version: '版本 ',
+    author: '作者 ',
   },
   outline: {
     title: '大纲',
@@ -1836,6 +1842,10 @@ registerMessages('en-US', {
     confirmDeleteLib: 'Delete extension package "{name}"?',
     inputLibName: 'Enter new package name',
   },
+  fileTree: {
+    projectDir: 'Project Directory',
+    empty: 'No files',
+  },
   support: {
     title: 'Support Libraries',
     extPackages: 'Packages {count}',
@@ -1859,6 +1869,8 @@ registerMessages('en-US', {
     deleted: 'Deleted {name}',
     hint: 'Double-click to open source.eg | Right-click for more',
     noDesc: 'No description',
+    version: 'Version ',
+    author: 'Author ',
   },
   outline: {
     title: 'Outline',
