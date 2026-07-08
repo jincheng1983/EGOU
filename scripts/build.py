@@ -138,6 +138,23 @@ def main():
     elif not args.skip_test:
         run(["go", "test", "./..."])
 
+    # 3.5 预生成 wails-template 的 vendor 目录（离线编译依赖）
+    #      必须在步骤4（runtime-frontend 缓存）之前运行，确保预构建缓存时也能用 vendor 模式
+    #      解决中国网络环境 proxy.golang.org 不可达导致的 "dial tcp ... timeout" 错误
+    template_src = ROOT / "runtime" / "wails-template"
+    vendor_dir = template_src / "vendor"
+    if not vendor_dir.exists():
+        print("\n[3.5] 生成 wails-template vendor 目录（离线编译依赖）...")
+        vendor_script = ROOT / "scripts" / "vendor_template.py"
+        if vendor_script.exists():
+            r = subprocess.run([sys.executable, str(vendor_script)], cwd=str(ROOT), text=True)
+            if r.returncode != 0:
+                print(f"vendor 生成失败（退出码 {r.returncode}），运行时前端缓存将需要联网构建", file=sys.stderr)
+        else:
+            print(f"未找到 {vendor_script}，跳过 vendor 生成")
+    else:
+        print(f"\n[3.5] vendor 目录已存在，跳过生成: {vendor_dir}")
+
     # 4. 预构建运行时前端缓存，缩短 IDE 首次运行/构建用户程序的耗时
     #    同时预打包到 bin/runtime-frontend/（随 exe 分发，无 Node.js 环境也可用）
     bin_cache = BIN_DIR / "runtime-frontend"
@@ -333,26 +350,9 @@ def main():
         shutil.copytree(components_src, components_dst)
         print(f"已复制组件库目录: components/")
 
-    # 7.4 wails-template 用户程序编译模板
+    # 7.4 wails-template 用户程序编译模板（vendor 已在步骤3.5生成）
     template_src = ROOT / "runtime" / "wails-template"
     template_dst = BIN_DIR / "wails-template"
-
-    # 7.4.0 预生成 vendor 目录（让用户程序编译时无需联网下载 Wails v3 等依赖）
-    #      解决中国网络环境 proxy.golang.org 不可达导致的 "dial tcp ... timeout" 错误
-    #      用户分发后只需安装 Go 环境，无需翻墙即可编译用户程序
-    vendor_dir = template_src / "vendor"
-    if not vendor_dir.exists():
-        print("\n[7.4.0] 生成 vendor 目录（离线编译依赖）...")
-        vendor_script = ROOT / "scripts" / "vendor_template.py"
-        if vendor_script.exists():
-            r = subprocess.run([sys.executable, str(vendor_script)], cwd=str(ROOT), text=True)
-            if r.returncode != 0:
-                print(f"vendor 生成失败（退出码 {r.returncode}），用户程序编译将需要联网", file=sys.stderr)
-                print("  提示：开发机需能访问 GOPROXY（首次生成时）", file=sys.stderr)
-        else:
-            print(f"未找到 {vendor_script}，跳过 vendor 生成")
-    else:
-        print(f"\n[7.4.0] vendor 目录已存在，跳过生成: {vendor_dir}")
 
     if template_src.exists():
         if template_dst.exists():
@@ -374,7 +374,7 @@ def main():
         if vendor_dst.exists():
             print(f"已复制用户程序模板（含 vendor 离线依赖）: wails-template/")
         else:
-            print(f"已复制用户程序模板（无 vendor，编译需联网）: wails-template/")
+            print(f"警告: vendor 目录未复制，用户程序编译需要联网", file=sys.stderr)
 
     # 7.5 Garble 工具（随 IDE 打包，用户程序编译时直接用，无需用户另装）
     #     v0.8.0 起 UPX 完全移除，Garble 成为唯一防逆向手段

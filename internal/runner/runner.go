@@ -1288,6 +1288,10 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 	} else {
 		env = append(env, "CGO_ENABLED=0")
 	}
+	// 检测到 vendor/ 时强制 GOPROXY=off，彻底阻止联网下载依赖
+	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
+		env = append(env, "GOPROXY=off")
+	}
 	cmd.Env = env
 	// garble 需要独立的 GARBLE_CACHE 目录（默认 %LocalAppData%\garble 在部分 Windows 环境不可靠）
 	// 用 exe 同级 tools/.garble-cache，路径可控且随 IDE 分发
@@ -1560,15 +1564,25 @@ func ensureFrontendDist(dir string, sink EventSink) error {
 	return saveFrontendCache(dir, cacheDir)
 }
 
-// buildFrontendDist 在指定目录完整执行 go mod tidy、生成 bindings、npm install/build。
+// buildFrontendDist 在指定目录执行准备前端资源的步骤。
+// 若目录下存在 vendor/（离线依赖），则跳过 go mod tidy 直接使用 vendor，
+// 无需联网；否则执行 go mod tidy 下载依赖（开发环境首次构建）。
 func buildFrontendDist(dir string, sink EventSink) error {
-	emit(sink, "frontend", "[1/3] go mod tidy", false)
-	tidyCmd := exec.Command(goBinary, "mod", "tidy")
-	tidyCmd.Dir = dir
-	tidyCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	tidyCmd.Env = buildGoEnv()
-	if output, err := tidyCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("go mod tidy 失败: %s", string(output))
+	hasVendor := false
+	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
+		hasVendor = true
+	}
+	if !hasVendor {
+		emit(sink, "frontend", "[1/3] go mod tidy", false)
+		tidyCmd := exec.Command(goBinary, "mod", "tidy")
+		tidyCmd.Dir = dir
+		tidyCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		tidyCmd.Env = buildGoEnv()
+		if output, err := tidyCmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("go mod tidy 失败: %s", string(output))
+		}
+	} else {
+		emit(sink, "frontend", "[1/3] 检测到 vendor 目录，跳过 go mod tidy（离线模式）", false)
 	}
 
 	emit(sink, "frontend", "[2/3] 生成 Wails bindings", false)
@@ -1579,6 +1593,10 @@ func buildFrontendDist(dir string, sink EventSink) error {
 	genCmd := exec.Command(wailsBin, "generate", "bindings", "-ts")
 	genCmd.Dir = dir
 	genCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	genCmd.Env = buildGoEnv()
+	if hasVendor {
+		genCmd.Env = append(genCmd.Env, "GOFLAGS=-mod=vendor", "GOPROXY=off")
+	}
 	if output, err := genCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("生成 Wails bindings 失败: %s", string(output))
 	}
