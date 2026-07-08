@@ -1653,7 +1653,8 @@ const designerDefaultBorderWidth = persistedInt('eg-designer-borderwidth', 1)
 // 编译
 const buildDefaultMode = persistedStr('eg-build-mode', 'debug')
 const buildAutoOpenFolder = persistedBoolNotFalse('eg-build-autofolder')
-// v0.8.0 修订：Garble 混淆强度三档（off/basic/full），默认 basic（仅 -tiny，无杀软误报）
+// v0.11.32 修订：Garble 混淆强度三档（off/basic/full），默认 basic（标识符混淆，不需要 git，无杀软误报）
+// v0.8.0 旧：basic 曾用 -tiny（需 git apply linker 补丁，用户机器可能无 git），v0.11.32 起去掉 -tiny
 // 旧 localStorage 键 'eg-build-garble'（布尔）已废弃，新键 'eg-build-garble-level'（字符串）
 const buildGarbleLevel = persistedStr('eg-build-garble-level', 'basic')
 const buildShowHistory = persistedBoolNotFalse('eg-build-history')
