@@ -1,8 +1,27 @@
 <template>
   <div class="window-designer">
     <aside class="designer-toolbox">
-      <div class="panel-header">{{ t('designer.toolbox') }}</div>
-      <div class="toolbox-list">
+      <!-- 顶部标签切换：组件箱 / 模板 / 层级（由父组件 App.vue 通过 side-panel prop 控制） -->
+      <div class="toolbox-tabs">
+        <button
+          class="toolbox-tab"
+          :class="{ active: sidePanel === 'toolbox' }"
+          @click="$emit('update:sidePanel', 'toolbox')"
+        >{{ t('designer.toolbox') }}</button>
+        <button
+          class="toolbox-tab"
+          :class="{ active: sidePanel === 'templates' }"
+          @click="$emit('update:sidePanel', 'templates')"
+        >{{ t('designer.template') }}</button>
+        <button
+          class="toolbox-tab"
+          :class="{ active: sidePanel === 'layers' }"
+          @click="$emit('update:sidePanel', 'layers')"
+        >{{ t('designer.layers') }}</button>
+      </div>
+
+      <!-- 组件箱视图 -->
+      <div v-if="sidePanel === 'toolbox'" class="toolbox-list">
         <div
           v-for="item in toolbox"
           :key="item.type"
@@ -15,60 +34,64 @@
           <span>{{ item.label }}</span>
         </div>
       </div>
-      <template v-if="sidePanel === 'templates'">
-      <div class="panel-header layer-header template-header">
-        <span>{{ t('designer.template') }}</span>
-        <div class="template-actions">
-          <button class="tpl-action-btn" :title="t('designer.exportTemplate')" @click="exportTemplates">
-            <n-icon :component="DownloadOutline" size="14" />
-          </button>
-          <button class="tpl-action-btn" :title="t('designer.importTemplate')" @click="importTemplates">
-            <n-icon :component="CloudUploadOutline" size="14" />
-          </button>
+
+      <!-- 模板视图 -->
+      <template v-else-if="sidePanel === 'templates'">
+        <div class="panel-header layer-header template-header">
+          <span>{{ t('designer.template') }}</span>
+          <div class="template-actions">
+            <button class="tpl-action-btn" :title="t('designer.exportTemplate')" @click="exportTemplates">
+              <n-icon :component="DownloadOutline" size="14" />
+            </button>
+            <button class="tpl-action-btn" :title="t('designer.importTemplate')" @click="importTemplates">
+              <n-icon :component="CloudUploadOutline" size="14" />
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="toolbox-list template-list">
-        <div
-          v-for="(tpl, idx) in allTemplates"
-          :key="tpl.name"
-          class="toolbox-item template-item"
-          :class="{ 'custom-template': tpl.custom }"
-          draggable="true"
-          :title="t('designer.dragHint', { name: tpl.name + `（${tpl.components.length}）` + (tpl.custom ? '（右键删除）' : '') })"
-          @dragstart="onTemplateDragStart($event, idx)"
-          @contextmenu.stop="onTemplateContextMenu($event, idx)"
-        >
-          <n-icon :component="tpl.icon" />
-          <span>{{ tpl.name }}</span>
+        <div class="toolbox-list template-list">
+          <div
+            v-for="(tpl, idx) in allTemplates"
+            :key="tpl.name"
+            class="toolbox-item template-item"
+            :class="{ 'custom-template': tpl.custom }"
+            draggable="true"
+            :title="t('designer.dragHint', { name: tpl.name + `（${tpl.components.length}）` + (tpl.custom ? '（右键删除）' : '') })"
+            @dragstart="onTemplateDragStart($event, idx)"
+            @contextmenu.stop="onTemplateContextMenu($event, idx)"
+          >
+            <n-icon :component="tpl.icon" />
+            <span>{{ tpl.name }}</span>
+          </div>
         </div>
-      </div>
-      <input ref="importInputRef" type="file" accept=".json" style="display:none" @change="onImportFileChange" />
+        <input ref="importInputRef" type="file" accept=".json" style="display:none" @change="onImportFileChange" />
       </template>
+
+      <!-- 层级视图 -->
       <template v-else>
-      <div class="panel-header layer-header">{{ t('designer.layers') }}</div>
-      <div class="layer-list">
-        <div
-          v-for="comp in layersList"
-          :key="comp.id"
-          class="layer-item"
-          :class="{ selected: isSelected(comp.id), hidden: comp.visible === false }"
-          draggable="true"
-          :title="`${labelForType(comp.type)} · ${comp.name}`"
-          @click="onLayerClick($event, comp)"
-          @dragstart="onLayerDragStart($event, comp)"
-          @dragover="onLayerDragOver($event, comp)"
-          @drop="onLayerDrop($event, comp)"
-          @contextmenu.stop="onComponentContextMenu($event, comp)"
-        >
-          <span v-if="iconSvgForType(comp.type)" class="layer-icon-svg" v-html="iconSvgForType(comp.type)"></span>
-          <n-icon v-else :component="iconForType(comp.type)" size="14" />
-          <span class="layer-name">{{ comp.name || labelForType(comp.type) }}</span>
-          <span v-if="comp.locked" class="layer-flag locked">{{ t('designer.lock') }}</span>
-          <span v-if="comp.visible === false" class="layer-flag">{{ t('designer.hide') }}</span>
-          <span v-if="comp.enabled === false" class="layer-flag">{{ t('designer.disable') }}</span>
+        <div class="panel-header layer-header">{{ t('designer.layers') }}</div>
+        <div class="layer-list">
+          <div
+            v-for="comp in layersList"
+            :key="comp.id"
+            class="layer-item"
+            :class="{ selected: isSelected(comp.id), hidden: comp.visible === false }"
+            draggable="true"
+            :title="`${labelForType(comp.type)} · ${comp.name}`"
+            @click="onLayerClick($event, comp)"
+            @dragstart="onLayerDragStart($event, comp)"
+            @dragover="onLayerDragOver($event, comp)"
+            @drop="onLayerDrop($event, comp)"
+            @contextmenu.stop="onComponentContextMenu($event, comp)"
+          >
+            <span v-if="iconSvgForType(comp.type)" class="layer-icon-svg" v-html="iconSvgForType(comp.type)"></span>
+            <n-icon v-else :component="iconForType(comp.type)" size="14" />
+            <span class="layer-name">{{ comp.name || labelForType(comp.type) }}</span>
+            <span v-if="comp.locked" class="layer-flag locked">{{ t('designer.lock') }}</span>
+            <span v-if="comp.visible === false" class="layer-flag">{{ t('designer.hide') }}</span>
+            <span v-if="comp.enabled === false" class="layer-flag">{{ t('designer.disable') }}</span>
+          </div>
+          <div v-if="layersList.length === 0" class="layer-empty">{{ t('designer.emptyLayers') }}</div>
         </div>
-        <div v-if="layersList.length === 0" class="layer-empty">{{ t('designer.emptyLayers') }}</div>
-      </div>
       </template>
     </aside>
 
@@ -270,11 +293,10 @@
     </main>
 
     <aside class="designer-props">
-      <div class="panel-header">{{ t('designer.properties') }}</div>
       <div class="props-form">
         <template v-if="selectedType === 'form'">
           <div class="prop-section">{{ t('designer.secBasic') }}</div>
-          <div class="prop-row">
+          <div class="prop-row prop-row-full">
             <span class="prop-label">{{ t('designer.propTitle') }}</span>
             <n-input v-model:value="form.title" size="small" @update:value="emitChange" />
           </div>
@@ -295,7 +317,7 @@
             <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMaxH') }}</span><n-input-number v-model:value="form.maxHeight" size="small" :min="0" @update:value="emitChange" /></div>
           </div>
           <div class="prop-section">{{ t('designer.secAppearance') }}</div>
-          <div class="prop-row">
+          <div class="prop-row prop-row-full">
             <span class="prop-label">{{ t('designer.propIcon') }}</span>
             <n-input-group style="width: 100%;">
               <n-input v-model:value="form.icon" size="small" :placeholder="t('designer.iconPlaceholder')" @update:value="emitChange" style="flex: 1;" />
@@ -340,19 +362,19 @@
 
         <template v-else-if="firstSelectedComponent">
           <div class="prop-section">{{ t('designer.secComponent') }}</div>
-          <div v-if="selectedIds.size === 1" class="prop-row">
+          <div v-if="selectedIds.size === 1" class="prop-row prop-row-full">
             <span class="prop-label">{{ t('designer.propName') }}</span>
             <n-input v-model:value="firstSelectedComponent.name" size="small" @update:value="emitChange" />
           </div>
-          <div v-if="selectedIds.size > 1" class="prop-row">
+          <div v-if="selectedIds.size > 1" class="prop-row prop-row-full">
             <span class="prop-label">{{ t('designer.propSelected') }}</span>
             <span class="prop-value">{{ t('designer.componentsCount', { count: selectedIds.size }) }}</span>
           </div>
-          <div v-if="showTextProp" class="prop-row">
+          <div v-if="showTextProp" class="prop-row prop-row-full">
             <span class="prop-label">{{ textPropLabel }}</span>
             <n-input v-model:value="firstSelectedComponent.text" size="small" @update:value="emitChange" />
           </div>
-          <div v-if="showItemsProp" class="prop-row">
+          <div v-if="showItemsProp" class="prop-row prop-row-full">
             <span class="prop-label">{{ t('designer.propOptions') }}</span>
             <n-input
               v-model:value="firstSelectedComponent.items"
@@ -395,7 +417,12 @@
 
           <template v-if="selectedIds.size === 1 && currentSchema.length">
             <div class="prop-section">{{ t('designer.secAdvanced') }}</div>
-            <div v-for="s in currentSchema" :key="s.key" class="prop-row">
+            <div
+              v-for="s in currentSchema"
+              :key="s.key"
+              class="prop-row"
+              :class="{ 'prop-row-full': s.type === 'text' || s.type === 'image' }"
+            >
               <span class="prop-label">{{ s.label }}</span>
               <n-select
                 v-if="s.type === 'select'"
@@ -534,9 +561,9 @@ const props = defineProps({
   snapEnabled: { type: Boolean, default: true },
   tabOrderMode: { type: Boolean, default: false },
   gridSize: { type: Number, default: 8 },
-  sidePanel: { type: String, default: 'layers' }
+  sidePanel: { type: String, default: 'toolbox' }
 })
-const emit = defineEmits(['update:modelValue', 'open-event', 'update:showGrid', 'update:snapEnabled', 'update:tabOrderMode', 'update:gridSize'])
+const emit = defineEmits(['update:modelValue', 'open-event', 'update:showGrid', 'update:snapEnabled', 'update:tabOrderMode', 'update:gridSize', 'update:sidePanel'])
 
 const TITLE_HEIGHT = 32
 
@@ -2849,9 +2876,37 @@ onUnmounted(() => {
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
 }
-.toolbox-list {
+/* 顶部标签切换条：组件箱 / 模板 / 层级 */
+.toolbox-tabs {
+  display: flex;
   flex-shrink: 0;
-  max-height: 45%;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+.toolbox-tab {
+  flex: 1;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--ide-font-size-xs);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.toolbox-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.toolbox-tab.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+  background: var(--bg-secondary);
+}
+.toolbox-list {
+  flex: 1 1 0;
+  min-height: 0;
   overflow: auto;
   padding: 8px;
   display: flex;
@@ -3382,12 +3437,26 @@ onUnmounted(() => {
   overflow: auto;
   padding: 8px;
   display: grid;
-  grid-template-columns: 48px 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 6px 8px;
   align-content: start;
 }
 .prop-row {
-  display: contents;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.prop-row > :deep(.n-input),
+.prop-row > :deep(.n-input-number),
+.prop-row > :deep(.n-select),
+.prop-row > :deep(.n-color-picker) {
+  flex: 1;
+  min-width: 0;
+}
+/* 长文本/textarea/input-group 等需要占满一行 */
+.prop-row-full {
+  grid-column: span 2;
 }
 .prop-label {
   font-size: var(--ide-font-size-xs);
@@ -3395,8 +3464,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 2px;
-  line-height: 28px;
+  flex-shrink: 0;
+  min-width: 36px;
   white-space: nowrap;
 }
 .prop-label-sm {
@@ -3456,15 +3525,13 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   justify-content: flex-start;
-  padding-left: 56px;
+  padding-left: 4px;
 }
 .events-row {
   grid-column: span 2;
-  display: contents;
 }
 .events-row .prop-label {
-  align-self: start;
-  padding-top: 4px;
+  align-self: center;
 }
 .section-title {
   grid-column: span 2;

@@ -76,28 +76,103 @@ func detectBundledGo() string {
 var garbleLevel = "basic"
 
 // buildGoEnv 构造 go 子进程的环境变量。
-// 关键修复：os.Environ() 可能已包含用户系统的 GOROOT（指向旧版本 Go），
-// 直接 append 会导致子进程收到两个 GOROOT，go.exe 用第一个（用户系统的），
-// 但 go.exe 本身是内置 SDK 的新版本，引发 "version X does not match go tool version Y" 错误。
-// 此函数先剔除已有的 GOROOT，再追加内置/用户指定的 goRoot。
+// 关键修复（v0.11.23）：强制使用内置 Go SDK 的环境，彻底隔离用户系统 Go。
+//
+// 历史问题：
+//   - v0.11.8 内置 Go SDK 后，只 append GOROOT 导致子进程收到两个 GOROOT
+//   - v0.11.10 剔除 os.Environ() 中的 GOROOT 解决了双 GOROOT 问题
+//   - 但 PATH 中仍可能包含用户系统的旧 Go bin 目录（如 C:\Program Files\Go\bin），
+//     go.exe 执行 `go tool compile` 时通过 PATH 查找 compile.exe，会用旧版工具，
+//     导致 "version go1.25.12 does not match go tool version go1.26.4" 错误
+//
+// 最终方案：当使用内置 SDK 时，剔除 PATH 中的其他 Go 相关路径，并把内置 SDK 的
+// bin 目录前置到 PATH，确保 go tool 命令只找内置 SDK 的工具。
 func buildGoEnv() []string {
 	env := os.Environ()
-	if goRoot != "" {
-		// 剔除已有 GOROOT，避免版本冲突
-		filtered := make([]string, 0, len(env)+1)
-		for _, e := range env {
-			if !strings.HasPrefix(e, "GOROOT=") {
-				filtered = append(filtered, e)
+	if goRoot == "" {
+		return env
+	}
+	// 内置 SDK 模式：构造隔离环境
+	bundledBin := filepath.Join(goRoot, "bin")
+	filtered := make([]string, 0, len(env)+2)
+	for _, e := range env {
+		// 剔除 GOROOT（避免双 GOROOT）
+		if strings.HasPrefix(e, "GOROOT=") {
+			continue
+		}
+		// 剔除用户系统可能设置的 GOPATH（让内置 SDK 用默认 GOPATH=~/go）
+		// 注意：不剔除 GOPATH，因为用户的依赖在系统 GOPATH/pkg 中，剔除会导致找不到依赖
+		// 剔除 GOBIN/GOFLAGS/GOPROXY/GOSUMDB 等可能指向旧环境的变量
+		if strings.HasPrefix(e, "GOBIN=") ||
+			strings.HasPrefix(e, "GOFLAGS=") ||
+			strings.HasPrefix(e, "GOPROXY=") ||
+			strings.HasPrefix(e, "GOSUMDB=") ||
+			strings.HasPrefix(e, "GONOSUMCHECK=") ||
+			strings.HasPrefix(e, "GONOSUMDB=") ||
+			strings.HasPrefix(e, "GOWORK=") {
+			continue
+		}
+		// 处理 PATH：剔除用户系统中其他 Go 的 bin 目录，避免 go tool 找到旧工具
+		if strings.HasPrefix(e, "PATH=") {
+			pathVal := strings.TrimPrefix(e, "PATH=")
+			paths := filepath.SplitList(pathVal)
+			cleanPaths := make([]string, 0, len(paths))
+			for _, p := range paths {
+				// 跳过用户系统的 Go 安装目录（常见路径 + 任何包含 \Go\bin 或 /go/bin 的路径）
+				lower := strings.ToLower(p)
+				if isSystemGoBin(lower) {
+					continue
+				}
+				cleanPaths = append(cleanPaths, p)
+			}
+			// 内置 SDK bin 前置
+			cleanPaths = append([]string{bundledBin}, cleanPaths...)
+			e = "PATH=" + strings.Join(cleanPaths, string(filepath.ListSeparator))
+		}
+		filtered = append(filtered, e)
+	}
+	// 追加内置 SDK 的 GOROOT
+	filtered = append(filtered, "GOROOT="+goRoot)
+	return filtered
+}
+
+// isSystemGoBin 判断一个路径是否是用户系统安装的 Go 的 bin 目录。
+// 用于从 PATH 中剔除用户系统的 Go，避免与内置 SDK 冲突。
+func isSystemGoBin(lowerPath string) bool {
+	// 常见安装路径
+	systemGoBins := []string{
+		`c:\program files\go\bin`,
+		`c:\program files (x86)\go\bin`,
+		`c:\go\bin`,
+		`c:\go\1.25.12\bin`, // 用户的具体路径
+	}
+	for _, sgb := range systemGoBins {
+		if lowerPath == sgb {
+			return true
+		}
+	}
+	// 通配匹配：任何包含 \go\bin 或 /go/bin 的路径（排除内置 SDK 路径，内置 SDK 由 detectBundledGo 处理）
+	// 注意：内置 SDK 的路径是 <exeDir>/go/bin，不应被剔除。但 buildGoEnv 调用前 goRoot 已设置，
+	// 内置 SDK bin 会作为前置加入，这里剔除的是用户系统的 Go bin。
+	if strings.Contains(lowerPath, `\go\bin`) || strings.Contains(lowerPath, `/go/bin`) {
+		// 但要排除内置 SDK 自己的路径（通过 goRoot 判断）
+		if goRoot != "" {
+			bundledBinLower := strings.ToLower(filepath.Join(goRoot, "bin"))
+			if lowerPath == bundledBinLower {
+				return false
 			}
 		}
-		env = append(filtered, "GOROOT="+goRoot)
+		return true
 	}
-	return env
+	return false
 }
 
 // SetGoBinary 设置 Go 编译器路径（如 C:\Program Files\Go\bin\go.exe）。
 // 传入空字符串恢复为内置 Go SDK 或 "go"（从 PATH 查找）。
 // 自动推断 GOROOT（go.exe 的上级目录的上级目录）。
+//
+// v0.11.23 修订：按用户要求，优先使用内置 Go SDK，用户指定的路径仍支持，
+// 但内置 SDK 存在时默认用内置 SDK（detectBundledGo 已在包初始化时调用）。
 func SetGoBinary(path string) {
 	if path != "" {
 		goBinary = path

@@ -147,6 +147,11 @@
                       <span class="view-tab-sep" />
                       <div
                         class="view-tab"
+                        :class="{ active: designerSidePanel === 'toolbox' }"
+                        @click="designerSidePanel = 'toolbox'"
+                      >{{ t('designer.toolbox') }}</div>
+                      <div
+                        class="view-tab"
                         :class="{ active: designerSidePanel === 'templates' }"
                         @click="designerSidePanel = 'templates'"
                       >{{ t('designer.template') }}</div>
@@ -248,7 +253,7 @@
                     v-model:snap-enabled="designerSnapEnabled"
                     v-model:tab-order-mode="designerTabOrderMode"
                     v-model:grid-size="designerGridSize"
-                    :side-panel="designerSidePanel"
+                    v-model:side-panel="designerSidePanel"
                   />
                 </div>
 
@@ -2275,13 +2280,13 @@ const breadcrumbPath = computed(() => {
   return f.name
 })
 
-const leftPanelWidth = ref(parseInt(localStorage.getItem('eg-left-width') || '240', 10))
-const rightPanelWidth = ref(parseInt(localStorage.getItem('eg-right-width') || '280', 10))
+const leftPanelWidth = ref(parseInt(localStorage.getItem('eg-left-width') || '230', 10))
+const rightPanelWidth = ref(parseInt(localStorage.getItem('eg-right-width') || '180', 10))
 const outputPanelHeight = ref(parseInt(localStorage.getItem('eg-output-height') || '160', 10))
 
 const MIN_LEFT = 180
 const MAX_LEFT = 400
-const MIN_RIGHT = 200
+const MIN_RIGHT = 160
 const MAX_RIGHT = 500
 const MIN_OUTPUT = 80
 const MAX_OUTPUT = 400
@@ -3104,8 +3109,8 @@ async function loadExternalComponents() {
 const designerShowGrid = persistedBoolNotFalse('eg-designer-showgrid')
 const designerSnapEnabled = persistedBoolNotFalse('eg-designer-snap')
 const designerGridSize = persistedInt('eg-designer-gridsize', 8)
-// 设计器侧边栏切换：layers（层级） / templates（模板），默认层级
-const designerSidePanel = ref('layers')
+// 设计器侧边栏切换：toolbox（组件箱） / templates（模板） / layers（层级），默认组件箱
+const designerSidePanel = ref('toolbox')
 const designerTabOrderMode = ref(false) // Tab 顺序模式不持久化，每次打开默认关闭
 const outputPreRef = ref(null)
 const errorPreRef = ref(null)

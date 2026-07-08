@@ -65,8 +65,8 @@ const props = defineProps({
 const emit = defineEmits(['select', 'search', 'user', 'toggle-output', 'close-project'])
 
 const topItems = [
-  { key: 'files', label: t('menu.file'), icon: DocumentOutline },
   { key: 'project', label: t('menu.project'), icon: FolderOutline },
+  { key: 'files', label: t('menu.file'), icon: DocumentOutline },
   { key: 'support', label: t('menu.support'), icon: LibraryOutline },
   { key: 'ai', label: t('menu.ai'), icon: SparklesOutline },
 ]
