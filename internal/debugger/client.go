@@ -512,3 +512,62 @@ func (c *Client) Detach(kill bool) error {
 	var resp interface{}
 	return c.call("RPCServer.Detach", req, &resp)
 }
+
+// versionRe 匹配语义化版本号 major.minor[.patch]。
+var versionRe = regexp.MustCompile(`(\d+)\.(\d+)(?:\.(\d+))?`)
+
+// detectDelveVersion 执行 dlv version，返回版本号字符串（如 "1.25.2"）。
+func detectDelveVersion(dlvPath string) (string, error) {
+	out, err := exec.Command(dlvPath, "version").CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("执行 dlv version 失败: %w", err)
+	}
+	m := versionRe.FindStringSubmatch(string(out))
+	if m == nil {
+		return "", fmt.Errorf("无法解析 dlv 版本号: %s", strings.TrimSpace(string(out)))
+	}
+	return m[0], nil
+}
+
+// parseMajorMinor 从版本号字符串提取 "major.minor"（如 "go1.26.4" → "1.26"，"1.25.2" → "1.25"）。
+func parseMajorMinor(ver string) string {
+	// 剥离 "go"/"v" 前缀
+	ver = strings.TrimPrefix(ver, "go")
+	ver = strings.TrimPrefix(ver, "v")
+	m := versionRe.FindStringSubmatch(ver)
+	if m == nil {
+		return ""
+	}
+	return m[1] + "." + m[2]
+}
+
+// CheckVersionCompatibility 检测 dlv 与 Go 版本的兼容性。
+//
+// 规则：dlv 的 major.minor 必须 >= Go 的 major.minor。
+// dlv 的运行时数据结构解析能力与 Go 大版本绑定，低版本 dlv 无法解析高版本 Go
+// 的 DWARF/runtime 结构（如 dlv 1.25.2 + Go 1.26.4 下断点能命中但无法读取
+// goroutine/变量，报 "unknown goroutine 0"）。
+//
+// 参数 goVersion 格式如 "go1.26.4"（detectGoVersion 返回值）。
+// 返回 nil 表示兼容，error 包含明确的升级建议。
+func CheckVersionCompatibility(goVersion string) error {
+	dlvPath, err := findDelve()
+	if err != nil {
+		// dlv 未安装，让后续 StartDebug 的 findDelve 报详细错误
+		return nil
+	}
+	dlvVer, err := detectDelveVersion(dlvPath)
+	if err != nil {
+		return nil // 版本检测失败不阻断，让 dlv 自己启动
+	}
+	goMM := parseMajorMinor(goVersion)
+	dlvMM := parseMajorMinor(dlvVer)
+	if goMM == "" || dlvMM == "" {
+		return nil // 解析失败不阻断
+	}
+	if dlvMM < goMM {
+		return fmt.Errorf("dlv 版本 %s 与 Go %s 不兼容：dlv 无法解析新版 Go 的运行时数据结构（断点能命中但无法读取 goroutine/变量）。请安装匹配版本的 dlv：go install github.com/go-delve/delve/cmd/dlv@v%s.0",
+			dlvVer, goVersion, goMM)
+	}
+	return nil
+}

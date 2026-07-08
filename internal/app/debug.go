@@ -54,6 +54,15 @@ func (s *IDEService) StartDebug(projectPath string, breakpoints []BreakpointSpec
 		return errors.New("未打开项目，无法调试")
 	}
 
+	// dlv 与 Go 版本兼容性检测（编译前检查，避免浪费编译时间）
+	// 规则：dlv major.minor 必须 >= Go major.minor，否则 dlv 无法解析新版 Go 的 runtime 结构
+	tc := runner.DetectToolchains()
+	if tc.Go.Version != "" {
+		if err := debugger.CheckVersionCompatibility(tc.Go.Version); err != nil {
+			return err
+		}
+	}
+
 	// 收集项目源码（与 RunProject 一致：main.eg + 所有 .eg 文件）
 	src, err := collectProjectSources(projectPath)
 	if err != nil {

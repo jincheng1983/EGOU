@@ -179,6 +179,15 @@ async function startDebug() {
       emit('debug-log', '⚠ ' + t('debug.startFailed', { msg: 'Delve' }))
       emit('debug-log', '  go install github.com/go-delve/delve/cmd/dlv@latest')
       emit('debug-log', '  ' + t('settings.toolchainPath') + ' → dlv')
+    } else if (msg.includes('不兼容')) {
+      // dlv 与 Go 版本不兼容：提取升级命令并高亮显示
+      emit('debug-log', '⚠ ' + t('debug.startFailed', { msg: msg.split('：')[0] }))
+      // 提取 "go install ..." 升级命令
+      const installCmd = msg.match(/go install github\.com\/go-delve\/delve\/cmd\/dlv@v[\d.]+/)
+      if (installCmd) {
+        emit('debug-log', '  ' + installCmd[0])
+      }
+      emit('debug-log', '  ' + t('settings.toolchainPath') + ' → dlv')
     } else {
       emit('debug-log', '⚠ ' + t('debug.startFailed', { msg }))
     }
