@@ -141,10 +141,33 @@ func findWindres() string {
 	return ""
 }
 
+// findBundledDelve 查找 exe 同级 go/bin/dlv.exe（内置 Delve 调试器，随 Go SDK 一起分发）。
+func findBundledDelve() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	exeDir := filepath.Dir(exePath)
+	var candidates []string
+	if runtime.GOOS == "windows" {
+		candidates = []string{filepath.Join(exeDir, "go", "bin", "dlv.exe")}
+	} else {
+		candidates = []string{filepath.Join(exeDir, "go", "bin", "dlv")}
+	}
+	for _, p := range candidates {
+		if fileExists(p) {
+			return p
+		}
+	}
+	return ""
+}
+
 // findDelve 查找 Delve 调试器（dlv）路径。
-// 查找顺序：PATH → GOPATH/bin（go install 默认位置）。
-// dlv 是 P2 调试器的依赖，未安装时调试功能不可用。
+// 查找顺序：内置（exe同级go/bin/）→ PATH → GOPATH/bin。
 func findDelve() string {
+	if p := findBundledDelve(); p != "" {
+		return p
+	}
 	candidates := []string{"dlv"}
 	if runtime.GOOS == "windows" {
 		candidates = []string{"dlv.exe", "dlv"}
@@ -168,6 +191,9 @@ func findDelve() string {
 	}
 	return ""
 }
+
+// FindDelve 返回 Delve 调试器路径（内置 → PATH → GOPATH/bin），供调试器包复用。
+func FindDelve() string { return findDelve() }
 
 // detectVersion 执行 `<path> <args...>` 并从输出中解析版本号。
 // 版本号正则：匹配形如 "x.y.z" 的数字串（含可选前缀如 "gcc (..."）。

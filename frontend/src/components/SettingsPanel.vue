@@ -256,18 +256,6 @@
           </div>
           <div class="prop-hint" v-html="t('settings.buildGarbleHint')"></div>
 
-          <div class="section-title"><span>{{ t('settings.buildSectionDebugger') }}</span></div>
-          <div class="prop-hint">{{ t('settings.buildDebuggerHint') }}</div>
-          <div class="prop-grid">
-            <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">{{ t('settings.buildDelvePathLabel') }}</label>
-              <n-input-group>
-                <n-input v-model:value="delvePathLocal" size="small" :placeholder="t('settings.buildDelvePathPh')" clearable />
-                <n-button size="small" @click="browseDelvePath">{{ t('settings.buildBtnBrowse') }}</n-button>
-              </n-input-group>
-            </div>
-          </div>
-
           <div class="section-title"><span>{{ t('settings.buildSectionOutput') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell" style="grid-column: 1 / -1;">
@@ -605,8 +593,6 @@ const props = defineProps({
   garbleLevel: { type: String, default: 'basic' },
   showBuildHistory: { type: Boolean, default: true },
   outputDir: { type: String, default: 'bin' },
-  // 工具链路径（v0.9.2：用户可指定 dlv 路径，Go 使用内置 SDK 自动检测）
-  delvePath: { type: String, default: '' },
   // 界面
   openLastProject: { type: Boolean, default: true },
   leftPanelWidth: { type: Number, default: 240 },
@@ -631,7 +617,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:minimapEnabled', 'update:fontSize', 'update:lineNumbersEnabled', 'update:lineHeight', 'update:autoSaveDelay', 'update:tabSize', 'update:wordWrap', 'update:renderWhitespace', 'update:cursorBlinking', 'update:cursorSmoothCaretAnimation', 'update:cursorWidth', 'update:bracketPairColorization', 'update:guidesBracketPairs', 'update:fontLigatures', 'update:lineNumbersMinChars', 'update:renderFinalNewline', 'update:minimapShowSlider', 'update:minimapRenderCharacters', 'update:minimapMaxColumn', 'update:editorTheme', 'update:fontFamily', 'update:autoConvertSymbols',
   'update:gridSize', 'update:showGrid', 'update:snapGrid', 'update:defaultRadius', 'update:defaultBorderWidth',
   'update:defaultBuildMode', 'update:autoOpenFolder', 'update:garbleLevel', 'update:showBuildHistory', 'update:outputDir',
-  'update:delvePath',
   'update:openLastProject', 'update:leftPanelWidth', 'update:rightPanelWidth', 'update:outputPanelHeight',
   'update:sbShowCursor', 'update:sbShowIndent', 'update:sbShowEncoding', 'update:sbShowEol', 'update:sbShowLang', 'update:sbShowHealth',
   'update:autoSwitchOutputTab', 'update:smartScroll',
@@ -834,17 +819,6 @@ watch(showBuildHistoryLocal, (v) => emit('update:showBuildHistory', v))
 const outputDirLocal = ref(props.outputDir)
 watch(() => props.outputDir, (v) => { outputDirLocal.value = v })
 watch(outputDirLocal, (v) => emit('update:outputDir', v))
-// v0.9.2：dlv 路径可配置（调试器版本不匹配时用户自行指定，Go 使用内置 SDK）
-const delvePathLocal = ref(props.delvePath)
-watch(() => props.delvePath, (v) => { delvePathLocal.value = v })
-watch(delvePathLocal, (v) => emit('update:delvePath', v))
-
-async function browseDelvePath() {
-  if (window.IDEService && window.IDEService.PickFilePath) {
-    const path = await window.IDEService.PickFilePath(t('settings.buildPickDelveTitle'), t('settings.buildExecFilter'))
-    if (path) delvePathLocal.value = path
-  }
-}
 
 // 界面
 const openLastProjectLocal = ref(props.openLastProject)

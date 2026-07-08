@@ -423,6 +423,26 @@ def main():
         # 统计体积
         sdk_size = sum(f.stat().st_size for f in go_sdk_dst.rglob("*") if f.is_file()) / (1024 * 1024)
         print(f"已复制精简 Go SDK: go/（{sdk_size:.0f} MB，跳过 doc/misc/test/api）")
+
+        # 7.6b 自动打包 dlv（Delve 调试器）到 bin/go/bin/dlv.exe
+        #     查找顺序：PATH → GOPATH/bin（go install 默认位置）
+        dlv_src = shutil.which("dlv") or shutil.which("dlv.exe")
+        if not dlv_src:
+            gopath = os.environ.get("GOPATH", "")
+            if not gopath:
+                gopath = str(Path.home() / "go")
+            for candidate in [Path(gopath) / "bin" / "dlv.exe", Path(gopath) / "bin" / "dlv"]:
+                if candidate.exists():
+                    dlv_src = str(candidate)
+                    break
+        if dlv_src and Path(dlv_src).exists():
+            dlv_dst = go_sdk_dst / "bin" / ("dlv.exe" if dlv_src.endswith(".exe") else "dlv")
+            shutil.copy2(dlv_src, dlv_dst)
+            dlv_size = dlv_dst.stat().st_size / (1024 * 1024)
+            print(f"已打包内置 Delve 调试器: go/bin/{dlv_dst.name}（{dlv_size:.1f} MB）")
+        else:
+            print("提示：未找到 dlv.exe（执行 `go install github.com/go-delve/delve/cmd/dlv@latest` 安装），"
+                  "发布包将不含内置调试器，用户需自行安装 dlv 到 PATH")
     else:
         print("未找到 Go SDK（GOROOT），bin/go/ 不包含内置编译器（用户需自装 Go）")
 

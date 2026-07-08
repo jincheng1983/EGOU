@@ -18,38 +18,28 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"egou/internal/runner"
 )
 
-// delveBinary 指向 dlv 可执行文件路径，空则从 PATH/GOPATH/bin 查找。
-// 由 IDE 启动时通过 SetDelveBinary 注入。
+// delveBinary 指向 dlv 可执行文件路径，空则自动检测（内置 → PATH → GOPATH/bin）。
+// 由 IDE 启动时通过 SetDelveBinary 注入（保留接口兼容，正常情况下无需配置）。
 var delveBinary string
 
-// SetDelveBinary 设置 dlv 可执行文件路径。
+// SetDelveBinary 设置 dlv 可执行文件路径（留空则自动检测）。
 func SetDelveBinary(path string) { delveBinary = path }
 
-// findDelve 查找 dlv 可执行文件：优先 delveBinary，其次 PATH，最后 GOPATH/bin。
+// findDelve 查找 dlv 可执行文件：优先用户配置 → 内置（exe同级go/bin/）→ PATH → GOPATH/bin。
 func findDelve() (string, error) {
 	if delveBinary != "" {
 		if _, err := os.Stat(delveBinary); err == nil {
 			return delveBinary, nil
 		}
 	}
-	if p, err := exec.LookPath("dlv"); err == nil {
+	if p := runner.FindDelve(); p != "" {
 		return p, nil
 	}
-	if p, err := exec.LookPath("dlv.exe"); err == nil {
-		return p, nil
-	}
-	gp := os.Getenv("GOPATH")
-	if gp == "" {
-		gp = os.Getenv("USERPROFILE") + "/go"
-	}
-	for _, c := range []string{gp + "/bin/dlv.exe", gp + "/bin/dlv"} {
-		if _, err := os.Stat(c); err == nil {
-			return c, nil
-		}
-	}
-	return "", errors.New("未找到 dlv（Delve 调试器），请先执行: go install github.com/go-delve/delve/cmd/dlv@latest")
+	return "", errors.New("未找到 dlv（Delve 调试器），发布包缺失内置 dlv，请重新构建或手动将 dlv 放到 go/bin/ 目录")
 }
 
 // listenAddrRe 匹配 dlv 输出的 "API server listening at: ADDR"。

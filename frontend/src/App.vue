@@ -463,7 +463,6 @@
   v-model:garble-level="buildGarbleLevel"
   v-model:show-build-history="buildShowHistory"
   v-model:output-dir="buildOutputDir"
-  v-model:delve-path="buildDelvePath"
   v-model:open-last-project="uiOpenLastProject"
   v-model:left-panel-width="leftPanelWidth"
   v-model:right-panel-width="rightPanelWidth"
@@ -1659,8 +1658,6 @@ const buildAutoOpenFolder = persistedBoolNotFalse('eg-build-autofolder')
 const buildGarbleLevel = persistedStr('eg-build-garble-level', 'basic')
 const buildShowHistory = persistedBoolNotFalse('eg-build-history')
 const buildOutputDir = persistedStr('eg-build-outputdir', 'bin')
-// v0.9.2：dlv 路径可配置（Go 使用内置 SDK 自动检测，无需用户配置）
-const buildDelvePath = persistedStr('eg-build-delve-path', '')
 // 界面
 const uiOpenLastProject = persistedBoolNotFalse('eg-ui-lastproject')
 const sbShowCursor = persistedBoolNotFalse('eg-sb-cursor')
@@ -2748,19 +2745,6 @@ onMounted(() => {
     if (window.IDEService && window.IDEService.SetBuildOptions) {
       try { window.IDEService.SetBuildOptions(v) } catch (e) {
         console.warn('[build] SetBuildOptions 同步失败:', e)
-      }
-    }
-  })
-  // v0.9.2：同步 dlv 路径到后端（Go 使用内置 SDK 自动检测，无需用户配置）
-  if (window.IDEService && window.IDEService.SetDelvePath) {
-    try { window.IDEService.SetDelvePath(buildDelvePath.value) } catch (e) {
-      console.warn('[build] SetDelvePath 初始同步失败:', e)
-    }
-  }
-  watch(buildDelvePath, (v) => {
-    if (window.IDEService && window.IDEService.SetDelvePath) {
-      try { window.IDEService.SetDelvePath(v) } catch (e) {
-        console.warn('[build] SetDelvePath 同步失败:', e)
       }
     }
   })

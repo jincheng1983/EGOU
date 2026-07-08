@@ -164,7 +164,7 @@ onMounted(() => {
           isWholeLine: false,
           glyphMarginClassName: 'eg-bookmark-glyph',
           glyphMarginHoverMessage: { value: t('editor.bookmark', { line }) },
-          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
         }
       }))
     )
@@ -262,7 +262,7 @@ onMounted(() => {
           isWholeLine: false,
           glyphMarginClassName: info.cond ? 'eg-breakpoint-conditional-glyph' : 'eg-breakpoint-glyph',
           glyphMarginHoverMessage: { value: info.cond ? t('editor.conditionalBreakpoint', { line, cond: info.cond }) : t('editor.breakpoint', { line }) },
-          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
         }
       }))
     )
@@ -276,7 +276,7 @@ onMounted(() => {
         options: {
           isWholeLine: true,
           className: 'eg-debug-current-line',
-          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
         }
       }, {
         // glyph margin 黄色箭头标记（VS Code 风格）
@@ -285,7 +285,7 @@ onMounted(() => {
           isWholeLine: false,
           glyphMarginClassName: 'eg-debug-current-glyph',
           glyphMarginHoverMessage: { value: t('editor.currentLine') },
-          stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
         }
       }])
     } else {

@@ -333,7 +333,7 @@
             <n-select v-model:value="form.backdrop" size="small" :options="backdropOptions" @update:value="emitChange" />
           </div>
           <div class="prop-section">{{ t('designer.secBehavior') }}</div>
-          <div class="prop-row row-checks row-checks-3">
+          <div class="prop-row row-checks">
             <n-checkbox v-model:checked="form.resizable" @update:checked="emitChange">{{ t('designer.propResizable') }}</n-checkbox>
             <n-checkbox v-model:checked="form.centered" @update:checked="emitChange">{{ t('designer.propCenter') }}</n-checkbox>
             <n-checkbox v-model:checked="form.minimizable" @update:checked="emitChange">{{ t('designer.propMinBtn') }}</n-checkbox>
@@ -343,7 +343,7 @@
             <n-checkbox v-model:checked="form.alwaysOnTop" @update:checked="emitChange">{{ t('designer.propTopmost') }}</n-checkbox>
           </div>
           <div class="prop-section">{{ t('designer.secWindowEffect') }}</div>
-          <div class="prop-row row-checks row-checks-3">
+          <div class="prop-row row-checks">
             <n-checkbox v-model:checked="form.rounded" @update:checked="emitChange">{{ t('designer.propRadius') }}</n-checkbox>
             <n-checkbox v-model:checked="form.shadow" @update:checked="emitChange">{{ t('designer.propShadow') }}</n-checkbox>
           </div>
@@ -3480,17 +3480,14 @@ onUnmounted(() => {
   grid-column: span 2;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 6px 10px;
   justify-content: flex-start;
+  align-items: center;
   padding-left: 4px;
 }
-.row-checks-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px 8px;
-}
-.row-checks-3 :deep(.n-checkbox) {
+.row-checks :deep(.n-checkbox) {
   margin-right: 0;
+  white-space: nowrap;
 }
 .events-row {
   grid-column: span 2;
