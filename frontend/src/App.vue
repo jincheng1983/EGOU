@@ -225,6 +225,7 @@
                           @font-size-change="onFontSizeChange"
                           @open-file-at="onOpenFileAt"
                           @toggle-breakpoint="onToggleBreakpoint"
+                          @edit-breakpoint-condition="onEditBreakpointCondition"
                         />
                       </div>
                       <div
@@ -366,6 +367,7 @@
                         @jump-to="gotoDebugLocation"
                         @debug-log="onDebugLog"
                         @debug-started="onDebugStarted"
+                        @breakpoint-condition-changed="onBreakpointConditionChanged"
                       />
                     </n-tab-pane>
                   </n-tabs>
@@ -3307,8 +3309,8 @@ watch(activeFileIndex, () => {
     const fileName = activeFile.value?.name
     if (!fileName) return
     const bps = debugPanelRef.value?.getBreakpoints?.() || []
-    const lines = bps.filter(bp => bp.file === fileName).map(bp => bp.line)
-    editorRef.value?.setBreakpoints?.(lines)
+    const fileBps = bps.filter(bp => bp.file === fileName).map(bp => ({ line: bp.line, cond: bp.cond || '' }))
+    editorRef.value?.setBreakpoints?.(fileBps)
   })
 })
 
@@ -4435,6 +4437,24 @@ function onToggleBreakpoint(line) {
     if (isDebugging.value) {
       IDEService.DebugToggleBreakpoint(fileName, line).catch(() => {})
     }
+  }
+}
+
+// onEditBreakpointCondition: 编辑器右键 glyph margin → 触发条件断点编辑
+// line: 行号, currentCond: 当前条件表达式（空字符串表示无条件）
+function onEditBreakpointCondition(line, currentCond) {
+  const f = activeFile.value
+  if (!f) return
+  const fileName = f.name
+  // 触发 DebugPanel 的内联条件编辑（内部自动展开断点列表 + 聚焦输入框）
+  debugPanelRef.value?.editBreakpointCondition?.(fileName, line, currentCond)
+}
+
+// onBreakpointConditionChanged: DebugPanel 条件保存后 → 同步 Editor 装饰器（条件断点视觉变化）
+function onBreakpointConditionChanged({ file, line, cond }) {
+  const fileName = activeFile.value?.name
+  if (file === fileName) {
+    editorRef.value?.setBreakpointCondition?.(line, cond)
   }
 }
 

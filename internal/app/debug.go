@@ -30,6 +30,7 @@ var errDebugAlreadyRunning = errors.New("调试器已在运行，请先停止当
 type BreakpointSpec struct {
 	File string `json:"file"`
 	Line int    `json:"line"`
+	Cond string `json:"cond"` // 条件表达式（Go 语法，如 "i == 10"），为空则无条件断点
 }
 
 // DebugVars 是 DebugVariables 的返回值。
@@ -101,7 +102,7 @@ func (s *IDEService) StartDebug(projectPath string, breakpoints []BreakpointSpec
 			continue
 		}
 		file := filepath.Base(bp.File)
-		if _, err := client.CreateBreakpoint(file, bp.Line); err != nil {
+		if _, err := client.CreateBreakpoint(file, bp.Line, bp.Cond); err != nil {
 			s.emitDebugLog("设置断点失败 " + file + ":" + strconv.Itoa(bp.Line) + " " + err.Error())
 		} else {
 			hasUserBreakpoint = true
@@ -232,7 +233,31 @@ func (s *IDEService) DebugToggleBreakpoint(file string, line int) error {
 			return client.ClearBreakpoint(bp.ID)
 		}
 	}
-	_, err = client.CreateBreakpoint(fileBase, line)
+	_, err = client.CreateBreakpoint(fileBase, line, "")
+	return err
+}
+
+// DebugSetBreakpointCondition 设置指定文件:行的断点条件表达式。
+// cond 为空字符串表示清除条件（变为无条件断点）。
+// 运行时修改条件用 AmendBreakpoint（保留断点 ID，无需删除重建）。
+func (s *IDEService) DebugSetBreakpointCondition(file string, line int, cond string) error {
+	client := s.getDebugClient()
+	if client == nil {
+		return errDebugNotRunning
+	}
+	bps, err := client.ListBreakpoints()
+	if err != nil {
+		return err
+	}
+	fileBase := filepath.Base(file)
+	for _, bp := range bps {
+		if bp.File == fileBase && bp.Line == line {
+			bp.Cond = cond
+			return client.AmendBreakpoint(&bp)
+		}
+	}
+	// 断点不存在时直接创建带条件的断点
+	_, err = client.CreateBreakpoint(fileBase, line, cond)
 	return err
 }
 

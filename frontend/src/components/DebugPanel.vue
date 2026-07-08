@@ -78,10 +78,27 @@
           v-for="(bp, i) in breakpoints"
           :key="i"
           class="debug-bp-item"
+          :class="{ 'has-cond': bp.cond }"
           @click="$emit('jump-to', bp.file, bp.line)"
         >
+          <span class="debug-bp-icon" :class="{ conditional: bp.cond }">{{ bp.cond ? '◆' : '●' }}</span>
           <span class="debug-bp-loc">{{ bp.file }}:{{ bp.line }}</span>
-          <button class="debug-bp-del" :title="t('debug.removeBreakpoint')" @click.stop="removeBreakpoint(i)">✕</button>
+          <span v-if="bp.cond" class="debug-bp-cond" :title="bp.cond">{{ bp.cond }}</span>
+          <div v-if="editingBpIndex === i" class="debug-bp-edit" @click.stop>
+            <input
+              v-model="editingCond"
+              class="debug-bp-input"
+              :placeholder="t('debug.conditionPlaceholder')"
+              @keydown.enter="saveCondition(i)"
+              @keydown.escape="cancelEditCondition"
+              ref="condInputRef"
+            />
+            <button class="debug-bp-ok" @click.stop="saveCondition(i)">✓</button>
+          </div>
+          <div v-else class="debug-bp-actions">
+            <button class="debug-bp-edit-btn" :title="t('debug.editCondition')" @click.stop="startEditCondition(i)">⚙</button>
+            <button class="debug-bp-del" :title="t('debug.removeBreakpoint')" @click.stop="removeBreakpoint(i)">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -89,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { IDEService } from '../../bindings/egou/internal/app'
 import { Events } from '@wailsio/runtime'
 import { t } from '../i18n/index.js'
@@ -97,7 +114,7 @@ import { t } from '../i18n/index.js'
 const props = defineProps({
   projectPath: { type: String, default: '' }
 })
-const emit = defineEmits(['jump-to', 'debug-log', 'debug-started'])
+const emit = defineEmits(['jump-to', 'debug-log', 'debug-started', 'breakpoint-condition-changed'])
 
 const isDebugging = ref(false)
 const debugStatus = ref('')
@@ -105,6 +122,10 @@ const stacktrace = ref([])
 const variables = ref({ locals: [], arguments: [] })
 const breakpoints = ref([])
 const selectedFrame = ref(0)
+// 条件编辑状态
+const editingBpIndex = ref(-1)
+const editingCond = ref('')
+const condInputRef = ref(null)
 
 const sections = reactive({ stack: true, vars: true, bp: false })
 
@@ -166,7 +187,7 @@ async function startDebug() {
   }
   debugStatus.value = t('debug.compiling')
   try {
-    const bps = breakpoints.value.map(bp => ({ file: bp.file, line: bp.line }))
+    const bps = breakpoints.value.map(bp => ({ file: bp.file, line: bp.line, cond: bp.cond || '' }))
     await IDEService.StartDebug(props.projectPath, bps)
     isDebugging.value = true
     debugStatus.value = t('debug.runningToEntry') // v0.9.8：后端自动 Continue 到 main.eg 入口
@@ -258,10 +279,10 @@ async function selectFrame(i) {
   await refreshVars(i)
 }
 
-function addBreakpoint(file, line) {
+function addBreakpoint(file, line, cond) {
   const exists = breakpoints.value.some(bp => bp.file === file && bp.line === line)
   if (!exists) {
-    breakpoints.value.push({ file, line })
+    breakpoints.value.push({ file, line, cond: cond || '' })
     if (isDebugging.value) {
       IDEService.DebugToggleBreakpoint(file, line).catch(() => {})
     }
@@ -284,7 +305,52 @@ function removeBreakpointByFileLine(file, line) {
   }
 }
 
-defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDebugging, startDebug, stopDebug, continueDebug, stepOver, stepInto, stepOut, getBreakpoints: () => breakpoints.value })
+// 条件断点编辑
+function startEditCondition(index) {
+  editingBpIndex.value = index
+  editingCond.value = breakpoints.value[index]?.cond || ''
+  nextTick(() => {
+    condInputRef.value?.focus?.()
+    condInputRef.value?.select?.()
+  })
+}
+
+function cancelEditCondition() {
+  editingBpIndex.value = -1
+  editingCond.value = ''
+}
+
+function saveCondition(index) {
+  const bp = breakpoints.value[index]
+  if (!bp) {
+    cancelEditCondition()
+    return
+  }
+  bp.cond = editingCond.value.trim()
+  editingBpIndex.value = -1
+  editingCond.value = ''
+  // 通知 App.vue 同步 Editor 装饰器（条件断点视觉变化）
+  emit('breakpoint-condition-changed', { file: bp.file, line: bp.line, cond: bp.cond })
+  // 调试中同步到 dlv
+  if (isDebugging.value) {
+    IDEService.DebugSetBreakpointCondition(bp.file, bp.line, bp.cond).catch(() => {})
+  }
+}
+
+// 由 App.vue 调用：从 Editor 右键菜单触发条件编辑
+function editBreakpointCondition(file, line, currentCond) {
+  sections.bp = true // 自动展开断点列表
+  const idx = breakpoints.value.findIndex(bp => bp.file === file && bp.line === line)
+  if (idx >= 0) {
+    startEditCondition(idx)
+  } else {
+    // 断点不在列表中（可能是当前文件外的断点），添加后再编辑
+    breakpoints.value.push({ file, line, cond: currentCond || '' })
+    startEditCondition(breakpoints.value.length - 1)
+  }
+}
+
+defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, editBreakpointCondition, isDebugging, startDebug, stopDebug, continueDebug, stepOver, stepInto, stepOut, getBreakpoints: () => breakpoints.value })
 </script>
 
 <style scoped>
@@ -466,19 +532,50 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
 .debug-bp-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 3px 12px;
+  gap: 4px;
+  padding: 3px 8px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-color-light);
+  flex-wrap: wrap;
 }
 .debug-bp-item:hover {
   background: var(--hover-color);
+}
+.debug-bp-item.has-cond {
+  background: color-mix(in srgb, var(--accent-color) 5%, transparent);
+}
+.debug-bp-icon {
+  color: var(--error-color);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.debug-bp-icon.conditional {
+  color: var(--accent-color);
 }
 .debug-bp-loc {
   color: var(--text-primary);
   font-family: var(--ide-code-font);
   font-size: var(--ide-font-size-xs);
+  flex-shrink: 0;
 }
+.debug-bp-cond {
+  color: var(--accent-color);
+  font-family: var(--ide-code-font);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  opacity: 0.8;
+}
+.debug-bp-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.debug-bp-edit-btn,
 .debug-bp-del {
   border: none;
   background: transparent;
@@ -488,8 +585,43 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
   padding: 0 4px;
   border-radius: var(--radius-sm);
 }
+.debug-bp-edit-btn:hover {
+  color: var(--accent-color);
+  background: var(--hover-color);
+}
 .debug-bp-del:hover {
   color: var(--error-color);
   background: var(--hover-color);
+}
+.debug-bp-edit {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  margin-top: 2px;
+}
+.debug-bp-input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  font-size: var(--ide-font-size-xs);
+  font-family: var(--ide-code-font);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input, var(--bg-secondary));
+  color: var(--text-primary);
+  outline: none;
+}
+.debug-bp-ok {
+  border: none;
+  background: var(--accent-color);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--ide-font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.debug-bp-ok:hover {
+  opacity: 0.85;
 }
 </style>

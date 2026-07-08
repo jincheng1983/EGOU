@@ -325,7 +325,7 @@ func TestE2EDebuggerFlow(t *testing.T) {
 		}
 	}
 
-	bp, err := client.CreateBreakpoint("main.eg", bpLine)
+	bp, err := client.CreateBreakpoint("main.eg", bpLine, "")
 	if err != nil {
 		// 调试器实际运行时可能因 //line 指令格式不同导致断点设置失败
 		// 这里记录详细错误，但不立即 Fail，让后续 Continue 也能验证流程

@@ -46,7 +46,8 @@ const emit = defineEmits([
   'update:modelValue', 'cursor-change', 'show-help',
   'goto-def', 'find-refs', 'rename-symbol', 'font-size-change',
   'open-file-at',  // 跨文件跳转：{ file, line, col, word }
-  'toggle-breakpoint'  // 调试断点切换：line
+  'toggle-breakpoint',  // 调试断点切换：line
+  'edit-breakpoint-condition'  // 编辑断点条件：line, currentCond
 ])
 
 const hostRef = ref(null)
@@ -219,11 +220,22 @@ onMounted(() => {
   editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.F2, () => nextBookmark())
   editor.addCommand(monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.F2, () => prevBookmark())
 
-  // glyph margin 点击：Shift+点击切换断点，普通点击切换书签
+  // glyph margin 点击：Shift+点击切换断点，右键编辑条件，普通点击切换书签
   editor.onMouseDown((e) => {
     if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
       const line = e.target.position.lineNumber
       if (!line) return
+      // 右键：编辑断点条件（已有断点）或添加条件断点（无断点时先创建）
+      if (e.event.rightButton) {
+        e.event.preventDefault()
+        if (!debugBreakpoints.has(line)) {
+          debugBreakpoints.set(line, { cond: '' })
+          updateBreakpointDecorations()
+          emit('toggle-breakpoint', line)
+        }
+        emit('edit-breakpoint-condition', line, getBreakpointCondition(line))
+        return
+      }
       if (e.event.shiftKey) {
         emit('toggle-breakpoint', line)
       } else {
@@ -233,22 +245,23 @@ onMounted(() => {
   })
 
   // ===== 断点 + 当前执行行（P2 调试器集成）=====
-  // 断点行号集合（由 App.vue 通过 setBreakpoints 设置）
+  // 断点：Map<line, {cond: string}>（cond 为空表示普通断点，非空表示条件断点）
   // 当前执行行（由 App.vue 通过 setCurrentLine 设置，调试暂停时高亮）
   let bpDecorations = []
   let currentLineDecoration = []
-  let debugBreakpoints = new Set()
+  let debugBreakpoints = new Map()
   let debugCurrentLine = 0
 
   function updateBreakpointDecorations() {
     if (!editor) return
+    const entries = [...debugBreakpoints.entries()]
     bpDecorations = editor.deltaDecorations(bpDecorations,
-      [...debugBreakpoints].map(line => ({
+      entries.map(([line, info]) => ({
         range: new monaco.Range(line, 1, line, 1),
         options: {
           isWholeLine: false,
-          glyphMarginClassName: 'eg-breakpoint-glyph',
-          glyphMarginHoverMessage: { value: t('editor.breakpoint', { line }) },
+          glyphMarginClassName: info.cond ? 'eg-breakpoint-conditional-glyph' : 'eg-breakpoint-glyph',
+          glyphMarginHoverMessage: { value: info.cond ? t('editor.conditionalBreakpoint', { line, cond: info.cond }) : t('editor.breakpoint', { line }) },
           stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
         }
       }))
@@ -280,8 +293,18 @@ onMounted(() => {
     }
   }
 
-  function setBreakpoints(lines) {
-    debugBreakpoints = new Set(lines || [])
+  function setBreakpoints(bps) {
+    // 兼容两种格式：行号数组 [1,2,3] 或对象数组 [{line, cond}]
+    debugBreakpoints = new Map()
+    if (Array.isArray(bps)) {
+      bps.forEach(item => {
+        if (typeof item === 'number') {
+          debugBreakpoints.set(item, { cond: '' })
+        } else if (item && typeof item.line === 'number') {
+          debugBreakpoints.set(item.line, { cond: item.cond || '' })
+        }
+      })
+    }
     updateBreakpointDecorations()
   }
 
@@ -289,9 +312,25 @@ onMounted(() => {
     if (debugBreakpoints.has(line)) {
       debugBreakpoints.delete(line)
     } else {
-      debugBreakpoints.add(line)
+      debugBreakpoints.set(line, { cond: '' })
     }
     updateBreakpointDecorations()
+    return debugBreakpoints.has(line)
+  }
+
+  // 设置断点条件（不改变断点存在状态，仅更新条件）
+  function setBreakpointCondition(line, cond) {
+    if (debugBreakpoints.has(line)) {
+      debugBreakpoints.set(line, { cond: cond || '' })
+      updateBreakpointDecorations()
+    }
+  }
+
+  function getBreakpointCondition(line) {
+    return debugBreakpoints.get(line)?.cond || ''
+  }
+
+  function hasBreakpoint(line) {
     return debugBreakpoints.has(line)
   }
 
@@ -937,11 +976,14 @@ defineExpose({
   prevBookmark: () => editor?._prevBookmark?.(),
   clearBookmarks: () => editor?._clearAllBookmarks?.(),
   // 调试器：断点 + 当前执行行（v0.9.12：通过 editor 引用，避免 ReferenceError）
-  setBreakpoints: (lines) => editor?._setBreakpoints?.(lines),
+  setBreakpoints: (bps) => editor?._setBreakpoints?.(bps),
   toggleBreakpointLine: (line) => editor?._toggleBreakpointLine?.(line),
+  setBreakpointCondition: (line, cond) => editor?._setBreakpointCondition?.(line, cond),
+  getBreakpointCondition: (line) => editor?._getBreakpointCondition?.(line) || '',
+  hasBreakpoint: (line) => editor?._hasBreakpoint?.(line) || false,
   setCurrentLine: (line) => editor?._setCurrentLine?.(line),
   clearDebugState: () => editor?._clearDebugState?.(),
-  getBreakpoints: () => [...(editor?._debugBreakpoints || [])],
+  getBreakpoints: () => [...(editor?._debugBreakpoints?.entries?.() || [])].map(([line, info]) => ({ line, cond: info.cond || '' })),
   getCurrentLine: () => editor ? editor.getPosition().lineNumber : 0,
   flashLine: () => {},
   runAction: (id) => {
@@ -993,6 +1035,32 @@ defineExpose({
   box-shadow: 0 0 3px rgba(241, 76, 76, 0.5);
 }
 .eg-breakpoint-glyph:hover {
+  transform: scale(1.15);
+}
+/* 条件断点 glyph（红色菱形 + "?" 标记，区别于普通红圆） */
+.eg-breakpoint-conditional-glyph {
+  background: var(--error-color, #f14c4c);
+  border-radius: 3px;
+  margin-left: 2px;
+  width: 11px !important;
+  height: 11px !important;
+  margin-top: 4px;
+  cursor: pointer;
+  box-shadow: 0 0 3px rgba(241, 76, 76, 0.5);
+  position: relative;
+}
+.eg-breakpoint-conditional-glyph::after {
+  content: '?';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+.eg-breakpoint-conditional-glyph:hover {
   transform: scale(1.15);
 }
 /* 调试当前执行行高亮（VS Code 风格：黄色背景 + 左侧箭头标记） */

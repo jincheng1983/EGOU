@@ -256,11 +256,12 @@ func (c *Client) kill() {
 // ===== 断点管理 =====
 
 // CreateBreakpoint 在指定文件:行设置断点，返回带 ID 的断点。
+// cond 为条件表达式（Go 语法，如 "i == 10"），为空则无条件断点。
 // dlv 的 CreateBreakpoint 响应格式为 {"Breakpoint": {...}}（包装在 Breakpoint 键中）。
-func (c *Client) CreateBreakpoint(file string, line int) (*Breakpoint, error) {
+func (c *Client) CreateBreakpoint(file string, line int, cond string) (*Breakpoint, error) {
 	req := struct {
 		Breakpoint Breakpoint `json:"breakpoint"`
-	}{Breakpoint: Breakpoint{File: file, Line: line}}
+	}{Breakpoint: Breakpoint{File: file, Line: line, Cond: cond}}
 	var resp struct {
 		Breakpoint Breakpoint `json:"Breakpoint"`
 	}
@@ -268,6 +269,17 @@ func (c *Client) CreateBreakpoint(file string, line int) (*Breakpoint, error) {
 		return nil, err
 	}
 	return &resp.Breakpoint, nil
+}
+
+// AmendBreakpoint 修改已有断点的属性（条件、禁用状态等）。
+// bp 必须包含有效的 ID 字段，其他字段为待修改的值。
+// 用于运行时修改条件断点表达式，无需删除重建断点（保留断点 ID）。
+func (c *Client) AmendBreakpoint(bp *Breakpoint) error {
+	req := struct {
+		Breakpoint Breakpoint `json:"breakpoint"`
+	}{Breakpoint: *bp}
+	var resp interface{}
+	return c.call("RPCServer.AmendBreakpoint", req, &resp)
 }
 
 // CreateBreakpointAtFunction 在指定函数入口设置断点。

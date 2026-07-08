@@ -555,6 +555,8 @@ registerMessages(DEFAULT_LOCALE, {
     stepOut: '单步跳出 (Shift+F11)',
     stop: '停止调试',
     removeBreakpoint: '删除断点',
+    editCondition: '编辑条件',
+    conditionPlaceholder: '输入条件表达式，如 i == 10',
     paused: '已暂停',
     exited: '已退出',
     running: '运行中...',
@@ -580,6 +582,7 @@ registerMessages(DEFAULT_LOCALE, {
   editor: {
     bookmark: '书签 (行 {line})',
     breakpoint: '断点 (行 {line})',
+    conditionalBreakpoint: '条件断点 (行 {line}): {cond}',
     currentLine: '当前执行位置',
     keyword: '关键字',
     dataType: '数据类型',
@@ -1664,6 +1667,8 @@ registerMessages('en-US', {
     stepOut: 'Step Out (Shift+F11)',
     stop: 'Stop Debug',
     removeBreakpoint: 'Remove Breakpoint',
+    editCondition: 'Edit Condition',
+    conditionPlaceholder: 'Enter condition, e.g. i == 10',
     paused: 'Paused',
     exited: 'Exited',
     running: 'Running...',
@@ -1689,6 +1694,7 @@ registerMessages('en-US', {
   editor: {
     bookmark: 'Bookmark (line {line})',
     breakpoint: 'Breakpoint (line {line})',
+    conditionalBreakpoint: 'Conditional Breakpoint (line {line}): {cond}',
     currentLine: 'Current execution position',
     keyword: 'Keyword',
     dataType: 'Data Type',
