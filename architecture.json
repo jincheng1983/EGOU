@@ -1,0 +1,364 @@
+{
+  "project": {
+    "name": "EGOU",
+    "fullName": "易狗 IDE",
+    "version": "0.10.1",
+    "edition": "第八版（最终完善版）",
+    "baseline": "基于第七版 NxEGOU 重构",
+    "lastUpdated": "2026-07-08",
+    "description": "基于中文语法的桌面应用开发环境，.eg 中文源码转译为 Go 代码并通过 Wails v3 编译为跨平台桌面应用"
+  },
+  "techStack": {
+    "backend": {
+      "language": "Go",
+      "version": "1.25.0+",
+      "framework": "Wails v3 v3.0.0-alpha2.110",
+      "serviceMode": "Wails Service（ServiceStartup + ServiceName）",
+      "debugger": "Delve (dlv) headless 模式",
+      "obfuscation": "garble -tiny",
+      "buildFlags": "-tags production,netgo,osusergo -trimpath -buildvcs=false -ldflags \"-w -s\"",
+      "buildScript": "python scripts/build.py"
+    },
+    "frontend": {
+      "framework": "Vue 3",
+      "scriptStyle": "<script setup>",
+      "uiLibrary": "Naive UI",
+      "editor": "Monaco Editor",
+      "languageId": "egou",
+      "build": "Vite",
+      "i18n": "自研轻量（零依赖，631 行）",
+      "theme": "themes.js 单一数据源（4 套主题 × 39 变量）"
+    }
+  },
+  "directoryLayout": {
+    "type": "标准 Go 项目布局 + 三层 internal + 完整外置化",
+    "root": {
+      "cmd/egou/": "IDE 主程序入口（main.go）",
+      "cmd/eg/": "CLI 工具入口",
+      "internal/": "内部包（不对外暴露）",
+      "runtime/": "运行时模板源（wails-template/ 含 vendor 离线依赖）",
+      "frontend/": "Vue 3 前端",
+      "scripts/": "构建/清理脚本（build.py 强制使用）",
+      "docs/": "文档",
+      "build/": "Wails v3 跨平台构建配置",
+      "fonts/": "字体目录（Vite 构建到 frontend/dist/fonts/）",
+      "libs/": "全局支持库源（.elib 扩展包）",
+      "templates/": "项目模板源",
+      "plugins/": "插件目录源",
+      "config/": "配置目录源",
+      "components/": "组件库目录源",
+      "tools/": "工具目录（upx.exe 随包分发）"
+    },
+    "internal": {
+      "app/": "IDEService 按职责拆分（9 文件：service/project/file/compile/ai/libs/plugins/components/debug/system）",
+      "runner/": "编译/运行/构建（runner.go detector.go health.go lru_cache.go）",
+      "transpiler/": ".eg → Go 转译器（正则 + AST 双通道）",
+      "ai/": "AI 客户端 + 5 Agent 编排",
+      "debugger/": "Delve 调试器客户端",
+      "types/": "跨层共享类型",
+      "examples/": "内置示例嵌入"
+    },
+    "release": {
+      "description": "完整外置化，exe 只做 IDE 逻辑",
+      "bin/": {
+        "EGOU.exe": "IDE 主程序",
+        "frontend/dist/": "前端构建产物",
+        "libs/": "全局支持库（.elib）",
+        "templates/": "项目模板",
+        "plugins/": "插件目录",
+        "config/": "配置目录",
+        "components/": "组件库目录",
+        "wails-template/": "用户程序编译模板（含 vendor）",
+        "tools/upx.exe": "UPX 压缩工具"
+      }
+    }
+  },
+  "moduleDependencies": {
+    "cmd/egou/main.go": {
+      "constructs": "internal/app.IDEService",
+      "embeds": "frontend/dist",
+      "registers": "Wails application"
+    },
+    "internal/app/*": {
+      "calls": ["internal/runner", "internal/transpiler", "internal/ai", "internal/debugger"],
+      "embeds": "internal/examples"
+    },
+    "internal/runner": {
+      "calls": "internal/transpiler",
+      "aliases": "internal/types",
+      "embeds": "runtime/"
+    },
+    "internal/transpiler": {
+      "imports": "internal/types"
+    },
+    "internal/ai": {
+      "imports": "internal/types"
+    },
+    "internal/debugger": {
+      "mode": "standalone（JSON-RPC 与 dlv 通信）"
+    },
+    "frontend/src": {
+      "wails_binding": "internal/app.IDEService"
+    },
+    "cycleFree": true,
+    "cycleBreaker": "internal/types 打破 runner ↔ app 循环依赖"
+  },
+  "coreDataFlows": {
+    "compile": {
+      "steps": [
+        "用户保存 .eg",
+        "IDE 调用后端转译器",
+        "合并 .elib 扩展包源码（全局 libs/ + 项目 libs/）",
+        "Transpile 正则转译（主通道）/ TranspileAST（实验通道）",
+        "处理 @嵌入 块",
+        "生成 //line 指令（错误定位到 .eg 源码）",
+        "复制运行时模板到临时目录（wails-template/vendor/ 离线依赖）",
+        "写入用户代码 + 资源嵌入 + 前端资源",
+        "go build（debug/release 双模式，-mod=vendor）",
+        "运行 / 复制到产物目录",
+        "（release 模式）UPX 压缩 + SHA256 校验 + 版本号自增"
+      ]
+    },
+    "debug": {
+      "steps": [
+        "前端 DebugPanel.vue → F5/F10/F11/Shift+F11",
+        "App.vue → IDEService.DebugContinue/Next/Step/StepOut",
+        "internal/app/debug.go",
+        "internal/debugger/client.go（JSON-RPC over TCP）",
+        "dlv headless 子进程",
+        "egruntime.exe（带 DWARF 调试信息）"
+      ],
+      "breakpointMapping": ".eg 源码通过 //line 指令映射到生成的 Go 代码",
+      "entryBreakpoint": "自动在 main.mainImpl 设置断点并 continue，避免停在 Go runtime 入口"
+    },
+    "ai": {
+      "agents": ["planner", "coder", "reviewer", "ui_builder", "fixer"],
+      "dangerousToolConfirm": {
+        "levels": ["safe", "moderate", "dangerous"],
+        "tools": ["write_file", "delete_file", "run_build", "run_command", "overwrite_file"],
+        "timeout": "30s",
+        "channel": "ai-tool-confirm"
+      },
+      "buildAndFix": {
+        "maxRounds": 3,
+        "events": ["build-start", "build-failed", "fix-start", "fix-applied", "build-success", "max-rounds-exceeded"]
+      }
+    }
+  },
+  "transpiler": {
+    "dualChannel": true,
+    "channels": {
+      "regex": {
+        "file": "transpiler.go",
+        "lines": 1376,
+        "strategy": "正则 + 字符串替换",
+        "status": "主通道，稳定可靠"
+      },
+      "ast": {
+        "files": ["lexer.go", "parser.go", "gen.go", "symbols.go", "ast.go"],
+        "lines": 6563,
+        "testLines": 5900,
+        "strategy": "词法分析 → AST → 代码生成",
+        "status": "实验性，未集成到主编译流程",
+        "tokenTypes": 18,
+        "features": [
+          "Token 分层（@嵌入/@结束 独立 Token）",
+          "递归下降解析器（2383 行，支持错误恢复）",
+          "代码生成器（1100 行，集成 go/format）",
+          "符号遍历与引用查找（515 行）",
+          "TranspileAST 入口 + 回退机制"
+        ]
+      }
+    }
+  },
+  "extensionSystem": {
+    "types": [
+      {
+        "name": "支持库（.elib）",
+        "directory": "libs/",
+        "registration": "commands.json 声明式",
+        "purpose": "提供中文命令/函数"
+      },
+      {
+        "name": "组件包",
+        "directory": "components/",
+        "registration": "config.json 声明式",
+        "purpose": "窗口设计器组件"
+      },
+      {
+        "name": "插件",
+        "directory": "plugins/",
+        "registration": "main.js activate(api) 编程式",
+        "purpose": "IDE 功能扩展"
+      },
+      {
+        "name": "项目模板",
+        "directory": "templates/",
+        "registration": "template.json 声明式",
+        "purpose": "新建项目模板"
+      }
+    ],
+    "elibStructure": {
+      "path": "<项目>/libs/<包名>/",
+      "files": ["package.json", "commands.json", "source.eg"],
+      "loading": "IDE 启动时扫描，与内置支持库合并",
+      "layers": "全局库（exe 同级 libs/）+ 项目库（<项目>/libs/）双层",
+      "merge": "转译时自动合并 source.eg，剥离重复声明",
+      "alias": "中文别名 → 英文键映射注册到 transpiler",
+      "irreplaceable": "用户扩展是附加的，不能替换内置库"
+    },
+    "componentPackage": {
+      "path": "components/<包名>/components/<组件名>/",
+      "files": ["config.json", "icon.svg"],
+      "configFields": ["type", "label", "icon", "width", "height", "text", "props", "events", "preview"],
+      "preview": "HTML 模板，支持 {{propName}} 占位符",
+      "iconLoading": "SVG 字符串 + v-html + CSS 尺寸限制"
+    }
+  },
+  "ui": {
+    "layout": "3 栏布局（TitleBar + LeftMenu 48px + LeftPanel 240px + EditorStack flex:1 + RightPanel 280px + OutputPanel 160px + StatusBar）",
+    "themes": {
+      "count": 4,
+      "names": ["dark", "light", "ocean", "sunrise"],
+      "variables": 39,
+      "dataSource": "themes.js",
+      "fallback": "style.css :root + [data-theme]",
+      "style": "磨砂玻璃（Glassmorphism）",
+      "blur": "backdrop-filter: blur(12px) saturate(1.2)",
+      "alphaRange": "0.75-0.85",
+      "radiusLevels": 5,
+      "transition": "0.15s"
+    },
+    "cssVariableLayers": {
+      "background": 8,
+      "gradient": 2,
+      "border": 3,
+      "text": 6,
+      "accent": 4,
+      "semantic": 5,
+      "scrollbar": 2,
+      "shadow": 4,
+      "radius": 5
+    },
+    "i18n": {
+      "framework": "自研轻量（零依赖）",
+      "lines": 631,
+      "locales": ["zh-CN", "en-US"],
+      "fallback": "zh-CN",
+      "persistence": "localStorage['egou-locale']",
+      "interpolation": "{paramName}",
+      "namespaces": ["common", "menu", "settings", "ai", "debug", "editor", "output", "command", "leftmenu", "titlebar"],
+      "componentsUsingI18n": ["LeftMenu", "TitleBar", "SettingsPanel", "DebugPanel", "AIPanel", "Editor", "App"],
+      "callCount": "130+"
+    }
+  },
+  "security": {
+    "ide": {
+      "upx": false,
+      "garble": "garble -tiny（不含 -literals）",
+      "reason": "避免杀毒软件误报（TrojanSpy/Stealer）",
+      "sha256": true
+    },
+    "userProduct": {
+      "garbleLevels": {
+        "off": "普通 go build",
+        "basic": "garble -tiny（默认）",
+        "full": "garble -literals -tiny"
+      },
+      "upx": "可选，使用修改过魔数/节区名的 upx-egou.exe",
+      "randomKey": "每次编译注入随机密钥，防止批量逆向"
+    },
+    "signature": {
+      "method": "Go 原生 crypto/sha256 + os.Stat",
+      "prohibition": "禁止用 PowerShell"
+    }
+  },
+  "codeMetrics": {
+    "totalLines": "~30000",
+    "modules": {
+      "internal/app/": "~3000 行（9 文件）",
+      "internal/transpiler/": "6563 行（正则 + AST）",
+      "internal/runner/": "~1500 行",
+      "internal/ai/": "~2000 行",
+      "internal/debugger/": "~800 行",
+      "frontend/src/": "~15000 行"
+    },
+    "tests": {
+      "transpiler": "8 个测试文件，~5900 行"
+    },
+    "fileConstraints": {
+      "internal/app/": "单文件不超 500 行",
+      "vueComponents": "必须 <script setup>"
+    }
+  },
+  "keyDesignDecisions": [
+    {
+      "title": "完整外置化（非 go:embed）",
+      "reason": "资源可独立更新，支持多实例，避免 exe 体积膨胀"
+    },
+    {
+      "title": "IDEService 拆分",
+      "reason": "第七版 1688 行单文件拆为 9 个职责文件，可读性提升"
+    },
+    {
+      "title": "AST 编译器前端实验性并行",
+      "reason": "为未来精确错误恢复/查找引用/重命名打基础，不强制替换正则转译器"
+    },
+    {
+      "title": "调试器入口断点",
+      "reason": "自动在 main.mainImpl 设置断点并 continue，避免停在 Go runtime 入口"
+    },
+    {
+      "title": "轻量自研 i18n（非 vue-i18n）",
+      "reason": "零依赖，减少包体积，渐进迁移策略"
+    },
+    {
+      "title": "用户程序离线依赖",
+      "reason": "wails-template/vendor/ + -mod=vendor，无需 GOPROXY"
+    }
+  ],
+  "versionHistory": [
+    {"version": "v0.1.0", "date": "2026-06", "focus": "架构骨架搭建"},
+    {"version": "v0.2.0", "date": "2026-06", "focus": "前端迁移 + 3 栏布局 + 主题系统"},
+    {"version": "v0.3.0", "date": "2026-06", "focus": "编辑器 + 转译器 + 编译运行"},
+    {"version": "v0.4.0", "date": "2026-06", "focus": "窗口设计器 + 属性面板"},
+    {"version": "v0.5.0", "date": "2026-06", "focus": "AI 助手 + 5 Agent 编排 + i18n 框架"},
+    {"version": "v0.6.0", "date": "2026-07", "focus": "扩展系统（.elib + 插件 + 组件包）"},
+    {"version": "v0.7.0", "date": "2026-07", "focus": "项目模板 + 资源管理"},
+    {"version": "v0.8.0", "date": "2026-07", "focus": "调试器（Delve 集成）"},
+    {"version": "v0.9.0", "date": "2026-07", "focus": "调试器完善 + 工具链路径配置"},
+    {"version": "v0.10.0", "date": "2026-07", "focus": "G9 插件设计器组件完善"},
+    {"version": "v0.10.1", "date": "2026-07-08", "focus": "i18n 核心组件接入 + 文档补齐"}
+  ],
+  "knownLimitations": [
+    {
+      "issue": "dlv 1.25.2 + Go 1.26.4 不兼容",
+      "impact": "State() 返回 threads=0",
+      "workaround": "用户配置匹配的 dlv 版本"
+    },
+    {
+      "issue": "i18n 覆盖率不足",
+      "impact": "部分组件仍硬编码中文",
+      "workaround": "渐进迁移，高 ROI 优先"
+    },
+    {
+      "issue": "外置组件代码生成未实现",
+      "impact": "外置组件无法编译到用户程序",
+      "workaround": "v0.10.0 后续"
+    },
+    {
+      "issue": "AST 通道未集成到主流程",
+      "impact": "仅测试中使用",
+      "workaround": "实验性定位，符合设计预期"
+    }
+  ],
+  "documents": {
+    "plan": "计划文档.md（根目录）",
+    "design": "docs/design.md",
+    "uiSpec": "docs/ui-spec.md",
+    "optimizationPlan": "docs/optimization_plan.md",
+    "devDiary": "docs/开发日记.md",
+    "rules": ".trae/rules/project_rules.md",
+    "architecture": "architecture.json（本文件）"
+  }
+}
