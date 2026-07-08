@@ -973,10 +973,20 @@ const themeOverrides = computed(() => {
   const preset = getTheme(currentThemeName.value)
   const accent = preset.variables['--accent-color'] || '#63e2b7'
   const accentHover = preset.variables['--accent-hover'] || accent
+  const fs = uiFontSize.value + 'px'
+  // Naive UI 组件根据 size 属性选择不同字号变量（fontSizeTiny/Small/Medium/Large/Huge），
+  // 若只设 common.fontSize 则 size="tiny"/"small" 的组件仍用各自默认值，导致字号不统一。
+  // 这里把所有字号变量统一设为界面字号，确保下拉框/输入框/选择框等无论 size 都字号一致。
   return {
     common: {
       borderRadius: '8px',
-      fontSize: uiFontSize.value + 'px',
+      fontSize: fs,
+      fontSizeMini: fs,
+      fontSizeTiny: fs,
+      fontSizeSmall: fs,
+      fontSizeMedium: fs,
+      fontSizeLarge: fs,
+      fontSizeHuge: fs,
       fontFamily: 'var(--ide-font)',
       primaryColor: accent,
       primaryColorHover: accentHover,

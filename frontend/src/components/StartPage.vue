@@ -22,18 +22,24 @@
           <span>最近打开</span>
         </div>
         <n-empty v-if="!recent.length" description="暂无最近项目" size="small" />
-        <n-list v-else hoverable clickable>
-          <n-list-item v-for="(item, idx) in recent" :key="idx" @click="$emit('open-recent', item)">
-            <n-thing :title="item.name" :description="item.path" />
-          </n-list-item>
-        </n-list>
+        <div v-else class="recent-list">
+          <div
+            v-for="(item, idx) in recent"
+            :key="idx"
+            class="recent-item"
+            @click="$emit('open-recent', item)"
+          >
+            <span class="recent-name">{{ item.name }}</span>
+            <span class="recent-path">{{ item.path }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { NButton, NIcon, NEmpty, NList, NListItem, NThing } from 'naive-ui'
+import { NButton, NIcon, NEmpty } from 'naive-ui'
 import { AddCircleOutline, FolderOpenOutline, TimeOutline } from '@vicons/ionicons5'
 
 defineProps({
@@ -100,7 +106,7 @@ defineEmits(['create-project', 'open-project', 'open-recent'])
 }
 .recent-section {
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   text-align: center;
 }
 .recent-header {
@@ -112,14 +118,35 @@ defineEmits(['create-project', 'open-project', 'open-recent'])
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
-.recent-section :deep(.n-list-item) {
-  padding: 6px 12px;
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.recent-section :deep(.n-thing-header__title) {
-  font-size: var(--ide-font-size-sm);
-  font-weight: 500;
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--ide-font-size);
+  transition: background-color 0.15s ease;
 }
-.recent-section :deep(.n-thing-main__description) {
-  font-size: var(--ide-font-size-xs);
+.recent-item:hover {
+  background: var(--bg-hover);
+}
+.recent-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+.recent-path {
+  color: var(--text-muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
