@@ -10,7 +10,8 @@
           draggable="true"
           @dragstart="onDragStart($event, item.type)"
         >
-          <n-icon :component="item.icon" />
+          <span v-if="item.iconSvg" class="toolbox-icon-svg" v-html="item.iconSvg"></span>
+          <n-icon v-else :component="item.icon" />
           <span>{{ item.label }}</span>
         </div>
       </div>
@@ -59,7 +60,8 @@
           @drop="onLayerDrop($event, comp)"
           @contextmenu.stop="onComponentContextMenu($event, comp)"
         >
-          <n-icon :component="iconForType(comp.type)" size="14" />
+          <span v-if="iconSvgForType(comp.type)" class="layer-icon-svg" v-html="iconSvgForType(comp.type)"></span>
+          <n-icon v-else :component="iconForType(comp.type)" size="14" />
           <span class="layer-name">{{ comp.name || labelForType(comp.type) }}</span>
           <span v-if="comp.locked" class="layer-flag locked">锁</span>
           <span v-if="comp.visible === false" class="layer-flag">隐</span>
@@ -144,7 +146,7 @@
             @click.stop="onComponentClick($event, comp)"
             @contextmenu.stop="onComponentContextMenu($event, comp)"
           >
-            <component-preview :comp="comp" />
+            <component-preview :comp="comp" :external-preview="getExternalPreview(comp.type)" />
             <template v-if="isSelected(comp.id)">
               <div
                 v-for="h in resizeHandles"
@@ -614,16 +616,18 @@ const builtinToolbox = [
 ]
 
 // G9：合并内置组件 + 插件注册的组件 + 外置组件包（components/ 目录）
-// 外置组件结构：{ type, label, icon, width, height, text, props, events, packageDir, isExternal }
+// 外置组件结构：{ type, label, icon(SVG字符串或null), width, height, text, props, events, preview, packageDir, isExternal }
 const pluginComponents = ref([])
 const toolbox = computed(() => {
   const pluginItems = pluginComponents.value.map(p => ({
     type: p.type,
     label: p.label || p.type,
-    icon: p.icon || CubeOutline,
+    icon: (p.icon && typeof p.icon === 'object') ? p.icon : CubeOutline, // 内置图标用 n-icon component
+    iconSvg: (typeof p.icon === 'string') ? p.icon : null, // G9：外置 SVG 字符串图标
     width: p.width || 80,
     height: p.height || 28,
-    text: p.text || p.label || p.type
+    text: p.text || p.label || p.type,
+    preview: p.preview || null // G9：预览 HTML 模板
   }))
   return [...builtinToolbox, ...pluginItems]
 })
@@ -1578,6 +1582,16 @@ function labelForType(type) {
 
 function iconForType(type) {
   return toolbox.value.find(t => t.type === type)?.icon || null
+}
+
+// G9：获取外置组件的 SVG 图标字符串（层级列表用）
+function iconSvgForType(type) {
+  return toolbox.value.find(t => t.type === type)?.iconSvg || null
+}
+
+// G9：获取外置组件的 preview 配置（传给 ComponentPreview）
+function getExternalPreview(type) {
+  return toolbox.value.find(t => t.type === type)?.preview || null
 }
 
 function onLayerClick(e, comp) {
@@ -2954,6 +2968,22 @@ onUnmounted(() => {
 }
 .toolbox-item:active {
   cursor: grabbing;
+}
+/* G9：外置组件 SVG 图标（限制尺寸，与 n-icon 视觉一致） */
+.toolbox-icon-svg,
+.layer-icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.toolbox-icon-svg :deep(svg),
+.layer-icon-svg :deep(svg) {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 /* 模板 header：标题 + 操作按钮 */
 .template-header {

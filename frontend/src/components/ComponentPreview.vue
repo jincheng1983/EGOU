@@ -54,6 +54,7 @@
     <span v-if="comp.text && !prop('vertical')" class="divider-title">{{ comp.text }}</span>
   </div>
   <!-- P3：外置组件通用占位渲染（未知类型统一用占位框，显示类型标签） -->
+  <div v-else-if="externalPreviewHtml" class="real-control real-external-preview" v-html="externalPreviewHtml"></div>
   <div v-else class="real-control real-external" :style="extStyle">
     <span class="external-label">{{ comp.type }}</span>
     <span v-if="comp.text" class="external-text">{{ comp.text }}</span>
@@ -66,13 +67,28 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  comp: { type: Object, required: true }
+  comp: { type: Object, required: true },
+  // G9：外置组件的 preview HTML 模板（支持 {{propName}} 占位符）
+  externalPreview: { type: Object, default: null }
 })
 
 // 读取组件属性，缺失时返回默认值
 function prop(key, def = '') {
   return props.comp.props?.[key] ?? def
 }
+
+// G9：渲染外置组件 preview HTML，替换 {{propName}} 占位符为属性值
+const externalPreviewHtml = computed(() => {
+  const tmpl = props.externalPreview?.html
+  if (!tmpl) return ''
+  // 替换 {{propName}} 为属性值（含 comp.text 和 comp.props）
+  return tmpl.replace(/\{\{(\w+)\}\}/g, (m, key) => {
+    if (key === 'text') return props.comp.text || ''
+    if (key === 'type') return props.comp.type || ''
+    const v = prop(key, '')
+    return (v === null || v === undefined) ? '' : String(v)
+  })
+})
 
 const itemList = computed(() => {
   const items = props.comp.items || props.comp.text || ''
@@ -205,6 +221,19 @@ const progressPct = computed(() => {
   font-size: inherit;
   color: #000000;
   background: #ffffff;
+}
+/* G9：外置组件 preview 渲染容器（撑满父级，溢出隐藏） */
+.real-external-preview {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.real-external-preview :deep(input),
+.real-external-preview :deep(button),
+.real-external-preview :deep(select),
+.real-external-preview :deep(textarea) {
+  pointer-events: none;
+  user-select: none;
 }
 /* 编辑类控件在设计模式不需要响应输入，仅展示外观 */
 .real-edit,

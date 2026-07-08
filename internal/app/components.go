@@ -45,6 +45,14 @@ type ComponentDef struct {
 	Props       []ComponentPropSchema `json:"props"`     // 属性 schema 列表（驱动属性面板）
 	Events      []string          `json:"events"`       // 事件名列表（如 ["值被改变"]）
 	PackageDir  string            `json:"packageDir"`   // 所属组件包目录名（前端加载图标用）
+	Preview     *ComponentPreview `json:"preview,omitempty"` // 预览渲染配置（G9 完善）
+}
+
+// ComponentPreview 描述外置组件在设计器中的预览渲染方式。
+// HTML 是模板字符串，支持 {{propName}} 占位符（运行时替换为属性值）。
+// 例如：<input type="text" value="{{value}}" placeholder="{{format}}" />
+type ComponentPreview struct {
+	HTML string `json:"html"` // 预览 HTML 模板（支持 {{propName}} 占位符）
 }
 
 // ComponentPropSchema 描述组件单个属性的元数据，驱动属性面板动态渲染控件。

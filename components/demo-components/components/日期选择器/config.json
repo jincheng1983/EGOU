@@ -1,10 +1,13 @@
 {
   "type": "datepicker",
   "label": "日期选择器",
-  "icon": "",
+  "icon": "icon.svg",
   "width": 140,
   "height": 28,
   "text": "",
+  "preview": {
+    "html": "<input type=\"text\" style=\"width:100%;height:100%;border:1px solid #a0a0a0;border-radius:4px;padding:0 6px;font-size:12px;box-sizing:border-box;\" value=\"{{value}}\" placeholder=\"{{format}}\" readonly />"
+  },
   "props": [
     {
       "key": "format",
@@ -28,6 +31,12 @@
       "label": "可清空",
       "type": "bool",
       "default": true
+    },
+    {
+      "key": "value",
+      "label": "当前值",
+      "type": "text",
+      "default": ""
     }
   ],
   "events": ["值被改变", "获得焦点", "失去焦点"]
