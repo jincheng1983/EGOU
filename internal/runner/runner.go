@@ -87,22 +87,25 @@ var garbleLevel = "basic"
 //
 // 最终方案：当使用内置 SDK 时，剔除 PATH 中的其他 Go 相关路径，并把内置 SDK 的
 // bin 目录前置到 PATH，确保 go tool 命令只找内置 SDK 的工具。
+//
+// v0.11.27 修复：同时将 exe 同级 tools/ 目录加入 PATH（garble/wails3 等工具查找），
+// 确保在无 Go 系统安装的环境中也能正常运行。
 func buildGoEnv() []string {
 	env := os.Environ()
 	if goRoot == "" {
 		return env
 	}
-	// 内置 SDK 模式：构造隔离环境
 	bundledBin := filepath.Join(goRoot, "bin")
-	filtered := make([]string, 0, len(env)+2)
+	toolsDir := ""
+	if exePath, err := os.Executable(); err == nil {
+		toolsDir = filepath.Join(filepath.Dir(exePath), "tools")
+	}
+	filtered := make([]string, 0, len(env)+4)
+	foundPath := false
 	for _, e := range env {
-		// 剔除 GOROOT（避免双 GOROOT）
 		if strings.HasPrefix(e, "GOROOT=") {
 			continue
 		}
-		// 剔除用户系统可能设置的 GOPATH（让内置 SDK 用默认 GOPATH=~/go）
-		// 注意：不剔除 GOPATH，因为用户的依赖在系统 GOPATH/pkg 中，剔除会导致找不到依赖
-		// 剔除 GOBIN/GOFLAGS/GOPROXY/GOSUMDB 等可能指向旧环境的变量
 		if strings.HasPrefix(e, "GOBIN=") ||
 			strings.HasPrefix(e, "GOFLAGS=") ||
 			strings.HasPrefix(e, "GOPROXY=") ||
@@ -112,26 +115,38 @@ func buildGoEnv() []string {
 			strings.HasPrefix(e, "GOWORK=") {
 			continue
 		}
-		// 处理 PATH：剔除用户系统中其他 Go 的 bin 目录，避免 go tool 找到旧工具
 		if strings.HasPrefix(e, "PATH=") {
+			foundPath = true
 			pathVal := strings.TrimPrefix(e, "PATH=")
 			paths := filepath.SplitList(pathVal)
-			cleanPaths := make([]string, 0, len(paths))
+			cleanPaths := make([]string, 0, len(paths)+2)
 			for _, p := range paths {
-				// 跳过用户系统的 Go 安装目录（常见路径 + 任何包含 \Go\bin 或 /go/bin 的路径）
 				lower := strings.ToLower(p)
 				if isSystemGoBin(lower) {
 					continue
 				}
 				cleanPaths = append(cleanPaths, p)
 			}
-			// 内置 SDK bin 前置
-			cleanPaths = append([]string{bundledBin}, cleanPaths...)
+			// 前置顺序：go/bin（go 命令最优先）→ tools/（garble/wails3）→ 系统 PATH
+			prepend := []string{bundledBin}
+			if toolsDir != "" {
+				prepend = append(prepend, toolsDir)
+			}
+			cleanPaths = append(prepend, cleanPaths...)
 			e = "PATH=" + strings.Join(cleanPaths, string(filepath.ListSeparator))
 		}
 		filtered = append(filtered, e)
 	}
-	// 追加内置 SDK 的 GOROOT
+	// 如果环境中没有 PATH（极罕见），手动构造
+	if !foundPath {
+		pathParts := []string{}
+		pathParts = append(pathParts, bundledBin)
+		if toolsDir != "" {
+			pathParts = append(pathParts, toolsDir)
+		}
+		pathParts = append(pathParts, `C:\Windows\System32`, `C:\Windows`)
+		filtered = append(filtered, "PATH="+strings.Join(pathParts, string(filepath.ListSeparator)))
+	}
 	filtered = append(filtered, "GOROOT="+goRoot)
 	return filtered
 }
@@ -1832,11 +1847,26 @@ func findNPM() string {
 }
 
 // findWails3Cli 查找 wails3 可执行文件路径。
-// 查找顺序：1. WAILS3 环境变量 → 2. PATH 查找 → 3. GOPATH/bin 回退。
+// 查找顺序：1. WAILS3 环境变量 → 2. exe 同级 tools/ → 3. PATH 查找 → 4. GOPATH/bin 回退。
 func findWails3Cli() string {
 	if wails3Cli != "" {
 		if _, err := os.Stat(wails3Cli); err == nil {
 			return wails3Cli
+		}
+	}
+	// 1.5 优先从 exe 同级 tools/ 目录查找（随发布包自带，无需用户安装）
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidates := []string{
+			filepath.Join(exeDir, "tools", "wails3.exe"),
+			filepath.Join(exeDir, "tools", "wails3"),
+			filepath.Join(exeDir, "wails3.exe"),
+			filepath.Join(exeDir, "wails3"),
+		}
+		for _, p := range candidates {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
 		}
 	}
 	candidates := []string{"wails3.exe", "wails3"}
@@ -1845,7 +1875,6 @@ func findWails3Cli() string {
 			return p
 		}
 	}
-	// L1：回退到 GOPATH/bin（跨用户可移植，不再硬编码用户名）
 	if gopath := os.Getenv("GOPATH"); gopath != "" {
 		exeName := "wails3"
 		if runtime.GOOS == "windows" {
@@ -2215,13 +2244,23 @@ func garbleCompatible(garblePath string) bool {
 	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main\nfunc main(){}\n"), 0644)
 	cmd := exec.Command(garblePath, "build", "-o", filepath.Join(tmpDir, "test.exe"), ".")
 	cmd.Dir = tmpDir
-	cmd.Env = append(buildGoEnv(), "CGO_ENABLED=0")
+	cmd.Env = append(buildGoEnv(), "CGO_ENABLED=0", "GOPROXY=off")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		if strings.Contains(string(out), "too old") {
+		outStr := string(out)
+		// 版本不兼容 → 不兼容，回退普通编译
+		if strings.Contains(outStr, "too old") {
 			return false
 		}
+		// 工具链不可用（找不到 go 等）→ 不兼容，回退普通编译
+		if strings.Contains(outStr, "executable file not found") ||
+			strings.Contains(outStr, "Can't find the Go toolchain") ||
+			strings.Contains(outStr, "no Go files") ||
+			strings.Contains(outStr, "not found in PATH") {
+			return false
+		}
+		// 其他错误（网络、cgo 等）视为兼容，让正式编译时显示具体错误
 		return true
 	}
 	return true

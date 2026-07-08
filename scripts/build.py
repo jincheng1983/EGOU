@@ -392,6 +392,17 @@ def main():
     else:
         print("未找到 garble，bin/tools/ 不包含 garble（用户产物将无法启用混淆）")
 
+    # 7.5b Wails3 CLI（随 IDE 打包，用户程序前端资源构建/缓存失效时使用）
+    #      无 wails3 时 runtime-frontend 缓存失效将无法重新构建前端
+    if wails3:
+        wails3_dst = garble_dst_dir / "wails3.exe"
+        if Path(wails3).resolve() != wails3_dst.resolve():
+            shutil.copy2(wails3, wails3_dst)
+        wails3_size = wails3_dst.stat().st_size / (1024 * 1024)
+        print(f"已复制 Wails3 CLI: tools/wails3.exe（{wails3_size:.1f} MB）")
+    else:
+        print("警告: wails3 未找到，用户程序前端缓存失效时将无法重新构建", file=sys.stderr)
+
     # 7.6 内置 Go SDK（精简版，用户无需自装 Go 环境）
     #     从系统 GOROOT 复制到 bin/go/，去掉 doc/misc/test/api 减小体积
     #     保留 bin + lib + pkg + src + go.env + VERSION（编译必需）
@@ -420,6 +431,21 @@ def main():
             else:
                 shutil.copy2(item, dst)
             total_files += 1
+        # 验证 go.exe 存在
+        go_exe_dst = go_sdk_dst / "bin" / "go.exe"
+        if not go_exe_dst.exists():
+            print(f"错误：Go SDK 复制失败，{go_exe_dst} 不存在", file=sys.stderr)
+        else:
+            # 修正 go.env 中的 GOROOT（硬编码路径会导致找不到工具，运行时由 GOROOT 环境变量覆盖）
+            go_env_dst = go_sdk_dst / "go.env"
+            if go_env_dst.exists():
+                try:
+                    content = go_env_dst.read_text(encoding="utf-8", errors="replace")
+                    import re
+                    content = re.sub(r'^GOROOT=.*$', '', content, flags=re.MULTILINE)
+                    go_env_dst.write_text(content, encoding="utf-8")
+                except Exception:
+                    pass
         # 统计体积
         sdk_size = sum(f.stat().st_size for f in go_sdk_dst.rglob("*") if f.is_file()) / (1024 * 1024)
         print(f"已复制精简 Go SDK: go/（{sdk_size:.0f} MB，跳过 doc/misc/test/api）")
@@ -444,7 +470,7 @@ def main():
             print("提示：未找到 dlv.exe（执行 `go install github.com/go-delve/delve/cmd/dlv@latest` 安装），"
                   "发布包将不含内置调试器，用户需自行安装 dlv 到 PATH")
     else:
-        print("未找到 Go SDK（GOROOT），bin/go/ 不包含内置编译器（用户需自装 Go）")
+        print("警告：未能获取 GOROOT，Go SDK 未复制！用户程序编译将需要系统安装 Go。", file=sys.stderr)
 
     # 7.6 复制 README.md（如果存在）
     readme_src = ROOT / "README.md"
