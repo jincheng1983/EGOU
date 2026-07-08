@@ -185,7 +185,7 @@ onMounted(updateMaxState)
   border-radius: 4px;
 }
 .app-name {
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   font-weight: 600;
   margin-right: 8px;
   color: var(--text-primary);

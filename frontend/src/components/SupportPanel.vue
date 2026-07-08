@@ -291,7 +291,7 @@ function onSelect(keys) {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   border-bottom: 1px solid var(--border-color);
 }
@@ -321,12 +321,12 @@ function onSelect(keys) {
 }
 .help-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   margin-bottom: 4px;
   color: var(--text-primary);
 }
 .help-desc {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   margin-bottom: 8px;
   line-height: 1.4;

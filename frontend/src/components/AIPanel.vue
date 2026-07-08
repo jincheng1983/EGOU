@@ -712,7 +712,7 @@ defineExpose({
   height: 100%;
   min-height: 200px;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
 }
 
 .ai-thinking-bubble {
@@ -755,7 +755,7 @@ defineExpose({
 
 .ai-thinking-text {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
 }
 
 .ai-panel {
@@ -769,7 +769,7 @@ defineExpose({
 
 .panel-header {
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -787,7 +787,7 @@ defineExpose({
 .ai-header-btn {
   flex-shrink: 0;
   padding: 0 6px !important;
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
 }
 
 .ai-capabilities {
@@ -830,7 +830,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   font-weight: 600;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -845,7 +845,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   cursor: pointer;
   transition: background 0.15s;
   gap: 8px;
@@ -867,7 +867,7 @@ defineExpose({
   padding: 12px;
   text-align: center;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
 }
 
 .ai-chat {
@@ -892,7 +892,7 @@ defineExpose({
 }
 
 .ai-perm-title {
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 10px;
@@ -900,7 +900,7 @@ defineExpose({
 }
 
 .ai-perm-body {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -948,7 +948,7 @@ defineExpose({
   max-width: 90%;
   padding: 8px 10px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   line-height: 1.5;
 }
 
@@ -967,7 +967,7 @@ defineExpose({
   white-space: pre-wrap;
   word-break: break-word;
   font-family: var(--ide-code-font);
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
 }
 
 .ai-memory-panel {
@@ -984,7 +984,7 @@ defineExpose({
   gap: 6px;
   padding: 6px 8px;
   border-bottom: 1px solid var(--border-color);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
 }
 
 .ai-memory-title {
@@ -1055,7 +1055,7 @@ defineExpose({
   width: 28px;
   height: 28px;
   padding: 0 !important;
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   border-radius: 6px;
   background: var(--accent-color) !important;
   color: white !important;
@@ -1076,7 +1076,7 @@ defineExpose({
   width: 28px;
   height: 28px;
   padding: 0 !important;
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   border-radius: 6px;
   background: var(--error-color, #e74c3c) !important;
   color: white !important;
@@ -1104,11 +1104,11 @@ defineExpose({
 }
 
 .ai-tool-confirm-icon {
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
 }
 
 .ai-tool-confirm-title {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
@@ -1130,13 +1130,13 @@ defineExpose({
 }
 
 .ai-tool-name {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .ai-tool-summary {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-primary);
   margin-bottom: 6px;
   word-break: break-all;
@@ -1146,7 +1146,7 @@ defineExpose({
   padding: 6px 8px;
   background: var(--bg-hover);
   border-radius: 4px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
 }
 
 .ai-tool-param {

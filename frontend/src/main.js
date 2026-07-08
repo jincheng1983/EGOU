@@ -15,6 +15,16 @@ try {
   if (uiFont) document.documentElement.style.setProperty('--ide-font', uiFont)
   const codeFont = localStorage.getItem('eg-fontfamily')
   if (codeFont) document.documentElement.style.setProperty('--ide-code-font', codeFont)
+  // 界面字号：恢复 --ide-font-size 及衍生层级（sm/xs/lg/xl 按基础字号偏移）
+  const savedSize = parseInt(localStorage.getItem('eg-uifontsize'), 10)
+  if (savedSize >= 11 && savedSize <= 18) {
+    const root = document.documentElement.style
+    root.setProperty('--ide-font-size', savedSize + 'px')
+    root.setProperty('--ide-font-size-sm', (savedSize - 1) + 'px')
+    root.setProperty('--ide-font-size-xs', (savedSize - 2) + 'px')
+    root.setProperty('--ide-font-size-lg', (savedSize + 1) + 'px')
+    root.setProperty('--ide-font-size-xl', (savedSize + 2) + 'px')
+  }
 } catch {}
 
 // 配置 Monaco Worker

@@ -15,7 +15,7 @@
   margin-bottom: 8px;
 }
 .bc-section {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-muted);
   font-weight: 600;
   margin: 4px 0 8px;
@@ -100,6 +100,15 @@
   --ide-font: 'IdeFont', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --ide-code-font: 'IdeFont', 'Consolas', 'Courier New', monospace;
 
+  /* 界面字号层级 — 由系统设置中的「界面字号」统一控制（默认 13px，范围 11-18）
+     衍生变量按基础字号等比例偏移，用户调整后所有 UI 文字按层级同步缩放。
+     10px 及以下角标、16px+ emoji 图标、起始页大标题保留绝对值，不随此缩放。 */
+  --ide-font-size:    13px;  /* 基础字号：正文、常规文字 */
+  --ide-font-size-sm: 12px;  /* 小字号：次要说明、辅助文字 */
+  --ide-font-size-xs: 11px;  /* 超小字号：标签、徽章、时间戳 */
+  --ide-font-size-lg: 14px;  /* 大字号：强调文字、区域标题 */
+  --ide-font-size-xl: 15px;  /* 超大字号：面板标题 */
+
   /* 圆角分级 — NxEGO4 风格，柔和但不失锐利 */
   --radius-sm: 4px;    /* 小元素：标签、输入框 */
   --radius-md: 6px;    /* 中元素：按钮、卡片 */
@@ -173,6 +182,7 @@ html, body, #app {
   height: 100%;
   overflow: hidden;
   font-family: var(--ide-font);
+  font-size: var(--ide-font-size);
 }
 
 /* 统一快速过渡 — NxEGO4 风格 0.15s，丝滑但不拖沓 */

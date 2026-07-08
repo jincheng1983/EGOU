@@ -285,7 +285,7 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
 }
 
 .debug-toolbar {
@@ -326,14 +326,14 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
   color: var(--error-color);
 }
 .debug-btn-icon {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   line-height: 1;
 }
 
 .debug-status {
   margin-left: 8px;
   color: var(--text-tertiary);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -367,7 +367,7 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
 .debug-section-title {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -392,7 +392,7 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
 .debug-empty {
   padding: 12px 16px;
   color: var(--text-tertiary);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   text-align: center;
 }
 
@@ -446,7 +446,7 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--ide-code-font);
 }
 .debug-var-type {
   color: var(--text-tertiary);
@@ -467,15 +467,15 @@ defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDe
 }
 .debug-bp-loc {
   color: var(--text-primary);
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
+  font-family: var(--ide-code-font);
+  font-size: var(--ide-font-size-xs);
 }
 .debug-bp-del {
   border: none;
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   padding: 0 4px;
   border-radius: var(--radius-sm);
 }

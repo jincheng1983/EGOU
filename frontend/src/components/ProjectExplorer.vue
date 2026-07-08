@@ -597,19 +597,19 @@ function onContextMenuSelect(key) {
   padding: 0 4px 6px 8px;
 }
 .tree-label {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
 }
 :deep(.node-prefix) {
   display: inline-block;
   width: 20px;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 600;
 }
 :deep(.node-suffix) {
   margin-left: 6px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-secondary);
   opacity: 0.8;
 }

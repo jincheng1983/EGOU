@@ -353,7 +353,7 @@ const progressPct = computed(() => {
 }
 .tab-item {
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   border: 1px solid #a0a0a0;
   border-bottom: none;
   background: #f0f0f0;
@@ -393,7 +393,7 @@ const progressPct = computed(() => {
 }
 .divider-title {
   padding: 0 8px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: #666666;
 }
 .real-divider.vertical {

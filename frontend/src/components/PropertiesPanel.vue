@@ -72,7 +72,7 @@
       <div v-if="!parsed || parsed.functions.length === 0 && parsed.globalVars.length === 0 && parsed.constants.length === 0" class="outline-empty">
         <n-empty description="暂无大纲" size="small">
           <template #extra>
-            <n-text depth="3" style="font-size: 12px;">当前文件没有可识别的函数、变量或常量</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size-sm);">当前文件没有可识别的函数、变量或常量</n-text>
           </template>
         </n-empty>
       </div>
@@ -248,7 +248,7 @@ watch(() => props.currentFunctionName, (name) => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
@@ -307,7 +307,7 @@ watch(() => props.currentFunctionName, (name) => {
 }
 .section-title {
   padding: 6px 12px 4px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -319,7 +319,7 @@ watch(() => props.currentFunctionName, (name) => {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.12s;
@@ -365,12 +365,12 @@ watch(() => props.currentFunctionName, (name) => {
   text-overflow: ellipsis;
 }
 .item-params {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   flex-shrink: 0;
 }
 .item-type {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   flex-shrink: 0;
 }
@@ -390,7 +390,7 @@ watch(() => props.currentFunctionName, (name) => {
 .search-input {
   width: 100%;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-input, var(--bg-secondary));
@@ -412,7 +412,7 @@ watch(() => props.currentFunctionName, (name) => {
   overflow-x: hidden;
 }
 .symbol-table {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
 }
 .table-header {
   display: grid;

@@ -171,7 +171,7 @@ function onContextMenuSelect(key) {
   padding: 0 4px 6px 8px;
 }
 .tree-label {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
 }
 

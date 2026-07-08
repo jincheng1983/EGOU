@@ -2833,7 +2833,7 @@ onUnmounted(() => {
 }
 .panel-header {
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
@@ -2867,7 +2867,7 @@ onUnmounted(() => {
   gap: 6px;
   padding: 6px 8px;
   border-top: 1px solid var(--border-color);
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   flex-shrink: 0;
 }
 .grid-toggle {
@@ -2881,7 +2881,7 @@ onUnmounted(() => {
   width: 64px;
   height: 22px;
   padding: 0 4px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-tertiary);
@@ -2904,7 +2904,7 @@ onUnmounted(() => {
   padding: 5px 8px;
   border-radius: 6px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   cursor: pointer;
   user-select: none;
   transition: background 0.15s, color 0.15s;
@@ -2947,7 +2947,7 @@ onUnmounted(() => {
 }
 .layer-empty {
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   text-align: center;
   padding: 16px 8px;
 }
@@ -2958,7 +2958,7 @@ onUnmounted(() => {
   padding: 8px 10px;
   border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   cursor: grab;
   transition: all 0.2s;
 }
@@ -3065,7 +3065,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-secondary);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -3101,7 +3101,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
@@ -3160,7 +3160,7 @@ onUnmounted(() => {
   object-fit: contain;
 }
 .form-title {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: #1f2329;
   font-family: var(--ide-font);
   flex: 1;
@@ -3246,7 +3246,7 @@ onUnmounted(() => {
   position: absolute;
   top: 2px;
   right: 2px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   opacity: 0.7;
   pointer-events: none;
 }
@@ -3301,7 +3301,7 @@ onUnmounted(() => {
   color: #fff;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   pointer-events: none;
   z-index: 1000;
   white-space: nowrap;
@@ -3389,7 +3389,7 @@ onUnmounted(() => {
   display: contents;
 }
 .prop-label {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -3405,14 +3405,14 @@ onUnmounted(() => {
   display: block;
 }
 .prop-value {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-primary);
   display: flex;
   align-items: center;
 }
 .prop-section {
   grid-column: span 2;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   font-weight: 600;
   color: var(--text-primary);
   padding: 4px 0 2px 2px;
@@ -3485,7 +3485,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 0 6px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   height: 22px;
 }
 .tab-reset-btn:hover {
@@ -3524,7 +3524,7 @@ onUnmounted(() => {
   border-radius: 9px;
   background: var(--accent-color);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   font-weight: 600;
   display: flex;
   align-items: center;

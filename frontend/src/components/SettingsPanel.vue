@@ -31,7 +31,7 @@
               />
             </n-form-item>
           </n-form>
-          <n-text depth="2" style="font-size: 12px">{{ t('settings.languageDesc') }}</n-text>
+          <n-text depth="2" style="font-size: var(--ide-font-size-sm)">{{ t('settings.languageDesc') }}</n-text>
         </div>
 
         <!-- 主题 -->
@@ -299,6 +299,10 @@
             <div class="prop-cell">
               <label class="prop-cell-label">IDE 界面字体</label>
               <n-select v-model:value="uiFontFamilyLocal" size="small" :options="uiFontFamilyOptions" filterable style="width: 100%;" />
+            </div>
+            <div class="prop-cell">
+              <label class="prop-cell-label">界面字号（px，11-18）</label>
+              <n-input-number v-model:value="uiFontSizeLocal" size="small" :min="11" :max="18" :step="1" style="width: 100%;" />
             </div>
           </div>
 
@@ -693,6 +697,22 @@ const uiFontFamilyLocal = ref(localStorage.getItem('eg-uifont') || "'IdeFont', s
 watch(uiFontFamilyLocal, (v) => {
   localStorage.setItem('eg-uifont', v)
   document.documentElement.style.setProperty('--ide-font', v)
+}, { immediate: true })
+
+// IDE 界面字号（统一控制 UI 文字大小，写入 --ide-font-size 及衍生层级 sm/xs/lg/xl）
+// 编辑器字号独立由 eg-fontsize 控制，与此处互不影响。
+const uiFontSizeLocal = ref(parseInt(localStorage.getItem('eg-uifontsize'), 10) || 13)
+watch(uiFontSizeLocal, (v) => {
+  const size = Math.max(11, Math.min(18, parseInt(v, 10) || 13))
+  localStorage.setItem('eg-uifontsize', String(size))
+  const root = document.documentElement.style
+  root.setProperty('--ide-font-size', size + 'px')
+  root.setProperty('--ide-font-size-sm', (size - 1) + 'px')
+  root.setProperty('--ide-font-size-xs', (size - 2) + 'px')
+  root.setProperty('--ide-font-size-lg', (size + 1) + 'px')
+  root.setProperty('--ide-font-size-xl', (size + 2) + 'px')
+  // 通知 App.vue 同步 Naive UI themeOverrides.common.fontSize
+  window.dispatchEvent(new CustomEvent('eg-uifontsize-change', { detail: size }))
 }, { immediate: true })
 const autoConvertSymbolsLocal = ref(props.autoConvertSymbols)
 watch(() => props.autoConvertSymbols, (v) => { autoConvertSymbolsLocal.value = v })
@@ -1158,7 +1178,7 @@ async function deleteTemplate(dir) {
   padding: 8px 10px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   color: var(--text-secondary);
   transition: all 0.15s ease;
   user-select: none;
@@ -1210,7 +1230,7 @@ async function deleteTemplate(dir) {
   gap: 4px;
 }
 .prop-cell-label {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -1224,7 +1244,7 @@ async function deleteTemplate(dir) {
   margin: 0;
 }
 .prop-hint {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   margin: 4px 0 12px;
   padding: 6px 10px;
@@ -1236,7 +1256,7 @@ async function deleteTemplate(dir) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   margin: 16px 0 8px;
   padding: 6px 8px;
@@ -1272,7 +1292,7 @@ async function deleteTemplate(dir) {
   gap: 8px;
 }
 .plugin-name {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1281,12 +1301,12 @@ async function deleteTemplate(dir) {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 4px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-secondary);
 }
 .plugin-desc {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
 }
 /* AI 模型管理卡片 */
@@ -1328,12 +1348,12 @@ async function deleteTemplate(dir) {
   gap: 8px;
 }
 .model-setting-name {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
 }
 .model-setting-active {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--accent-color);
   font-weight: 500;
 }
@@ -1372,13 +1392,13 @@ async function deleteTemplate(dir) {
   font-size: 18px;
 }
 .agent-name {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
 }
 .agent-desc {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   margin-bottom: 6px;
 }
@@ -1389,7 +1409,7 @@ async function deleteTemplate(dir) {
   align-items: center;
 }
 .agent-kw-label {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-dim);
 }
 .agent-kw {
@@ -1422,13 +1442,13 @@ async function deleteTemplate(dir) {
   font-size: 16px;
 }
 .skill-name {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
 }
 .skill-desc {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-secondary);
 }
 /* P6：保存为模板输入行 */
@@ -1564,7 +1584,7 @@ async function deleteTemplate(dir) {
 }
 .theme-card-label {
   padding: 6px 8px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 500;
   text-align: center;
   color: var(--text-primary);

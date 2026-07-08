@@ -85,7 +85,7 @@ defineEmits(['create-project', 'open-project', 'open-recent'])
 }
 .start-subtitle {
   margin: 0 0 36px;
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   color: var(--text-secondary);
 }
 .start-actions {
@@ -108,7 +108,7 @@ defineEmits(['create-project', 'open-project', 'open-recent'])
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
@@ -116,10 +116,10 @@ defineEmits(['create-project', 'open-project', 'open-recent'])
   padding: 6px 12px;
 }
 .recent-section :deep(.n-thing-header__title) {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 500;
 }
 .recent-section :deep(.n-thing-main__description) {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
 }
 </style>

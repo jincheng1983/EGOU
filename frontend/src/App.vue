@@ -535,7 +535,7 @@
             </div>
           </div>
           <div v-else class="quick-open-empty">
-            <n-text depth="3" style="font-size: 13px;">未找到匹配文件</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">未找到匹配文件</n-text>
           </div>
         </div>
       </n-modal>
@@ -564,7 +564,7 @@
             />
           </div>
           <div class="goto-line-hint">
-            <n-text depth="3" style="font-size: 12px;">当前文件共 {{ activeFile.source ? activeFile.source.split('\n').length : 0 }} 行</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size-sm);">当前文件共 {{ activeFile.source ? activeFile.source.split('\n').length : 0 }} 行</n-text>
           </div>
         </div>
       </n-modal>
@@ -608,7 +608,7 @@
             </div>
           </div>
           <div v-else class="quick-open-empty">
-            <n-text depth="3" style="font-size: 13px;">未找到匹配符号</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">未找到匹配符号</n-text>
           </div>
         </div>
       </n-modal>
@@ -624,7 +624,7 @@
         :closable="false"
       >
         <div class="confirm-dialog-body">
-          <n-text style="font-size: 14px;">{{ confirmDialogMessage }}</n-text>
+          <n-text style="font-size: var(--ide-font-size-lg);">{{ confirmDialogMessage }}</n-text>
         </div>
         <template #footer>
           <n-space justify="end">
@@ -674,7 +674,7 @@
             </div>
           </div>
           <div v-else class="cp-empty">
-            <n-text depth="3" style="font-size: 13px;">未找到匹配命令</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">未找到匹配命令</n-text>
           </div>
         </div>
       </n-modal>
@@ -711,7 +711,7 @@
       >
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <n-space justify="space-between" align="center">
-            <n-text depth="3" style="font-size: 13px;">用户自定义代码片段（Ctrl+Shift+P 触发补全）</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">用户自定义代码片段（Ctrl+Shift+P 触发补全）</n-text>
             <n-space size="small" align="center">
               <n-button size="small" @click="exportSnippets">导出</n-button>
               <n-button size="small" @click="importSnippetsClick">导入</n-button>
@@ -749,9 +749,9 @@
           </div>
           <!-- 片段预览 -->
           <div v-if="selectedSnippet" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; background: var(--bg-secondary);">
-            <n-text depth="3" style="font-size: 12px; display: block; margin-bottom: 4px;">预览：{{ selectedSnippet.label || '（未命名）' }} · {{ selectedSnippet.category || '通用' }}</n-text>
-            <pre style="margin: 0; padding: 8px; font-family: var(--ide-code-font, monospace); font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 160px; overflow: auto;">{{ selectedSnippet.insertText || '（空）' }}</pre>
-            <n-text v-if="selectedSnippet.documentation" depth="3" style="font-size: 12px; display: block; margin-top: 4px;">说明：{{ selectedSnippet.documentation }}</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size-sm); display: block; margin-bottom: 4px;">预览：{{ selectedSnippet.label || '（未命名）' }} · {{ selectedSnippet.category || '通用' }}</n-text>
+            <pre style="margin: 0; padding: 8px; font-family: var(--ide-code-font, monospace); font-size: var(--ide-font-size-sm); white-space: pre-wrap; word-break: break-all; max-height: 160px; overflow: auto;">{{ selectedSnippet.insertText || '（空）' }}</pre>
+            <n-text v-if="selectedSnippet.documentation" depth="3" style="font-size: var(--ide-font-size-sm); display: block; margin-top: 4px;">说明：{{ selectedSnippet.documentation }}</n-text>
           </div>
           <n-space>
             <n-button size="small" type="primary" @click="snippetList.push({ label: '', insertText: '', documentation: '', category: snippetFilterCategory || '通用' }); selectedSnippetIndex = filteredSnippetList.length - 1">添加片段</n-button>
@@ -804,7 +804,7 @@
               <n-input v-model:value="createProjectName" placeholder="未命名项目" />
             </n-form-item>
             <n-form-item v-if="createProjectParent" label="完整路径">
-              <n-text depth="3" style="font-size: 12px; word-break: break-all;">
+              <n-text depth="3" style="font-size: var(--ide-font-size-sm); word-break: break-all;">
                 {{ createProjectParent }}\{{ createProjectName || '未命名项目' }}
               </n-text>
             </n-form-item>
@@ -960,6 +960,15 @@ const currentThemeName = ref(getSavedThemeName())
 applyTheme(currentThemeName.value)
 const theme = computed(() => getTheme(currentThemeName.value).isDark ? darkTheme : lightTheme)
 const isDark = computed(() => getTheme(currentThemeName.value).isDark)
+// 界面字号（与 SettingsPanel 联动，同步 Naive UI themeOverrides.common.fontSize）
+const uiFontSize = ref(parseInt(localStorage.getItem('eg-uifontsize'), 10) || 13)
+if (typeof window !== 'undefined') {
+  window.addEventListener('eg-uifontsize-change', (e) => {
+    const v = parseInt(e.detail, 10)
+    if (v >= 11 && v <= 18) uiFontSize.value = v
+  })
+}
+
 const themeOverrides = computed(() => {
   const preset = getTheme(currentThemeName.value)
   const accent = preset.variables['--accent-color'] || '#63e2b7'
@@ -967,7 +976,7 @@ const themeOverrides = computed(() => {
   return {
     common: {
       borderRadius: '8px',
-      fontSize: '14px',
+      fontSize: uiFontSize.value + 'px',
       fontFamily: 'var(--ide-font)',
       primaryColor: accent,
       primaryColorHover: accentHover,
@@ -5233,7 +5242,7 @@ function onShowHelp(info) {
   padding: 8px;
   overflow: auto;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: var(--ide-font-size);
 }
 .plugin-panel-container input,
 .plugin-panel-container button,
@@ -5316,7 +5325,7 @@ function onShowHelp(info) {
   height: 100%;
   overflow: auto;
   font-family: var(--ide-font), monospace;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--text-primary);
@@ -5407,7 +5416,7 @@ function onShowHelp(info) {
   transform: rotate(0deg);
 }
 .ref-file-name {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
@@ -5424,7 +5433,7 @@ function onShowHelp(info) {
   height: 16px;
   line-height: 16px;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--accent-color);
   background: color-mix(in srgb, var(--accent-color) 14%, transparent);
   border-radius: 8px;
@@ -5451,14 +5460,14 @@ function onShowHelp(info) {
 .ref-line-no {
   flex-shrink: 0;
   min-width: 36px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--accent-color);
   font-family: var(--ide-font), monospace;
   text-align: right;
   padding-top: 1px;
 }
 .ref-preview {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
@@ -5504,7 +5513,7 @@ function onShowHelp(info) {
   user-select: none;
   flex-shrink: 0;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   transition: background 0.2s;
 }
 .file-tab.active {
@@ -5552,7 +5561,7 @@ function onShowHelp(info) {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   line-height: 1;
   opacity: 0;
   transition: opacity 0.15s, background 0.15s;
@@ -5584,7 +5593,7 @@ function onShowHelp(info) {
 }
 /* 编译选项对话框分组样式 */
 .cfg-section {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
   padding: 8px 0 4px;
@@ -5616,7 +5625,7 @@ function onShowHelp(info) {
 }
 .view-tab {
   padding: 6px 16px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -5644,7 +5653,7 @@ function onShowHelp(info) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 6px;
@@ -5655,7 +5664,7 @@ function onShowHelp(info) {
   background: var(--bg-tertiary);
 }
 .view-tab-select {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   padding: 2px 4px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -5665,7 +5674,7 @@ function onShowHelp(info) {
   cursor: pointer;
 }
 .view-tab-btn {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   padding: 2px 8px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -5684,7 +5693,7 @@ function onShowHelp(info) {
   flex-shrink: 0;
   gap: 4px;
   padding: 4px 12px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
@@ -5726,8 +5735,8 @@ function onShowHelp(info) {
 }
 .bc-cursor {
   color: var(--text-muted);
-  font-family: monospace;
-  font-size: 11px;
+  font-family: var(--ide-code-font);
+  font-size: var(--ide-font-size-xs);
 }
 .bc-status {
   cursor: pointer;
@@ -5742,12 +5751,12 @@ function onShowHelp(info) {
   letter-spacing: 0.5px;
 }
 .bc-icon {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   opacity: 0.8;
 }
 .bc-sep {
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   line-height: 1;
   user-select: none;
 }
@@ -5766,7 +5775,7 @@ function onShowHelp(info) {
   color: var(--text-secondary);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   line-height: 1;
   transition: background 0.12s, color 0.12s;
 }
@@ -5781,7 +5790,7 @@ function onShowHelp(info) {
 }
 .bc-nav-icon {
   font-weight: bold;
-  font-family: monospace;
+  font-family: var(--ide-code-font);
 }
 .status-bar {
   height: 26px;
@@ -5794,7 +5803,7 @@ function onShowHelp(info) {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--border-color);
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   overflow: hidden;
   white-space: nowrap;
 }
@@ -5812,7 +5821,7 @@ function onShowHelp(info) {
   flex-shrink: 0;
 }
 .status-bar-msg {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   max-width: 240px;
   overflow: hidden;
@@ -5845,7 +5854,7 @@ function onShowHelp(info) {
   50% { opacity: 0.3; }
 }
 .sb-letter {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   opacity: 0.7;
   margin-right: 3px;
 }
@@ -5860,7 +5869,7 @@ function onShowHelp(info) {
   color: var(--accent-color);
 }
 .status-bar-goto {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-secondary);
   cursor: pointer;
   padding: 2px 8px;
@@ -5872,7 +5881,7 @@ function onShowHelp(info) {
   color: var(--accent-color);
 }
 .status-bar-item {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   color: var(--text-muted);
   padding: 2px 6px;
   border-radius: 3px;
@@ -5911,7 +5920,7 @@ function onShowHelp(info) {
   align-items: center;
   gap: 5px;
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: transparent;
@@ -5956,7 +5965,7 @@ function onShowHelp(info) {
 .health-indicator.ok .health-text { color: var(--color-success); }
 .health-indicator.bad .health-text { color: var(--color-error); }
 .health-detail {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   line-height: 1.6;
 }
 .health-detail-title {
@@ -5991,12 +6000,12 @@ function onShowHelp(info) {
   padding-top: 6px;
   border-top: 1px solid var(--border-color);
   color: var(--text-tertiary);
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   word-break: break-all;
 }
 .panel-header {
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   border-bottom: 1px solid var(--border-color);
 }
@@ -6010,7 +6019,7 @@ function onShowHelp(info) {
   margin-bottom: 4px;
 }
 .template-label {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 8px;
@@ -6061,13 +6070,13 @@ function onShowHelp(info) {
   line-height: 1;
 }
 .template-name {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 .template-desc {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   line-height: 1.3;
   overflow: hidden;
@@ -6085,7 +6094,7 @@ function onShowHelp(info) {
   padding: 8px 12px;
 }
 .quick-open-input-wrap :deep(.n-input) {
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
 }
 .quick-open-list {
   max-height: 320px;
@@ -6098,7 +6107,7 @@ function onShowHelp(info) {
   gap: 8px;
   padding: 7px 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   transition: background 0.1s;
 }
 .quick-open-item:hover,
@@ -6109,7 +6118,7 @@ function onShowHelp(info) {
   color: var(--accent-color);
 }
 .qo-icon {
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
   flex-shrink: 0;
 }
 .qo-name {
@@ -6117,7 +6126,7 @@ function onShowHelp(info) {
   flex-shrink: 0;
 }
 .qo-path {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   margin-left: auto;
   overflow: hidden;
@@ -6139,7 +6148,7 @@ function onShowHelp(info) {
   padding: 8px 12px;
 }
 .cp-input-wrap :deep(.n-input) {
-  font-size: 14px;
+  font-size: var(--ide-font-size-lg);
 }
 .cp-list {
   max-height: 380px;
@@ -6152,7 +6161,7 @@ function onShowHelp(info) {
   gap: 8px;
   padding: 7px 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   transition: background 0.1s;
 }
 .cp-item:hover,
@@ -6163,7 +6172,7 @@ function onShowHelp(info) {
   color: var(--accent-color);
 }
 .cp-icon {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   flex-shrink: 0;
   width: 20px;
   text-align: center;
@@ -6173,7 +6182,7 @@ function onShowHelp(info) {
   flex-shrink: 0;
 }
 .cp-cat {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   margin-left: 8px;
   padding: 1px 6px;
@@ -6181,14 +6190,14 @@ function onShowHelp(info) {
   background: var(--bg-quaternary);
 }
 .cp-shortcut {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-muted);
   margin-left: auto;
   padding: 1px 6px;
   border-radius: 3px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  font-family: monospace;
+  font-family: var(--ide-code-font);
 }
 .cp-empty {
   padding: 20px;
@@ -6208,7 +6217,7 @@ function onShowHelp(info) {
   margin-bottom: 0;
 }
 .kb-group-title {
-  font-size: 12px;
+  font-size: var(--ide-font-size-sm);
   font-weight: 600;
   color: var(--accent-color);
   text-transform: uppercase;
@@ -6229,7 +6238,7 @@ function onShowHelp(info) {
   background: var(--bg-tertiary);
 }
 .kb-desc {
-  font-size: 13px;
+  font-size: var(--ide-font-size);
   color: var(--text-primary);
 }
 .kb-keys {
@@ -6245,7 +6254,7 @@ function onShowHelp(info) {
   min-width: 24px;
   height: 22px;
   padding: 0 6px;
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   font-family: var(--ide-font), monospace;
   color: var(--text-primary);
   background: var(--bg-tertiary);
@@ -6255,7 +6264,7 @@ function onShowHelp(info) {
   user-select: none;
 }
 .kb-plus {
-  font-size: 11px;
+  font-size: var(--ide-font-size-xs);
   color: var(--text-dim);
   margin: 0 2px;
 }
