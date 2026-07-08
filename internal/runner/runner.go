@@ -1259,70 +1259,72 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 	// Garble 源码混淆：根据 garbleLevel + garble.exe 存在性决定调用方式
 	// garble 调用形式：garble [garbleFlags] build [goBuildArgs...]
 	//   - off   : 普通 go build
-	//   - basic : garble -tiny            （仅混淆变量名/函数名/类型名 + 移除文件名/行号）
-	//   - full  : garble -literals -tiny  （再加字符串字面量运行时解密，可能触发杀软误报）
-	// 注意：garble 依赖 GOCACHE 和 GOFLAGS，环境变量需继承；garble 会内部调用 go build
+	//   - basic : garble build           （标识符混淆：包名/变量名/函数名/类型名，不需要 git）
+	//   - full  : garble -literals build （再加字符串字面量混淆，可能触发杀软误报，不需要 git）
+	// 注意：不使用 -tiny（需要 git apply 给 Go linker 打补丁，用户机器可能无 git）
+	//       Go 原生 -ldflags="-w -s" 已去除符号表和调试信息，配合 garble 默认混淆足够防逆向
 	useGarble := false
 	garbleFlags := []string{}
 	garblePath := findGarble()
-	garbleCompat := false
-	garbleCompatDetail := ""
-	if garblePath != "" {
-		if cached, ok := garbleCompatCache.Load(garblePath); ok {
-			garbleCompat = cached.(bool)
-		} else {
-			garbleCompat, garbleCompatDetail = garbleCompatibleDetail(garblePath)
-			garbleCompatCache.Store(garblePath, garbleCompat)
+
+	if garblePath != "" && garbleLevel != "off" {
+		wantedFlags := []string{}
+		switch garbleLevel {
+		case "full":
+			wantedFlags = []string{"-literals"}
+		default: // basic
+			wantedFlags = []string{}
 		}
-	}
-	switch garbleLevel {
-	case "off":
+
+		key := garblePath + "|" + strings.Join(wantedFlags, ",")
+		if cached, ok := garbleCompatCache.Load(key); ok {
+			if cached.(bool) {
+				useGarble = true
+				garbleFlags = wantedFlags
+			}
+		} else {
+			compat, detail := garbleCompatibleDetail(garblePath, wantedFlags)
+			garbleCompatCache.Store(key, compat)
+			if compat {
+				useGarble = true
+				garbleFlags = wantedFlags
+			} else {
+				emit(sink, "build", "Garble 与当前 Go 不兼容，已自动回退普通编译", false)
+				if detail != "" {
+					emit(sink, "build", "  原因: "+detail, false)
+				}
+			}
+		}
+
+		if useGarble {
+			desc := "启用 Garble 基础混淆（标识符混淆）"
+			if garbleLevel == "full" {
+				desc = "启用 Garble 完整混淆（标识符+字符串混淆，可能触发杀软误报）"
+			}
+			emit(sink, "build", desc, false)
+		}
+	} else if garbleLevel == "off" {
 		emit(sink, "build", "Garble 混淆已关闭（编译选项设置），普通编译", false)
-	case "full":
-		if garbleCompat {
-			useGarble = true
-			garbleFlags = []string{"-literals", "-tiny"}
-			emit(sink, "build", "启用 Garble 完整混淆（-literals -tiny，可能触发杀软误报）", false)
-		} else if garblePath != "" {
-			emit(sink, "build", "Garble 与当前 Go 不兼容，已自动回退普通编译", false)
-			if garbleCompatDetail != "" {
-				emit(sink, "build", "  原因: "+garbleCompatDetail, false)
-			}
-		} else {
-			emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
-		}
-	default: // "basic" 或其他非法值
-		if garbleCompat {
-			useGarble = true
-			garbleFlags = []string{"-tiny"}
-			emit(sink, "build", "启用 Garble 基础混淆（-tiny，仅变量名/函数名，无杀软误报）", false)
-		} else if garblePath != "" {
-			emit(sink, "build", "Garble 与当前 Go 不兼容，已自动回退普通编译", false)
-			if garbleCompatDetail != "" {
-				emit(sink, "build", "  原因: "+garbleCompatDetail, false)
-			}
-		} else {
-			emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
-		}
+	} else {
+		emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
 	}
 
 	var cmd *exec.Cmd
 	if useGarble {
-		garbleArgs := append(garbleFlags, args...)
-		cmd = exec.Command(garblePath, garbleArgs...)
+		buildArgs := append([]string{}, garbleFlags...)
+		buildArgs = append(buildArgs, args...)
+		cmd = exec.Command(garblePath, buildArgs...)
 	} else {
 		cmd = exec.Command(goBinary, args...)
 	}
 	cmd.Dir = dir
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	// 构建 env：继承系统环境 + GOROOT（内置 Go SDK 时必须设置，剔除用户系统旧 GOROOT 避免版本冲突） + CGO 开关
 	env := buildGoEnv()
 	if hasCgo {
 		env = append(env, "CGO_ENABLED=1")
 	} else {
 		env = append(env, "CGO_ENABLED=0")
 	}
-	// 检测到 vendor/ 时强制 GOPROXY=off，彻底阻止联网下载依赖
 	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
 		env = append(env, "GOPROXY=off")
 	}
@@ -2271,7 +2273,11 @@ func findGarble() string {
 	return ""
 }
 
-func garbleCompatibleDetail(garblePath string) (bool, string) {
+// garbleCompatibleDetail 测试 garble 能否在当前环境下正常工作（使用实际 garbleFlags）。
+// 返回 (是否兼容, 错误详情)。兼容性测试使用与正式编译相同的 garbleFlags 和环境变量。
+// v0.11.32 起不再使用 -tiny（需要 git apply linker 补丁，用户机器可能无 git），
+// 默认 garble build 已提供标识符混淆，配合 -ldflags="-w -s" 足够防逆向。
+func garbleCompatibleDetail(garblePath string, garbleFlags []string) (bool, string) {
 	tmpDir, err := os.MkdirTemp("", "garble-check-*")
 	if err != nil {
 		return true, ""
@@ -2279,22 +2285,20 @@ func garbleCompatibleDetail(garblePath string) (bool, string) {
 	defer os.RemoveAll(tmpDir)
 	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module gcheck\n\ngo 1.25.0\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main\nfunc main(){}\n"), 0644)
-	cmd := exec.Command(garblePath, "build", "-o", filepath.Join(tmpDir, "test.exe"), ".")
+	args := append([]string{}, garbleFlags...)
+	args = append(args, "build", "-o", filepath.Join(tmpDir, "test.exe"), ".")
+	cmd := exec.Command(garblePath, args...)
 	cmd.Dir = tmpDir
 	cmd.Env = append(buildGoEnv(), "CGO_ENABLED=0", "GOPROXY=off")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		outStr := strings.TrimSpace(string(out))
-		if strings.Contains(outStr, "too old") {
-			return false, outStr
-		}
-		if strings.Contains(outStr, "executable file not found") ||
+		if strings.Contains(outStr, "too old") ||
+			strings.Contains(outStr, "executable file not found") ||
 			strings.Contains(outStr, "Can't find the Go toolchain") ||
-			strings.Contains(outStr, "not found in PATH") {
-			return false, outStr
-		}
-		if strings.Contains(outStr, "invalid GOTOOLCHAIN") ||
+			strings.Contains(outStr, "not found in PATH") ||
+			strings.Contains(outStr, "invalid GOTOOLCHAIN") ||
 			strings.Contains(outStr, "go: unknown directive") ||
 			strings.Contains(outStr, "compile: version") {
 			return false, outStr
@@ -2302,11 +2306,6 @@ func garbleCompatibleDetail(garblePath string) (bool, string) {
 		return true, ""
 	}
 	return true, ""
-}
-
-func garbleCompatible(garblePath string) bool {
-	ok, _ := garbleCompatibleDetail(garblePath)
-	return ok
 }
 
 var garbleCompatCache sync.Map
