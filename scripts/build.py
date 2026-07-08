@@ -392,6 +392,40 @@ def main():
     else:
         print("未找到 garble，bin/tools/ 不包含 garble（用户产物将无法启用混淆）")
 
+    # 7.6 内置 Go SDK（精简版，用户无需自装 Go 环境）
+    #     从系统 GOROOT 复制到 bin/go/，去掉 doc/misc/test/api 减小体积
+    #     保留 bin + lib + pkg + src + go.env + VERSION（编译必需）
+    go_sdk_dst = BIN_DIR / "go"
+    go_root = os.environ.get("GOROOT", "")
+    if not go_root:
+        # 从 go env GOROOT 获取
+        try:
+            result = subprocess.run(["go", "env", "GOROOT"], capture_output=True, text=True)
+            go_root = result.stdout.strip()
+        except Exception:
+            go_root = ""
+    if go_root and Path(go_root).exists():
+        # 精简：跳过 doc/misc/test/api 目录
+        skip_dirs = {"doc", "misc", "test", "api"}
+        if go_sdk_dst.exists():
+            shutil.rmtree(go_sdk_dst)
+        go_sdk_dst.mkdir(parents=True)
+        total_files = 0
+        for item in Path(go_root).iterdir():
+            if item.name in skip_dirs:
+                continue
+            dst = go_sdk_dst / item.name
+            if item.is_dir():
+                shutil.copytree(item, dst, symlinks=True)
+            else:
+                shutil.copy2(item, dst)
+            total_files += 1
+        # 统计体积
+        sdk_size = sum(f.stat().st_size for f in go_sdk_dst.rglob("*") if f.is_file()) / (1024 * 1024)
+        print(f"已复制精简 Go SDK: go/（{sdk_size:.0f} MB，跳过 doc/misc/test/api）")
+    else:
+        print("未找到 Go SDK（GOROOT），bin/go/ 不包含内置编译器（用户需自装 Go）")
+
     # 7.6 复制 README.md（如果存在）
     readme_src = ROOT / "README.md"
     readme_dst = BIN_DIR / "README.md"

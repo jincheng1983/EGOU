@@ -27,13 +27,41 @@ import (
 // wails3Cli 指向 Wails v3 CLI 可执行文件。
 var wails3Cli = os.Getenv("WAILS3")
 
-// goBinary 指向 Go 编译器路径，默认 "go"（依赖 PATH）。
-// 通过 SetGoBinary 可在运行时切换到指定路径的 Go SDK。
-var goBinary = "go"
+// goBinary 指向 Go 编译器路径。
+// 初始化时自动检测 exe 同级 go/bin/go.exe（内置 Go SDK），找不到则回退 "go"（依赖 PATH）。
+// 通过 SetGoBinary 可在运行时切换到用户指定的 Go SDK 路径。
+var goBinary = detectBundledGo()
+
+// goRoot 记录内置 Go SDK 的 GOROOT 路径（exe 同级 go/），编译时注入环境变量。
+var goRoot string
 
 // templateDir 指向外置 wails-template 目录的绝对路径（exe 同级 wails-template/）。
 // 由 IDE 启动时通过 SetTemplateDir 注入，未注入则从 exe 同级目录查找。
 var templateDir string
+
+// detectBundledGo 检测 exe 同级 go/bin/go.exe（内置 Go SDK）。
+// 找到则返回完整路径并记录 GOROOT；找不到返回 "go"（回退 PATH）。
+func detectBundledGo() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "go"
+	}
+	exeDir := filepath.Dir(exePath)
+	if runtime.GOOS == "windows" {
+		bundled := filepath.Join(exeDir, "go", "bin", "go.exe")
+		if _, err := os.Stat(bundled); err == nil {
+			goRoot = filepath.Join(exeDir, "go")
+			return bundled
+		}
+	} else {
+		bundled := filepath.Join(exeDir, "go", "bin", "go")
+		if _, err := os.Stat(bundled); err == nil {
+			goRoot = filepath.Join(exeDir, "go")
+			return bundled
+		}
+	}
+	return "go"
+}
 
 // garbleLevel 控制用户编译产物的 Garble 源码混淆强度，由 IDE 启动时通过 SetGarbleLevel 注入。
 //
@@ -48,12 +76,16 @@ var templateDir string
 var garbleLevel = "basic"
 
 // SetGoBinary 设置 Go 编译器路径（如 C:\Program Files\Go\bin\go.exe）。
-// 传入空字符串恢复为默认 "go"（从 PATH 查找）。
+// 传入空字符串恢复为内置 Go SDK 或 "go"（从 PATH 查找）。
+// 自动推断 GOROOT（go.exe 的上级目录的上级目录）。
 func SetGoBinary(path string) {
 	if path != "" {
 		goBinary = path
+		// 推断 GOROOT：goBinary = <GOROOT>/bin/go.exe
+		goRoot = filepath.Dir(filepath.Dir(path))
 	} else {
-		goBinary = "go"
+		// 恢复为内置 Go SDK 或 PATH
+		goBinary = detectBundledGo()
 	}
 }
 
@@ -1154,12 +1186,17 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 	}
 	cmd.Dir = dir
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	// 默认 CGO_ENABLED=0；有 cgo_link.go 时才启用
-	if hasCgo {
-		cmd.Env = append(os.Environ(), "CGO_ENABLED=1")
-	} else {
-		cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	// 构建 env：继承系统环境 + GOROOT（内置 Go SDK 时必须设置） + CGO 开关
+	env := os.Environ()
+	if goRoot != "" {
+		env = append(env, "GOROOT="+goRoot)
 	}
+	if hasCgo {
+		env = append(env, "CGO_ENABLED=1")
+	} else {
+		env = append(env, "CGO_ENABLED=0")
+	}
+	cmd.Env = env
 	// garble 需要独立的 GARBLE_CACHE 目录（默认 %LocalAppData%\garble 在部分 Windows 环境不可靠）
 	// 用 exe 同级 tools/.garble-cache，路径可控且随 IDE 分发
 	if useGarble {
@@ -1437,6 +1474,11 @@ func buildFrontendDist(dir string, sink EventSink) error {
 	tidyCmd := exec.Command(goBinary, "mod", "tidy")
 	tidyCmd.Dir = dir
 	tidyCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	tidyEnv := os.Environ()
+	if goRoot != "" {
+		tidyEnv = append(tidyEnv, "GOROOT="+goRoot)
+	}
+	tidyCmd.Env = tidyEnv
 	if output, err := tidyCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("go mod tidy 失败: %s", string(output))
 	}
