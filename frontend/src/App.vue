@@ -137,35 +137,35 @@
                       class="view-tab"
                       :class="{ active: activeFile.view === 'design' }"
                       @click="switchToDesignView"
-                    >设计</div>
+                    >{{ t('designer.viewDesign') }}</div>
                     <div
                       class="view-tab"
                       :class="{ active: activeFile.view === 'code' }"
                       @click="switchToCodeView"
-                    >代码</div>
+                    >{{ t('designer.viewCode') }}</div>
                     <template v-if="activeFile.view === 'design'">
                       <span class="view-tab-sep" />
                       <div
                         class="view-tab"
                         :class="{ active: designerSidePanel === 'templates' }"
                         @click="designerSidePanel = 'templates'"
-                      >模板</div>
+                      >{{ t('designer.template') }}</div>
                       <div
                         class="view-tab"
                         :class="{ active: designerSidePanel === 'layers' }"
                         @click="designerSidePanel = 'layers'"
-                      >层级</div>
+                      >{{ t('designer.layers') }}</div>
                       <span class="view-tab-sep" />
-                      <label class="view-tab-tool" title="切换网格线显示">
+                      <label class="view-tab-tool" :title="t('designer.toggleGridLines')">
                         <n-checkbox v-model:checked="designerShowGrid" size="small" />
-                        <span>显示网格</span>
+                        <span>{{ t('designer.showGrid') }}</span>
                       </label>
-                      <label class="view-tab-tool" title="切换网格吸附">
+                      <label class="view-tab-tool" :title="t('designer.toggleGridSnap')">
                         <n-checkbox v-model:checked="designerSnapEnabled" size="small" />
-                        <span>网格吸附</span>
+                        <span>{{ t('designer.snapGrid') }}</span>
                       </label>
-                      <select v-model.number="designerGridSize" class="view-tab-select" title="网格大小（像素）">
-                        <option :value="1">关闭</option>
+                      <select v-model.number="designerGridSize" class="view-tab-select" :title="t('designer.gridSizeTitle')">
+                        <option :value="1">{{ t('designer.close') }}</option>
                         <option :value="4">4px</option>
                         <option :value="8">8px</option>
                         <option :value="10">10px</option>
@@ -173,12 +173,12 @@
                         <option :value="20">20px</option>
                       </select>
                       <span class="view-tab-sep" />
-                      <label class="view-tab-tool" title="切换 Tab 顺序编辑模式">
+                      <label class="view-tab-tool" :title="t('designer.toggleTabOrder')">
                         <n-checkbox v-model:checked="designerTabOrderMode" size="small" />
-                        <span>Tab 顺序</span>
+                        <span>{{ t('designer.tabOrder') }}</span>
                       </label>
-                      <button v-if="designerTabOrderMode" class="view-tab-btn" title="按位置自动排序" @click="designerRef?.autoSortTabOrder()">自动排序</button>
-                      <button v-if="designerTabOrderMode" class="view-tab-btn" title="重置 Tab 顺序" @click="designerRef?.resetTabOrder()">重置</button>
+                      <button v-if="designerTabOrderMode" class="view-tab-btn" :title="t('designer.autoSortTitle')" @click="designerRef?.autoSortTabOrder()">{{ t('designer.autoSort') }}</button>
+                      <button v-if="designerTabOrderMode" class="view-tab-btn" :title="t('designer.resetTitle')" @click="designerRef?.resetTabOrder()">{{ t('designer.reset') }}</button>
                     </template>
                   </div>
                   <template v-if="activeFile.view === 'code' || !isFormFile">
@@ -365,8 +365,8 @@
                     </n-tab-pane>
                   </n-tabs>
                   <div class="output-actions">
-                    <n-button size="tiny" quaternary title="导出日志到文件" @click="exportLog">导出</n-button>
-                    <n-button size="tiny" quaternary title="清空所有输出" @click="clearAllOutput">清空</n-button>
+                    <n-button size="tiny" quaternary :title="t('output.exportTitle')" @click="exportLog">{{ t('output.exportLogs') }}</n-button>
+                    <n-button size="tiny" quaternary :title="t('output.clearTitle')" @click="clearAllOutput">{{ t('output.clearOutput') }}</n-button>
                   </div>
                   </div>
                 </div>
@@ -375,29 +375,29 @@
 
             <div class="status-bar">
               <div class="status-bar-left">
-                <span v-if="zenMode" class="status-bar-item status-bar-clickable sb-zen" @click="toggleZenMode" title="点击退出禅模式">禅模式</span>
-                <span v-if="isDebugging" class="status-bar-item sb-debug" title="调试器正在运行">调试中</span>
+                <span v-if="zenMode" class="status-bar-item status-bar-clickable sb-zen" @click="toggleZenMode" :title="t('status.zenExitHint')">{{ t('status.zenMode') }}</span>
+                <span v-if="isDebugging" class="status-bar-item sb-debug" :title="t('status.debuggerRunning')">{{ t('status.debugging') }}</span>
                 <span v-if="statusMessage" class="status-bar-msg">{{ statusMessage }}</span>
               </div>
               <div class="status-bar-right">
                 <span
                   v-if="cursorText && activeFileIndex >= 0 && sbShowCursor"
                   class="status-bar-goto"
-                  title="点击跳转到行 (Ctrl+G)"
+                  :title="t('status.gotoLineHint')"
                   @click="showGotoLine()"
                 >{{ cursorText }}</span>
-                <span v-if="activeFileIndex >= 0" class="status-bar-item status-bar-clickable sb-toggle" :class="{ active: editorWordWrap }" title="自动换行 (Alt+Z)" @click="toggleWordWrap">换</span>
-                <span v-if="activeFileIndex >= 0" class="status-bar-item status-bar-clickable sb-toggle" :class="{ active: minimapEnabled }" title="缩略图" @click="toggleMinimap">图</span>
-                <span v-if="activeFileIndex >= 0 && sbShowIndent" class="status-bar-item" title="缩进">Sp:{{ editorTabSize }}</span>
-                <span v-if="activeFileIndex >= 0 && sbShowEncoding" class="status-bar-item" title="编码">UTF-8</span>
-                <span v-if="activeFileIndex >= 0 && sbShowEol" class="status-bar-item" title="换行符">CRLF</span>
-                <span v-if="activeFileIndex >= 0 && !isFormFile && sbShowLang" class="status-bar-item" title="语言">EGOU</span>
+                <span v-if="activeFileIndex >= 0" class="status-bar-item status-bar-clickable sb-toggle" :class="{ active: editorWordWrap }" :title="t('status.wordWrapHint')" @click="toggleWordWrap">{{ t('status.wordWrap') }}</span>
+                <span v-if="activeFileIndex >= 0" class="status-bar-item status-bar-clickable sb-toggle" :class="{ active: minimapEnabled }" :title="t('status.minimapHint')" @click="toggleMinimap">{{ t('status.minimap') }}</span>
+                <span v-if="activeFileIndex >= 0 && sbShowIndent" class="status-bar-item" :title="t('status.indent')">Sp:{{ editorTabSize }}</span>
+                <span v-if="activeFileIndex >= 0 && sbShowEncoding" class="status-bar-item" :title="t('status.encoding')">UTF-8</span>
+                <span v-if="activeFileIndex >= 0 && sbShowEol" class="status-bar-item" :title="t('status.eol')">CRLF</span>
+                <span v-if="activeFileIndex >= 0 && !isFormFile && sbShowLang" class="status-bar-item" :title="t('status.language')">EGOU</span>
                 <n-popover v-if="sbShowHealth && healthReport" trigger="hover" placement="topEnd" :width="300">
                   <template #trigger>
                     <button
                       class="health-indicator health-dot-only"
                       :class="{ ok: healthReport.ok, bad: !healthReport.ok }"
-                      :title="healthReport.ok ? '后端正常（点击刷新）' : '后端异常（点击刷新）'"
+                      :title="healthReport.ok ? t('health.backendOk') : t('health.backendError')"
                       @click="refreshHealth"
                     >
                       <span class="health-dot" />
@@ -413,7 +413,7 @@
                       <span class="health-detail-value" :class="{ ok: row.ok, bad: !row.ok }">{{ row.value }}</span>
                     </div>
                     <div v-if="healthReport.cacheDir" class="health-detail-path">
-                      缓存目录：{{ healthReport.cacheDir }}
+                      {{ t('health.cacheDir', { dir: healthReport.cacheDir }) }}
                   </div>
                   </div>
                 </n-popover>
@@ -485,19 +485,19 @@
   @refresh-templates="loadGlobalTemplates" />
       </n-modal>
 
-      <n-modal v-model:show="searchVisible" preset="card" title="项目搜索" :bordered="false" style="width: 560px; max-width: 90vw;">
+      <n-modal v-model:show="searchVisible" preset="card" :title="t('modal.search.title')" :bordered="false" style="width: 560px; max-width: 90vw;">
         <n-form label-placement="left" label-width="80">
-          <n-form-item label="搜索词">
-            <n-input v-model:value="searchQuery" placeholder="输入搜索内容（回车搜索）" @keyup.enter="doSearch" />
+          <n-form-item :label="t('modal.search.keyword')">
+            <n-input v-model:value="searchQuery" :placeholder="t('modal.search.placeholder')" @keyup.enter="doSearch" />
           </n-form-item>
-          <n-form-item label="选项">
-            <n-checkbox v-model:checked="searchUseRegex">正则表达式</n-checkbox>
+          <n-form-item :label="t('modal.search.options')">
+            <n-checkbox v-model:checked="searchUseRegex">{{ t('modal.search.regex') }}</n-checkbox>
           </n-form-item>
         </n-form>
         <template #footer>
           <n-space justify="end">
-            <n-button @click="searchVisible = false">取消</n-button>
-            <n-button type="primary" :loading="searching" @click="doSearch">搜索</n-button>
+            <n-button @click="searchVisible = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" :loading="searching" @click="doSearch">{{ t('modal.search.btnSearch') }}</n-button>
           </n-space>
         </template>
       </n-modal>
@@ -520,7 +520,7 @@
             <n-input
               ref="quickOpenInputRef"
               v-model:value="quickOpenQuery"
-              placeholder="输入文件名快速打开 (Ctrl+P)"
+              :placeholder="t('modal.quickOpen.placeholder')"
               size="large"
               :bordered="false"
               autofocus
@@ -541,7 +541,7 @@
             </div>
           </div>
           <div v-else class="quick-open-empty">
-            <n-text depth="3" style="font-size: var(--ide-font-size);">未找到匹配文件</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">{{ t('modal.quickOpen.noMatch') }}</n-text>
           </div>
         </div>
       </n-modal>
@@ -563,14 +563,14 @@
             <n-input
               ref="gotoLineInputRef"
               v-model:value="gotoLineInput"
-              placeholder="输入行号，按 Enter 跳转 (Ctrl+G)"
+              :placeholder="t('modal.gotoLine.placeholder')"
               size="large"
               :bordered="false"
               @keydown="onGotoLineKeydown"
             />
           </div>
           <div class="goto-line-hint">
-            <n-text depth="3" style="font-size: var(--ide-font-size-sm);">当前文件共 {{ activeFile.source ? activeFile.source.split('\n').length : 0 }} 行</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size-sm);">{{ t('modal.gotoLine.totalLines', { count: activeFile.source ? activeFile.source.split('\n').length : 0 }) }}</n-text>
           </div>
         </div>
       </n-modal>
@@ -593,7 +593,7 @@
             <n-input
               ref="gotoSymbolInputRef"
               v-model:value="gotoSymbolQuery"
-              placeholder="输入符号名称 (Ctrl+Shift+O) @符号"
+              :placeholder="t('modal.gotoSymbol.placeholder')"
               size="large"
               :bordered="false"
               autofocus
@@ -610,11 +610,11 @@
             >
               <span class="qo-icon" :class="'sym-icon-' + s.kind">{{ s.kind === 'function' ? 'ƒ' : s.kind === 'variable' ? 'V' : 'C' }}</span>
               <span class="qo-name">{{ s.name }}</span>
-              <span class="qo-path" :class="'sym-kind-' + s.kind">{{ s.kind === 'function' ? '函数' : s.kind === 'variable' ? '变量' : '常量' }}{{ s.type ? ': ' + s.type : '' }} 行 {{ s.line + 1 }}</span>
+              <span class="qo-path" :class="'sym-kind-' + s.kind">{{ s.kind === 'function' ? t('modal.gotoSymbol.function') : s.kind === 'variable' ? t('modal.gotoSymbol.variable') : t('modal.gotoSymbol.constant') }}{{ s.type ? ': ' + s.type : '' }} 行 {{ s.line + 1 }}</span>
             </div>
           </div>
           <div v-else class="quick-open-empty">
-            <n-text depth="3" style="font-size: var(--ide-font-size);">未找到匹配符号</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">{{ t('modal.gotoSymbol.noMatch') }}</n-text>
           </div>
         </div>
       </n-modal>
@@ -634,8 +634,8 @@
         </div>
         <template #footer>
           <n-space justify="end">
-            <n-button @click="onConfirmCancel">取消</n-button>
-            <n-button type="error" @click="onConfirmOk">确定关闭</n-button>
+            <n-button @click="onConfirmCancel">{{ t('common.cancel') }}</n-button>
+            <n-button type="error" @click="onConfirmOk">{{ t('confirm.okClose') }}</n-button>
           </n-space>
         </template>
       </n-modal>
@@ -658,7 +658,7 @@
             <n-input
               ref="commandPaletteInputRef"
               v-model:value="commandPaletteQuery"
-              placeholder="输入命令名称搜索 (Ctrl+Shift+P)"
+              :placeholder="t('command.placeholder')"
               size="large"
               :bordered="false"
               autofocus
@@ -673,14 +673,14 @@
               @click="execCommand(c)"
               @mouseenter="commandPaletteSelected = i"
             >
-              <span class="cp-icon">{{ c.category === '文件' ? '📄' : c.category === '运行' ? '▶' : c.category === '视图' ? '👁' : c.category === '导航' ? '🧭' : '✏️' }}</span>
+              <span class="cp-icon">{{ c.category === t('command.catFile') ? '📄' : c.category === t('command.catRun') ? '▶' : c.category === t('command.catView') ? '👁' : c.category === t('command.catNav') ? '🧭' : '✏️' }}</span>
               <span class="cp-label">{{ c.label }}</span>
               <span class="cp-cat">{{ c.category }}</span>
               <span v-if="c.shortcut" class="cp-shortcut">{{ c.shortcut }}</span>
             </div>
           </div>
           <div v-else class="cp-empty">
-            <n-text depth="3" style="font-size: var(--ide-font-size);">未找到匹配命令</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size);">{{ t('command.noMatch') }}</n-text>
           </div>
         </div>
       </n-modal>
@@ -1183,7 +1183,7 @@ function pushClosedFile(file) {
 function reopenClosedFile() {
   const list = closedFiles.value
   if (list.length === 0) {
-    setStatusMsg('没有可重新打开的文件', 2000)
+    setStatusMsg(t('status.noReopen'), 2000)
     return
   }
   const entry = list.pop()
@@ -1225,7 +1225,7 @@ function navigateBack() {
     }
   }
   navIndex = 0
-  setStatusMsg('已到达导航历史起点', 1500)
+  setStatusMsg(t('status.navStart'), 1500)
 }
 
 function navigateForward() {
@@ -1243,7 +1243,7 @@ function navigateForward() {
     }
   }
   navIndex = navHistory.value.length - 1
-  setStatusMsg('已到达导航历史终点', 1500)
+  setStatusMsg(t('status.navEnd'), 1500)
 }
 
 function showQuickOpen() {
@@ -1340,24 +1340,24 @@ function getCommandList() {
   const dbg = isDebugging.value
   return [
     // 文件操作
-    { id: 'newFile', label: '新建代码文件', shortcut: 'Ctrl+N', category: '文件', action: () => newCodeFile(), enabled: hasProject },
-    { id: 'newWindow', label: '新建窗口', shortcut: '', category: '文件', action: () => { newWindowVisible.value = true; newWindowName.value = '窗口' + (files.value.filter(f => isFormFileName(f.name)).length + 1) }, enabled: hasProject },
-    { id: 'newClass', label: '新建类', shortcut: '', category: '文件', action: () => newClassFile(), enabled: hasProject },
-    { id: 'newModule', label: '新建模块', shortcut: '', category: '文件', action: () => newModuleFile(), enabled: hasProject },
-    { id: 'openFile', label: '打开文件...', shortcut: 'Ctrl+O', category: '文件', action: () => openFile(), enabled: hasProject },
-    { id: 'save', label: '保存', shortcut: 'Ctrl+S', category: '文件', action: () => quickSave(), enabled: hasFile },
-    { id: 'saveAs', label: '另存为...', shortcut: 'Ctrl+Shift+S', category: '文件', action: () => saveFile(true), enabled: hasFile },
-    { id: 'saveAll', label: '保存全部', shortcut: '', category: '文件', action: () => saveAllFiles(), enabled: files.value.length > 0 },
-    { id: 'closeFile', label: '关闭文件', shortcut: 'Ctrl+W', category: '文件', action: () => closeFile(activeFileIndex.value), enabled: hasFile },
-    { id: 'closeOtherFiles', label: '关闭其他文件', shortcut: '', category: '文件', action: () => closeOtherFiles(activeFileIndex.value), enabled: files.value.length > 1 },
-    { id: 'closeLeftFiles', label: '关闭左侧文件', shortcut: '', category: '文件', action: () => closeLeftFiles(activeFileIndex.value), enabled: files.value.length > 1 && activeFileIndex.value > 0 },
-    { id: 'closeRightFiles', label: '关闭右侧文件', shortcut: '', category: '文件', action: () => closeRightFiles(activeFileIndex.value), enabled: files.value.length > 1 && activeFileIndex.value < files.value.length - 1 },
-    { id: 'closeAllFiles', label: '关闭所有文件', shortcut: '', category: '文件', action: () => closeAllFiles(), enabled: files.value.length > 0 },
-    { id: 'reopenClosed', label: '重新打开已关闭的文件', shortcut: 'Ctrl+Shift+T', category: '文件', action: () => reopenClosedFile(), enabled: closedFiles.value.length > 0 || projectOpen.value },
+    { id: 'newFile', label: t('command.cmdNewFile'), shortcut: 'Ctrl+N', category: t('command.catFile'), action: () => newCodeFile(), enabled: hasProject },
+    { id: 'newWindow', label: t('command.cmdNewWindow'), shortcut: '', category: t('command.catFile'), action: () => { newWindowVisible.value = true; newWindowName.value = '窗口' + (files.value.filter(f => isFormFileName(f.name)).length + 1) }, enabled: hasProject },
+    { id: 'newClass', label: t('command.cmdNewClass'), shortcut: '', category: t('command.catFile'), action: () => newClassFile(), enabled: hasProject },
+    { id: 'newModule', label: t('command.cmdNewModule'), shortcut: '', category: t('command.catFile'), action: () => newModuleFile(), enabled: hasProject },
+    { id: 'openFile', label: t('command.cmdOpenFile'), shortcut: 'Ctrl+O', category: t('command.catFile'), action: () => openFile(), enabled: hasProject },
+    { id: 'save', label: t('command.cmdSave'), shortcut: 'Ctrl+S', category: t('command.catFile'), action: () => quickSave(), enabled: hasFile },
+    { id: 'saveAs', label: t('command.cmdSaveAs'), shortcut: 'Ctrl+Shift+S', category: t('command.catFile'), action: () => saveFile(true), enabled: hasFile },
+    { id: 'saveAll', label: t('command.cmdSaveAll'), shortcut: '', category: t('command.catFile'), action: () => saveAllFiles(), enabled: files.value.length > 0 },
+    { id: 'closeFile', label: t('command.cmdCloseFile'), shortcut: 'Ctrl+W', category: t('command.catFile'), action: () => closeFile(activeFileIndex.value), enabled: hasFile },
+    { id: 'closeOtherFiles', label: t('command.cmdCloseOtherFiles'), shortcut: '', category: t('command.catFile'), action: () => closeOtherFiles(activeFileIndex.value), enabled: files.value.length > 1 },
+    { id: 'closeLeftFiles', label: t('command.cmdCloseLeftFiles'), shortcut: '', category: t('command.catFile'), action: () => closeLeftFiles(activeFileIndex.value), enabled: files.value.length > 1 && activeFileIndex.value > 0 },
+    { id: 'closeRightFiles', label: t('command.cmdCloseRightFiles'), shortcut: '', category: t('command.catFile'), action: () => closeRightFiles(activeFileIndex.value), enabled: files.value.length > 1 && activeFileIndex.value < files.value.length - 1 },
+    { id: 'closeAllFiles', label: t('command.cmdCloseAllFiles'), shortcut: '', category: t('command.catFile'), action: () => closeAllFiles(), enabled: files.value.length > 0 },
+    { id: 'reopenClosed', label: t('command.cmdReopenClosed'), shortcut: 'Ctrl+Shift+T', category: t('command.catFile'), action: () => reopenClosedFile(), enabled: closedFiles.value.length > 0 || projectOpen.value },
     // 编译运行
-    { id: 'run', label: '编译运行', shortcut: 'F5', category: '运行', action: () => runCode(), enabled: hasProject },
-    { id: 'build', label: '生成可执行文件', shortcut: '', category: '运行', action: () => buildExecutable(), enabled: hasProject },
-    { id: 'buildOptions', label: '编译选项...', shortcut: '', category: '运行', action: () => openBuildOptions(), enabled: hasProject },
+    { id: 'run', label: t('command.cmdRun'), shortcut: 'F5', category: t('command.catRun'), action: () => runCode(), enabled: hasProject },
+    { id: 'build', label: t('command.cmdBuild'), shortcut: '', category: t('command.catRun'), action: () => buildExecutable(), enabled: hasProject },
+    { id: 'buildOptions', label: t('command.cmdBuildOptions'), shortcut: '', category: t('command.catRun'), action: () => openBuildOptions(), enabled: hasProject },
     // 调试
     { id: 'startDebug', label: t('command.startDebug'), shortcut: '', category: t('command.categoryDebug'), action: () => debugPanelRef.value?.startDebug?.(), enabled: hasProject && !dbg },
     { id: 'stopDebug', label: t('command.stopDebug'), shortcut: '', category: t('command.categoryDebug'), action: () => debugPanelRef.value?.stopDebug?.(), enabled: dbg },
@@ -1367,45 +1367,45 @@ function getCommandList() {
     { id: 'debugStepOut', label: t('command.debugStepOut'), shortcut: 'Shift+F11', category: t('command.categoryDebug'), action: () => IDEService.DebugStepOut().catch(() => {}), enabled: dbg },
     { id: 'toggleBreakpoint', label: t('command.toggleBreakpoint'), shortcut: 'F9', category: t('command.categoryDebug'), action: () => { const ln = editorRef.value?.getCurrentLine?.(); if (ln) onToggleBreakpoint(ln) }, enabled: hasEditor },
     // 视图
-    { id: 'fullscreen', label: '切换全屏', shortcut: 'F11', category: '视图', action: () => IDEService.ToggleFullscreen(), enabled: true },
-    { id: 'toggleOutput', label: '切换输出面板', shortcut: 'Ctrl+`', category: '视图', action: () => { outputCollapsed.value = !outputCollapsed.value }, enabled: true },
-    { id: 'toggleWordWrap', label: '切换自动换行', shortcut: 'Alt+Z', category: '视图', action: () => toggleWordWrap(), enabled: hasEditor },
-    { id: 'toggleMinimap', label: '切换缩略图', shortcut: '', category: '视图', action: () => toggleMinimap(), enabled: hasEditor },
-    { id: 'zenMode', label: '切换禅模式', shortcut: 'Ctrl+K Z', category: '视图', action: () => toggleZenMode(), enabled: true },
+    { id: 'fullscreen', label: t('command.cmdFullscreen'), shortcut: 'F11', category: t('command.catView'), action: () => IDEService.ToggleFullscreen(), enabled: true },
+    { id: 'toggleOutput', label: t('command.cmdToggleOutput'), shortcut: 'Ctrl+`', category: t('command.catView'), action: () => { outputCollapsed.value = !outputCollapsed.value }, enabled: true },
+    { id: 'toggleWordWrap', label: t('command.cmdToggleWordWrap'), shortcut: 'Alt+Z', category: t('command.catView'), action: () => toggleWordWrap(), enabled: hasEditor },
+    { id: 'toggleMinimap', label: t('command.cmdToggleMinimap'), shortcut: '', category: t('command.catView'), action: () => toggleMinimap(), enabled: hasEditor },
+    { id: 'zenMode', label: t('command.cmdZenMode'), shortcut: 'Ctrl+K Z', category: t('command.catView'), action: () => toggleZenMode(), enabled: true },
     // 导航
-    { id: 'quickOpen', label: '快速打开文件', shortcut: 'Ctrl+P', category: '导航', action: () => { commandPaletteVisible.value = false; nextTick(() => showQuickOpen()) }, enabled: hasProject },
-    { id: 'gotoSymbol', label: '转到符号', shortcut: 'Ctrl+Shift+O', category: '导航', action: () => { commandPaletteVisible.value = false; nextTick(() => showGotoSymbol()) }, enabled: hasFile },
-    { id: 'gotoLine', label: '转到行...', shortcut: 'Ctrl+G', category: '导航', action: () => { commandPaletteVisible.value = false; nextTick(() => showGotoLine()) }, enabled: hasFile },
-    { id: 'nextTab', label: '下一个标签页', shortcut: 'Ctrl+Tab', category: '导航', action: () => { const n = activeFileIndex.value + 1; switchFile(n >= files.value.length ? 0 : n) }, enabled: files.value.length > 1 },
-    { id: 'prevTab', label: '上一个标签页', shortcut: 'Ctrl+Shift+Tab', category: '导航', action: () => { const p = activeFileIndex.value - 1; switchFile(p < 0 ? files.value.length - 1 : p) }, enabled: files.value.length > 1 },
-    { id: 'navBack', label: '后退', shortcut: 'Alt+←', category: '导航', action: () => navigateBack(), enabled: navIndex > 0 },
-    { id: 'navForward', label: '前进', shortcut: 'Alt+→', category: '导航', action: () => navigateForward(), enabled: navIndex < navHistory.value.length - 1 },
+    { id: 'quickOpen', label: t('command.cmdQuickOpen'), shortcut: 'Ctrl+P', category: t('command.catNav'), action: () => { commandPaletteVisible.value = false; nextTick(() => showQuickOpen()) }, enabled: hasProject },
+    { id: 'gotoSymbol', label: t('command.cmdGotoSymbol'), shortcut: 'Ctrl+Shift+O', category: t('command.catNav'), action: () => { commandPaletteVisible.value = false; nextTick(() => showGotoSymbol()) }, enabled: hasFile },
+    { id: 'gotoLine', label: t('command.cmdGotoLine'), shortcut: 'Ctrl+G', category: t('command.catNav'), action: () => { commandPaletteVisible.value = false; nextTick(() => showGotoLine()) }, enabled: hasFile },
+    { id: 'nextTab', label: t('command.cmdNextTab'), shortcut: 'Ctrl+Tab', category: t('command.catNav'), action: () => { const n = activeFileIndex.value + 1; switchFile(n >= files.value.length ? 0 : n) }, enabled: files.value.length > 1 },
+    { id: 'prevTab', label: t('command.cmdPrevTab'), shortcut: 'Ctrl+Shift+Tab', category: t('command.catNav'), action: () => { const p = activeFileIndex.value - 1; switchFile(p < 0 ? files.value.length - 1 : p) }, enabled: files.value.length > 1 },
+    { id: 'navBack', label: t('command.cmdNavBack'), shortcut: 'Alt+←', category: t('command.catNav'), action: () => navigateBack(), enabled: navIndex > 0 },
+    { id: 'navForward', label: t('command.cmdNavForward'), shortcut: 'Alt+→', category: t('command.catNav'), action: () => navigateForward(), enabled: navIndex < navHistory.value.length - 1 },
     // 编辑器
-    { id: 'toggleComment', label: '切换行注释', shortcut: 'Ctrl+/', category: '编辑器', action: () => runEditorAction('editor.action.commentLine'), enabled: hasEditor },
-    { id: 'addSelectionNext', label: '将下一个匹配项添加到选区', shortcut: 'Ctrl+D', category: '编辑器', action: () => runEditorAction('editor.action.addSelectionToNextFindMatch'), enabled: hasEditor },
-    { id: 'selectAllOccurrences', label: '选中所有匹配项', shortcut: 'Ctrl+Shift+L', category: '编辑器', action: () => runEditorAction('editor.action.selectHighlights'), enabled: hasEditor },
-    { id: 'moveLineUp', label: '向上移动行', shortcut: 'Alt+↑', category: '编辑器', action: () => runEditorAction('editor.action.moveLinesUpAction'), enabled: hasEditor },
-    { id: 'moveLineDown', label: '向下移动行', shortcut: 'Alt+↓', category: '编辑器', action: () => runEditorAction('editor.action.moveLinesDownAction'), enabled: hasEditor },
-    { id: 'copyLineUp', label: '向上复制行', shortcut: 'Shift+Alt+↑', category: '编辑器', action: () => runEditorAction('editor.action.copyLinesUpAction'), enabled: hasEditor },
-    { id: 'copyLineDown', label: '向下复制行', shortcut: 'Shift+Alt+↓', category: '编辑器', action: () => runEditorAction('editor.action.copyLinesDownAction'), enabled: hasEditor },
-    { id: 'deleteLine', label: '删除行', shortcut: 'Ctrl+Shift+K', category: '编辑器', action: () => runEditorAction('editor.action.deleteLines'), enabled: hasEditor },
-    { id: 'jumpToBracket', label: '跳转到匹配括号', shortcut: 'Ctrl+Shift+\\', category: '编辑器', action: () => { runEditorAction('editor.action.jumpToBracket') }, enabled: hasEditor },
-    { id: 'insertCursorBelow', label: '向下添加光标', shortcut: 'Ctrl+Alt+↓', category: '编辑器', action: () => runEditorAction('editor.action.insertCursorBelow'), enabled: hasEditor },
-    { id: 'insertCursorAbove', label: '向上添加光标', shortcut: 'Ctrl+Alt+↑', category: '编辑器', action: () => runEditorAction('editor.action.insertCursorAbove'), enabled: hasEditor },
-    { id: 'foldAll', label: '全部折叠', shortcut: 'Ctrl+K Ctrl+0', category: '编辑器', action: () => runEditorAction('editor.foldAll'), enabled: hasEditor },
-    { id: 'unfoldAll', label: '全部展开', shortcut: 'Ctrl+K Ctrl+J', category: '编辑器', action: () => runEditorAction('editor.unfoldAll'), enabled: hasEditor },
-    { id: 'findHistory', label: '查找历史', shortcut: 'Alt+F', category: '编辑器', action: () => { editorRef.value?.toggleFindHistory?.() }, enabled: hasEditor },
-    { id: 'formatDoc', label: '格式化文档', shortcut: 'Ctrl+Shift+F', category: '编辑器', action: () => runEditorAction('editor.action.formatDocument'), enabled: hasEditor },
-    { id: 'trimTrailing', label: '裁剪尾随空格', shortcut: 'Ctrl+K Ctrl+X', category: '编辑器', action: () => runEditorAction('editor.action.trimTrailingWhitespace'), enabled: hasEditor },
-    { id: 'addLineComment', label: '添加行注释', shortcut: 'Ctrl+K Ctrl+C', category: '编辑器', action: () => runEditorAction('editor.action.addCommentLine'), enabled: hasEditor },
-    { id: 'removeLineComment', label: '取消行注释', shortcut: 'Ctrl+K Ctrl+U', category: '编辑器', action: () => runEditorAction('editor.action.removeCommentLine'), enabled: hasEditor },
-    { id: 'insertLineBelow', label: '在下方插入行', shortcut: 'Ctrl+Enter', category: '编辑器', action: () => runEditorAction('editor.action.insertLineAfter'), enabled: hasEditor },
-    { id: 'insertLineAbove', label: '在上方插入行', shortcut: 'Ctrl+Shift+Enter', category: '编辑器', action: () => runEditorAction('editor.action.insertLineBefore'), enabled: hasEditor },
-    { id: 'transformToUppercase', label: '转换为大写', category: '编辑器', action: () => runEditorAction('editor.action.transformToUppercase'), enabled: hasEditor },
-    { id: 'transformToLowercase', label: '转换为小写', category: '编辑器', action: () => runEditorAction('editor.action.transformToLowercase'), enabled: hasEditor },
-    { id: 'expandSelection', label: '扩展选区', shortcut: 'Shift+Alt+→', category: '编辑器', action: () => runEditorAction('editor.action.smartSelect.expand'), enabled: hasEditor },
-    { id: 'shrinkSelection', label: '收缩选区', shortcut: 'Shift+Alt+←', category: '编辑器', action: () => runEditorAction('editor.action.smartSelect.shrink'), enabled: hasEditor },
-    { id: 'keybindings', label: '键盘快捷键', shortcut: 'Ctrl+K Ctrl+S', category: '视图', action: () => showKeybindings(), enabled: true },
+    { id: 'toggleComment', label: t('command.cmdToggleComment'), shortcut: 'Ctrl+/', category: t('command.catEditor'), action: () => runEditorAction('editor.action.commentLine'), enabled: hasEditor },
+    { id: 'addSelectionNext', label: t('command.cmdAddSelectionNext'), shortcut: 'Ctrl+D', category: t('command.catEditor'), action: () => runEditorAction('editor.action.addSelectionToNextFindMatch'), enabled: hasEditor },
+    { id: 'selectAllOccurrences', label: t('command.cmdSelectAllOccurrences'), shortcut: 'Ctrl+Shift+L', category: t('command.catEditor'), action: () => runEditorAction('editor.action.selectHighlights'), enabled: hasEditor },
+    { id: 'moveLineUp', label: t('command.cmdMoveLineUp'), shortcut: 'Alt+↑', category: t('command.catEditor'), action: () => runEditorAction('editor.action.moveLinesUpAction'), enabled: hasEditor },
+    { id: 'moveLineDown', label: t('command.cmdMoveLineDown'), shortcut: 'Alt+↓', category: t('command.catEditor'), action: () => runEditorAction('editor.action.moveLinesDownAction'), enabled: hasEditor },
+    { id: 'copyLineUp', label: t('command.cmdCopyLineUp'), shortcut: 'Shift+Alt+↑', category: t('command.catEditor'), action: () => runEditorAction('editor.action.copyLinesUpAction'), enabled: hasEditor },
+    { id: 'copyLineDown', label: t('command.cmdCopyLineDown'), shortcut: 'Shift+Alt+↓', category: t('command.catEditor'), action: () => runEditorAction('editor.action.copyLinesDownAction'), enabled: hasEditor },
+    { id: 'deleteLine', label: t('command.cmdDeleteLine'), shortcut: 'Ctrl+Shift+K', category: t('command.catEditor'), action: () => runEditorAction('editor.action.deleteLines'), enabled: hasEditor },
+    { id: 'jumpToBracket', label: t('command.cmdJumpToBracket'), shortcut: 'Ctrl+Shift+\\', category: t('command.catEditor'), action: () => { runEditorAction('editor.action.jumpToBracket') }, enabled: hasEditor },
+    { id: 'insertCursorBelow', label: t('command.cmdInsertCursorBelow'), shortcut: 'Ctrl+Alt+↓', category: t('command.catEditor'), action: () => runEditorAction('editor.action.insertCursorBelow'), enabled: hasEditor },
+    { id: 'insertCursorAbove', label: t('command.cmdInsertCursorAbove'), shortcut: 'Ctrl+Alt+↑', category: t('command.catEditor'), action: () => runEditorAction('editor.action.insertCursorAbove'), enabled: hasEditor },
+    { id: 'foldAll', label: t('command.cmdFoldAll'), shortcut: 'Ctrl+K Ctrl+0', category: t('command.catEditor'), action: () => runEditorAction('editor.foldAll'), enabled: hasEditor },
+    { id: 'unfoldAll', label: t('command.cmdUnfoldAll'), shortcut: 'Ctrl+K Ctrl+J', category: t('command.catEditor'), action: () => runEditorAction('editor.unfoldAll'), enabled: hasEditor },
+    { id: 'findHistory', label: t('command.cmdFindHistory'), shortcut: 'Alt+F', category: t('command.catEditor'), action: () => { editorRef.value?.toggleFindHistory?.() }, enabled: hasEditor },
+    { id: 'formatDoc', label: t('command.cmdFormatDoc'), shortcut: 'Ctrl+Shift+F', category: t('command.catEditor'), action: () => runEditorAction('editor.action.formatDocument'), enabled: hasEditor },
+    { id: 'trimTrailing', label: t('command.cmdTrimTrailing'), shortcut: 'Ctrl+K Ctrl+X', category: t('command.catEditor'), action: () => runEditorAction('editor.action.trimTrailingWhitespace'), enabled: hasEditor },
+    { id: 'addLineComment', label: t('command.cmdAddLineComment'), shortcut: 'Ctrl+K Ctrl+C', category: t('command.catEditor'), action: () => runEditorAction('editor.action.addCommentLine'), enabled: hasEditor },
+    { id: 'removeLineComment', label: t('command.cmdRemoveLineComment'), shortcut: 'Ctrl+K Ctrl+U', category: t('command.catEditor'), action: () => runEditorAction('editor.action.removeCommentLine'), enabled: hasEditor },
+    { id: 'insertLineBelow', label: t('command.cmdInsertLineBelow'), shortcut: 'Ctrl+Enter', category: t('command.catEditor'), action: () => runEditorAction('editor.action.insertLineAfter'), enabled: hasEditor },
+    { id: 'insertLineAbove', label: t('command.cmdInsertLineAbove'), shortcut: 'Ctrl+Shift+Enter', category: t('command.catEditor'), action: () => runEditorAction('editor.action.insertLineBefore'), enabled: hasEditor },
+    { id: 'transformToUppercase', label: t('command.cmdTransformUppercase'), category: t('command.catEditor'), action: () => runEditorAction('editor.action.transformToUppercase'), enabled: hasEditor },
+    { id: 'transformToLowercase', label: t('command.cmdTransformLowercase'), category: t('command.catEditor'), action: () => runEditorAction('editor.action.transformToLowercase'), enabled: hasEditor },
+    { id: 'expandSelection', label: t('command.cmdExpandSelection'), shortcut: 'Shift+Alt+→', category: t('command.catEditor'), action: () => runEditorAction('editor.action.smartSelect.expand'), enabled: hasEditor },
+    { id: 'shrinkSelection', label: t('command.cmdShrinkSelection'), shortcut: 'Shift+Alt+←', category: t('command.catEditor'), action: () => runEditorAction('editor.action.smartSelect.shrink'), enabled: hasEditor },
+    { id: 'keybindings', label: t('command.cmdKeybindings'), shortcut: 'Ctrl+K Ctrl+S', category: t('command.catView'), action: () => showKeybindings(), enabled: true },
   ].filter(c => c.enabled)
 }
 
@@ -1842,7 +1842,7 @@ function saveSnippets() {
       editorRef.value.addUserSnippet(s.label, s.insertText, s.documentation || '', s.category || '通用')
     }
   }
-  setStatusMsg('代码片段已保存', 2000)
+  setStatusMsg(t('status.snippetSaved'), 2000)
   snippetsVisible.value = false
 }
 function exportSnippets() {
@@ -1881,10 +1881,10 @@ async function importSnippetsFile(e) {
   if (editorRef.value?.importUserSnippets) {
     const ok = editorRef.value.importUserSnippets(text)
     if (ok) {
-      setStatusMsg('代码片段导入成功', 2000)
+      setStatusMsg(t('status.snippetImported'), 2000)
       snippetList.value = editorRef.value.getUserSnippets()
     } else {
-      setStatusMsg('导入失败：格式不正确', 3000)
+      setStatusMsg(t('status.snippetImportFailed'), 3000)
     }
   }
   e.target.value = ''
@@ -2014,12 +2014,12 @@ async function saveBuildOptions() {
   try {
     const err = await IDEService.SaveProjectConfig(projectPath.value, cfg)
     if (err) {
-      setStatusMsg('保存配置失败: ' + err, 4000)
+      setStatusMsg(t('status.saveFailed', { err }), 4000)
     } else {
-      setStatusMsg('编译选项已保存', 2000)
+      setStatusMsg(t('status.optionsSaved'), 2000)
     }
   } catch (e) {
-    setStatusMsg('保存配置失败: ' + e.message, 4000)
+    setStatusMsg(t('status.saveFailed', { err: e.message }), 4000)
   }
   buildConfigVisible.value = false
 }
@@ -2138,7 +2138,7 @@ function onTabContextMenuSelect(key) {
   } else if (key === 'copy-path') {
     if (file?.path) {
       navigator.clipboard?.writeText(file.path).catch(() => {})
-      setStatusMsg('已复制路径', 2000)
+      setStatusMsg(t('status.pathCopied'), 2000)
     }
   } else if (key === 'reveal') {
     if (file?.path && window.IDEService?.OpenInExplorer) {
@@ -2162,9 +2162,9 @@ function togglePinTab(idx) {
     } else {
       activeFileIndex.value = files.value.indexOf(files.value[activeFileIndex.value])
     }
-    setStatusMsg('已固定标签页', 1500)
+    setStatusMsg(t('status.pinned'), 1500)
   } else {
-    setStatusMsg('已取消固定', 1500)
+    setStatusMsg(t('status.unpinned'), 1500)
   }
 }
 
@@ -2407,7 +2407,7 @@ function onKeyDown(e) {
     pendingChord = 'K'
     if (chordKeyTimer) clearTimeout(chordKeyTimer)
     chordKeyTimer = setTimeout(resetChordKey, 1500)
-    setStatusMsg('(Ctrl+K) 等待第二个快捷键...', 1500)
+    setStatusMsg(t('status.waitingSecondKey'), 1500)
     return
   }
   if (pendingChord === 'K' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 's') {
@@ -2420,7 +2420,7 @@ function onKeyDown(e) {
     e.preventDefault()
     resetChordKey()
     runEditorAction('editor.action.trimTrailingWhitespace')
-    setStatusMsg('已裁剪尾随空格', 2000)
+    setStatusMsg(t('status.trimmed'), 2000)
     return
   }
   if (pendingChord === 'K' && (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'c' || e.key === 'C')) {
@@ -2439,14 +2439,14 @@ function onKeyDown(e) {
     e.preventDefault()
     resetChordKey()
     runEditorAction('editor.foldAll')
-    setStatusMsg('已折叠所有区域', 2000)
+    setStatusMsg(t('status.foldedAll'), 2000)
     return
   }
   if (pendingChord === 'K' && (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'j' || e.key === 'J')) {
     e.preventDefault()
     resetChordKey()
     runEditorAction('editor.unfoldAll')
-    setStatusMsg('已展开所有区域', 2000)
+    setStatusMsg(t('status.unfoldedAll'), 2000)
     return
   }
   if (pendingChord === 'K' && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
@@ -2689,13 +2689,13 @@ function toggleZenMode() {
     }
     outputCollapsed.value = true
     zenMode.value = true
-    setStatusMsg('禅模式已开启 (Ctrl+K Z 退出)', 2500)
+    setStatusMsg(t('status.zenOn'), 2500)
   } else {
     zenMode.value = false
     if (zenModeSavedState) {
       outputCollapsed.value = zenModeSavedState.outputCollapsed
     }
-    setStatusMsg('禅模式已退出', 2000)
+    setStatusMsg(t('status.zenOff'), 2000)
   }
 }
 
@@ -2708,21 +2708,21 @@ async function refreshHealth() {
     healthReport.value = await IDEService.HealthCheck()
   } catch (e) {
     // 探活失败（例如后端未就绪）也写入 report，标记为异常
-    healthReport.value = { ok: false, message: '后端探活失败：' + String(e) }
+    healthReport.value = { ok: false, message: t('health.backendPingFailed', { err: String(e) }) }
   }
 }
 const healthDetailRows = computed(() => {
   const r = healthReport.value
   if (!r) return []
   const rows = []
-  rows.push({ label: 'Go 编译器', value: r.goCompiler || '未找到', ok: !!r.goCompiler })
-  rows.push({ label: 'Go 版本', value: r.goVersion || '—', ok: !!r.goVersion })
-  rows.push({ label: '运行时模板', value: r.templateOk ? '存在' : '缺失', ok: r.templateOk })
-  rows.push({ label: '前端缓存', value: r.cacheReady ? '就绪' : '未就绪', ok: r.cacheReady })
-  rows.push({ label: 'npm', value: r.npm || '未找到', ok: !!r.npm })
-  rows.push({ label: 'Wails3 CLI', value: r.wails3Cli || '未配置', ok: !!r.wails3Cli })
-  rows.push({ label: 'Delve 调试器', value: r.delve || '未安装（go install github.com/go-delve/delve/cmd/dlv@latest）', ok: !!r.delve })
-  rows.push({ label: '系统', value: `${r.os}/${r.arch}`, ok: true })
+  rows.push({ label: t('health.goCompiler'), value: r.goCompiler || t('health.notFound'), ok: !!r.goCompiler })
+  rows.push({ label: t('health.goVersion'), value: r.goVersion || '—', ok: !!r.goVersion })
+  rows.push({ label: t('health.runtimeTemplate'), value: r.templateOk ? t('health.exists') : t('health.missing'), ok: r.templateOk })
+  rows.push({ label: t('health.frontendCache'), value: r.cacheReady ? t('health.ready') : t('health.notReady'), ok: r.cacheReady })
+  rows.push({ label: t('health.npm'), value: r.npm || t('health.notFound'), ok: !!r.npm })
+  rows.push({ label: t('health.wailsCLI'), value: r.wails3Cli || t('health.notConfigured'), ok: !!r.wails3Cli })
+  rows.push({ label: t('health.delve'), value: r.delve || t('health.notInstalled'), ok: !!r.delve })
+  rows.push({ label: t('health.title'), value: `${r.os}/${r.arch}`, ok: true })
   return rows
 })
 
@@ -2787,7 +2787,7 @@ onMounted(() => {
     }
   }).then(result => {
     if (result.ok && result.count > 0) {
-      output.value += `[plugin] 已加载 ${result.count} 个插件\n`
+      output.value += t('message.pluginsLoaded', { count: result.count }) + '\n'
     }
   }).catch(e => console.warn('[plugin] 插件加载失败:', e))
   // P3：加载外置组件包（exe 同级 components/ 目录），注册到 WindowDesigner 工具箱
@@ -2814,8 +2814,8 @@ onMounted(() => {
   })
   // v0.9.5：监听 debug:error 同步到全局状态栏（之前仅 DebugPanel 内部显示，用户切 tab 后看不到）
   offDebugError = Events.On('debug:error', (ev) => {
-    const errMsg = ev?.data?.error || '调试器发生未知错误'
-    setStatusMsg('调试错误: ' + errMsg, 5000)
+    const errMsg = ev?.data?.error || t('health.unknownError')
+    setStatusMsg(t('health.debugError', { msg: errMsg }), 5000)
   })
   // v0.11.7：全局监听编译进度事件，驱动 BuildProgress 进度条（覆盖 run/build/debug 三种场景）
   offBuildProgress = Events.On('ide:run-event', (ev) => {
@@ -3094,7 +3094,7 @@ async function loadExternalComponents() {
       if (typeof d.registerPluginComponent === 'function') d.registerPluginComponent(def)
     }
     if (defs.length > 0) {
-      output.value += `[components] 已加载 ${defs.length} 个外置组件\n`
+      output.value += t('message.componentsLoaded', { count: defs.length }) + '\n'
     }
   } catch (e) {
     console.warn('[components] 外置组件加载失败:', e)
@@ -3527,18 +3527,18 @@ async function openFile() {
   try {
     const data = await IDEService.OpenFile()
     if (data.error) {
-      output.value = '打开文件失败: ' + data.error
-      setStatusMsg('打开失败', 3000)
+      output.value = t('message.openFileFailed', { err: data.error })
+      setStatusMsg(t('status.openFailed'), 3000)
       return
     }
     if (data.name) {
       files.value.push(makeFile(data.name, data.content, data.path))
       switchFile(files.value.length - 1)
-      setStatusMsg('已打开 ' + data.name, 2000)
+      setStatusMsg(t('status.opened', { name: data.name }), 2000)
     }
   } catch (e) {
-    output.value = '打开文件失败: ' + e.message
-    setStatusMsg('打开失败', 3000)
+    output.value = t('message.openFileFailed', { err: e.message })
+    setStatusMsg(t('status.openFailed'), 3000)
   }
 }
 
@@ -3556,16 +3556,16 @@ async function quickSave() {
     const content = getFileSaveContent(activeFile.value)
     const data = await IDEService.QuickSave(activeFile.value.path, content)
     if (data.error) {
-      output.value = '快速保存失败: ' + data.error
-      setStatusMsg('保存失败', 5000)
+      output.value = t('message.quickSaveFailed', { err: data.error })
+      setStatusMsg(t('status.fileSaveFailed'), 5000)
       return
     }
     activeFile.value.savedSource = content
-    setStatusMsg('已保存')
+    setStatusMsg(t('status.fileSaved'))
     await maybeRefreshProjectLibs(data.path)
   } catch (e) {
-    output.value = '快速保存失败: ' + e.message
-    setStatusMsg('保存失败', 5000)
+    output.value = t('message.quickSaveFailed', { err: e.message })
+    setStatusMsg(t('status.fileSaveFailed'), 5000)
   }
 }
 
@@ -3576,20 +3576,20 @@ async function exportLog() {
   else if (outputTabName.value === 'errors') content = errorOutput.value
   else content = tipOutput.value
   if (!content) {
-    setStatusMsg('当前面板无内容', 2000)
+    setStatusMsg(t('status.noContent'), 2000)
     return
   }
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const defaultName = `eg-${outputTabName.value}-${ts}.log`
   try {
-    const data = await IDEService.SaveFile(defaultName, content, '导出日志')
+    const data = await IDEService.SaveFile(defaultName, content, t('message.exportLogTitle'))
     if (data.error) {
-      setStatusMsg('导出失败: ' + data.error, 4000)
+      setStatusMsg(t('status.exportFailed', { err: data.error }), 4000)
       return
     }
-    setStatusMsg('已导出')
+    setStatusMsg(t('status.exported'))
   } catch (e) {
-    setStatusMsg('导出失败: ' + e.message, 4000)
+    setStatusMsg(t('status.exportFailed', { err: e.message }), 4000)
   }
 }
 
@@ -3599,7 +3599,7 @@ function clearAllOutput() {
   errorOutput.value = ''
   tipOutput.value = ''
   refsResults.value = []
-  setStatusMsg('已清空输出', 2000)
+  setStatusMsg(t('status.outputCleared'), 2000)
 }
 
 // 构建历史记录：加载/保存/追加/清除
@@ -3625,12 +3625,12 @@ function onSearch() { searchQuery.value = ''; searchVisible.value = true }
 
 async function doSearch() {
   const q = searchQuery.value.trim()
-  if (!q) { setStatusMsg('请输入搜索内容', 2000); return }
-  if (!projectPath.value) { setStatusMsg('未打开项目', 2000); return }
+  if (!q) { setStatusMsg(t('status.searchEmpty'), 2000); return }
+  if (!projectPath.value) { setStatusMsg(t('status.noProject'), 2000); return }
   searching.value = true
   try {
     let re = null
-    if (searchUseRegex.value) { try { re = new RegExp(q, 'g') } catch (e) { setStatusMsg('正则无效: ' + e.message, 3000); searching.value = false; return } }
+    if (searchUseRegex.value) { try { re = new RegExp(q, 'g') } catch (e) { setStatusMsg(t('status.regexInvalid', { err: e.message }), 3000); searching.value = false; return } }
     const results = []
     // H1：ListProjectDir 已递归返回整棵树，直接遍历 Children，不再逐层 RPC
     const tree = await IDEService.ListProjectDir(projectPath.value)
@@ -3649,22 +3649,22 @@ async function doSearch() {
         if (col > 0) results.push({ file: rel, filePath: node.Path, line: i + 1, col, preview: line.trim() })
       }
     }
-    refsQuery.value = '搜索: ' + q
+    refsQuery.value = t('message.searchPrefix') + q
     refsResults.value = results
     outputTabName.value = 'tips'
     searchVisible.value = false
-    setStatusMsg(`找到 ${results.length} 处匹配`, 3000)
-  } catch (e) { setStatusMsg('搜索失败: ' + e.message, 4000) }
+    setStatusMsg(t('status.searchMatchCount', { count: results.length }), 3000)
+  } catch (e) { setStatusMsg(t('status.searchFailed', { err: e.message }), 4000) }
   finally { searching.value = false }
 }
 
 function clearBuildHistory() {
   buildHistory.value = []
   saveBuildHistory()
-  setStatusMsg('已清空构建历史', 2000)
+  setStatusMsg(t('status.buildHistoryCleared'), 2000)
 }
 async function copyBuildHistoryPath(p) {
-  try { await navigator.clipboard.writeText(p); setStatusMsg('已复制路径', 2000) } catch {}
+  try { await navigator.clipboard.writeText(p); setStatusMsg(t('status.pathCopied'), 2000) } catch {}
 }
 function openBuildHistoryFolder(p) {
   IDEService.OpenInExplorer(p)
@@ -3679,13 +3679,13 @@ async function checkSignatureAndReport(filePath) {
     let info
     try { info = JSON.parse(result) } catch { info = null }
     if (info && info.status === 'Computed') {
-      output.value += `[指纹] SHA256: ${info.sha256}\n`
-      output.value += `[大小] ${info.sizeText} (${info.size} 字节)\n`
+      output.value += t('message.fingerprintSha', { sha256: info.sha256 }) + '\n'
+      output.value += t('message.fingerprintSize', { sizeText: info.sizeText, size: info.size }) + '\n'
     } else {
-      output.value += `[指纹] 计算失败: ${info?.error || result}\n`
+      output.value += t('message.fingerprintFailed', { err: info?.error || result }) + '\n'
     }
   } catch (e) {
-    output.value += `[指纹] 检查异常: ${e.message}\n`
+    output.value += t('message.fingerprintError', { err: e.message }) + '\n'
   }
 }
 
@@ -3715,28 +3715,28 @@ function gotoBookmark(line) {
 function clearAllBookmarks() {
   editorRef.value?.clearBookmarks?.()
   bookmarkList.value = []
-  setStatusMsg('已清除所有书签', 2000)
+  setStatusMsg(t('status.bookmarksCleared'), 2000)
 }
 
 async function saveFile(saveAs = false) {
-  const title = saveAs ? '另存为' : '保存文件'
+  const title = saveAs ? t('common.saveAs') : t('message.saveFileTitle')
   try {
     const content = getFileSaveContent(activeFile.value)
     const data = await IDEService.SaveFile(activeFile.value.name, content, title)
     if (data.error) {
-      output.value = (saveAs ? '另存为失败: ' : '保存失败: ') + data.error
-      setStatusMsg(saveAs ? '另存为失败' : '保存失败', 5000)
+      output.value = saveAs ? t('message.saveAsFailedErr', { err: data.error }) : t('message.saveFailedErr', { err: data.error })
+      setStatusMsg(saveAs ? t('status.saveAsFailed') : t('status.fileSaveFailed'), 5000)
       return
     }
     if (data.path) {
       activeFile.value.path = data.path
       activeFile.value.savedSource = content
-      setStatusMsg(saveAs ? '已另存为' : '已保存')
+      setStatusMsg(saveAs ? t('status.fileSavedAs') : t('status.fileSaved'))
       await maybeRefreshProjectLibs(data.path)
     }
   } catch (e) {
-    output.value = (saveAs ? '另存为失败: ' : '保存失败: ') + e.message
-    setStatusMsg(saveAs ? '另存为失败' : '保存失败', 5000)
+    output.value = saveAs ? t('message.saveAsFailedErr', { err: e.message }) : t('message.saveFailedErr', { err: e.message })
+    setStatusMsg(saveAs ? t('status.saveAsFailed') : t('status.fileSaveFailed'), 5000)
   }
 }
 
@@ -3757,7 +3757,7 @@ async function maybeRefreshProjectLibs(savedPath) {
   try {
     const r = await loadProjectLibs(root)
     if (r && r.count > 0) {
-      setStatusMsg(`已重新加载 ${r.count} 个扩展包`, 2500)
+      setStatusMsg(t('status.libsReloaded', { count: r.count }), 2500)
     }
   } catch (e) {
     console.warn('[lib] 保存后刷新扩展包失败:', e)
@@ -3884,7 +3884,7 @@ function doCloseAll() {
 function closeSavedFiles() {
   const savedFiles = files.value.filter(f => !f.pinned && !isFileDirty(f))
   if (savedFiles.length === 0) {
-    setStatusMsg('没有已保存且可关闭的文件', 2000)
+    setStatusMsg(t('status.noSavedFilesToClose'), 2000)
     return
   }
   const currentFile = files.value[activeFileIndex.value]
@@ -3901,7 +3901,7 @@ function closeSavedFiles() {
     activeFileIndex.value = 0
   }
   selectedFunctionIndex.value = null
-  setStatusMsg(`已关闭 ${savedFiles.length} 个已保存文件`, 2000)
+  setStatusMsg(t('status.closedSavedFiles', { count: savedFiles.length }), 2000)
 }
 
 async function deleteFile(idx) {
@@ -3986,7 +3986,7 @@ async function deleteFile(idx) {
     codeDiskContent: codeContent,
     codeWasOnDisk: !!(codeFile && codeFile.path)
   })
-  setStatusMsg('已删除: ' + file.name, 2500)
+  setStatusMsg(t('status.deleted', { name: file.name }), 2500)
 }
 
 async function deleteFileByPath(filePath) {
@@ -4053,7 +4053,7 @@ async function deleteFileByPath(filePath) {
     codeWasOnDisk: !!(codeFileObj && codePath)
   })
 
-  setStatusMsg('已删除: ' + name, 2500)
+  setStatusMsg(t('status.deleted', { name }), 2500)
 }
 
 function selectFunction(idx) {
@@ -4111,13 +4111,13 @@ function gotoCurrentFunction() {
 function toggleWordWrap() {
   editorWordWrap.value = !editorWordWrap.value
   localStorage.setItem('eg-wordwrap', String(editorWordWrap.value))
-  setStatusMsg('自动换行：' + (editorWordWrap.value ? '开启' : '关闭'), 1500)
+  setStatusMsg(t('status.wordWrapToggle', { state: editorWordWrap.value ? t('status.toggleOn') : t('status.toggleOff') }), 1500)
 }
 
 function toggleMinimap() {
   minimapEnabled.value = !minimapEnabled.value
   localStorage.setItem('eg-minimap', String(minimapEnabled.value))
-  setStatusMsg('缩略图：' + (minimapEnabled.value ? '显示' : '隐藏'), 1500)
+  setStatusMsg(t('status.minimapToggle', { state: minimapEnabled.value ? t('status.toggleShow') : t('status.toggleHide') }), 1500)
 }
 
 function bcRevealProject() {
@@ -4205,14 +4205,14 @@ async function onOpenFileAt(payload) {
     await openProjectFile(payload.file)
     nextTick(() => {
       editorRef.value?.gotoLine(payload.line || 1)
-      const src = payload.source === 'global-lib' ? '全局库'
-                 : payload.source === 'project-lib' ? '项目库'
-                 : '项目'
+      const src = payload.source === 'global-lib' ? t('message.globalLib')
+                 : payload.source === 'project-lib' ? t('message.projectLib')
+                 : t('message.projectSrc')
       const pkg = payload.pkgName ? `:${payload.pkgName}` : ''
-      setStatusMsg(`已转到定义: ${payload.word} → ${src}${pkg}:${payload.line}`, 3000)
+      setStatusMsg(t('status.gotoDef', { word: payload.word, location: `${src}${pkg}:${payload.line}` }), 3000)
     })
   } catch (e) {
-    setStatusMsg(`打开文件失败: ${e.message || e}`, 3000)
+    setStatusMsg(t('status.openFileFailed', { err: e.message || e }), 3000)
   }
 }
 
@@ -4240,7 +4240,7 @@ async function onGotoDef({ word, key, meta }) {
         await openProjectFile(srcPath)
         nextTick(() => {
           editorRef.value?.gotoLine(lineNo)
-          setStatusMsg(`已转到定义: ${word} → ${lib.name}:${lineNo}`, 3000)
+          setStatusMsg(t('status.gotoDef', { word, location: `${lib.name}:${lineNo}` }), 3000)
         })
         return
       }
@@ -4253,12 +4253,12 @@ async function onGotoDef({ word, key, meta }) {
     if (doc) {
       outputTabName.value = 'tips'
       tipOutput.value = doc
-      setStatusMsg(`已显示命令文档: ${word}`, 2500)
+      setStatusMsg(t('status.showDoc', { name: word }), 2500)
       return
     }
   }
 
-  setStatusMsg(`未找到 ${word} 的定义`, 2500)
+  setStatusMsg(t('status.defNotFound', { name: word }), 2500)
 }
 
 // 格式化支持库命令为完整文档，用于「转到定义」回退展示。
@@ -4337,7 +4337,7 @@ async function onFindRefs({ word, modelUri, localRefs }) {
         }
       }
     } catch (e) {
-      tipOutput.value = `扫描项目 .eg 失败: ${e.message}`
+      tipOutput.value = t('message.scanEgFailed', { err: e.message })
       return
     }
   }
@@ -4360,7 +4360,7 @@ async function onFindRefs({ word, modelUri, localRefs }) {
 
   refsResults.value = results
   tipOutput.value = ''
-  setStatusMsg(`已查找 ${word} 的引用：${results.length} 处`, 3000)
+  setStatusMsg(t('status.refsFound', { name: word, count: results.length }), 3000)
 }
 
 async function gotoRefItem(r) {
@@ -4580,7 +4580,7 @@ async function onRenameSymbol({ oldName, newName, modelUri }) {
   }
 
   if (totalChanged > 0) {
-    setStatusMsg(`已重命名 ${oldName} → ${newName}（${totalChanged} 处）`, 3000)
+    setStatusMsg(t('status.renamed', { oldName, newName, count: totalChanged }), 3000)
     await maybeRefreshProjectLibs(activeFile.value?.path)
   }
 }
@@ -4589,26 +4589,26 @@ async function transpileCode() {
   clearErrorMarkers()
   output.value = ''
   errorOutput.value = ''
-  tipOutput.value = '转译中...'
+  tipOutput.value = t('status.transpiling')
   outputTabName.value = 'tips'
-  setStatusMsg('转译中...', 0)
+  setStatusMsg(t('status.transpiling'), 0)
   try {
     const data = await IDEService.Transpile(activeFile.value.source)
     if (data.error) {
       tipOutput.value = ''
       errorOutput.value = data.error
-      setStatusMsg('转译失败', 4000)
+      setStatusMsg(t('status.transpileFailed'), 4000)
       const line = extractErrorLine(data.error)
       if (line) gotoError(line, data.error)
     } else {
-      tipOutput.value = '转译成功'
+      tipOutput.value = t('status.transpileOk')
       errorOutput.value = ''
-      setStatusMsg('转译成功', 2000)
+      setStatusMsg(t('status.transpileOk'), 2000)
     }
   } catch (e) {
     tipOutput.value = ''
-    errorOutput.value = '调用失败: ' + e.message
-    setStatusMsg('调用失败', 4000)
+    errorOutput.value = t('message.callFailedWithErr', { err: e.message })
+    setStatusMsg(t('status.callFailed'), 4000)
   }
 }
 
@@ -4639,21 +4639,21 @@ async function saveAllFiles() {
     savedCount = results.filter(ok => ok).length
   }
   if (savedCount > 0) {
-    setStatusMsg(`已保存 ${savedCount} 个文件`, 1500)
+    setStatusMsg(t('status.savedNFiles', { count: savedCount }), 1500)
   }
   if (skippedNoPath > 0) {
     // 有未指定路径的新文件，输出面板提示用户先另存为
-    output.value += `[提示] ${skippedNoPath} 个新建文件未保存路径，请使用「另存为」保存后再编译\n`
+    output.value += t('message.skippedNoPath', { count: skippedNoPath }) + '\n'
   }
 }
 
 async function runCode() {
   clearErrorMarkers()
   await saveAllFiles()
-  output.value = '[1/5] 准备编译运行…\n'
+  output.value = t('message.prepareRun') + '\n'
   errorOutput.value = ''
   tipOutput.value = ''
-  setStatusMsg('运行中…', 0)
+  setStatusMsg(t('status.running'), 0)
   outputTabName.value = 'output'
   outputCollapsed.value = false
   buildActive.value = true
@@ -4669,22 +4669,22 @@ async function runCode() {
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + text
       outputTabName.value = 'errors'
       outputCollapsed.value = false
-      setStatusMsg('运行失败', 5000)
+      setStatusMsg(t('status.runFailed'), 5000)
       const line = extractErrorLine(text)
       if (line) gotoError(line, text)
       return
     }
     if (stage === 'done') {
-      setStatusMsg('运行完成', 3000)
+      setStatusMsg(t('status.runDone'), 3000)
       return
     }
     let prefix = ''
     switch (stage) {
-      case 'transpile': prefix = '[转译] '; break
-      case 'stage':     prefix = '[准备] '; break
-      case 'frontend':  prefix = '[前端] '; break
-      case 'build':     prefix = '[编译] '; break
-      case 'run':       prefix = isOutput ? '[输出] ' : '[运行] '; break
+      case 'transpile': prefix = t('message.stageTranspile'); break
+      case 'stage':     prefix = t('message.stagePrepare'); break
+      case 'frontend':  prefix = t('message.stageFrontend'); break
+      case 'build':     prefix = t('message.stageBuild'); break
+      case 'run':       prefix = isOutput ? t('message.stageOutput') : t('message.stageRun'); break
       default:          prefix = `[${stage}] `
     }
     output.value += prefix + text + '\n'
@@ -4698,7 +4698,7 @@ async function runCode() {
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + data.error
       outputTabName.value = 'errors'
       outputCollapsed.value = false
-      setStatusMsg('运行失败', 5000)
+      setStatusMsg(t('status.runFailed'), 5000)
       const line = extractErrorLine(data.error)
       if (line) gotoError(line, data.error)
     } else if (data.output) {
@@ -4707,10 +4707,10 @@ async function runCode() {
   } catch (e) {
     buildActive.value = false
     buildProgressRef.value?.reset()
-    errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + '调用失败: ' + e.message
+    errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + t('message.callFailedWithErr', { err: e.message })
     outputTabName.value = 'errors'
     outputCollapsed.value = false
-    setStatusMsg('调用失败', 5000)
+    setStatusMsg(t('status.callFailed'), 5000)
   } finally {
     offEvent && offEvent()
   }
@@ -4725,16 +4725,16 @@ function createProject() {
 
 function showNewWindowDialog() {
   if (!projectOpen.value || !projectPath.value) {
-    output.value = '请先打开或创建一个项目'
-    setStatusMsg('未打开项目', 2500)
+    output.value = t('message.openProjectFirst')
+    setStatusMsg(t('status.noProject'), 2500)
     return
   }
   newWindowVisible.value = true
-  newWindowName.value = '窗口' + (files.value.filter(f => isFormFileName(f.name)).length + 1)
+  newWindowName.value = t('message.windowPrefix') + (files.value.filter(f => isFormFileName(f.name)).length + 1)
 }
 
 async function confirmNewWindow() {
-  const name = newWindowName.value.trim() || '窗口1'
+  const name = newWindowName.value.trim() || t('message.windowDefault')
   const safeName = name.replace(/[\\/:*?"<>|]/g, '_')
   const formName = safeName.endsWith('.ew') ? safeName : safeName + '.ew'
   const codeName = formName.replace(/\.ew$/i, '.eg')
@@ -4775,10 +4775,10 @@ async function confirmNewWindow() {
       formPath,
       codePath
     })
-    setStatusMsg('已创建窗口: ' + formName, 2500)
+    setStatusMsg(t('status.windowCreated', { name: formName }), 2500)
   } catch (e) {
-    output.value = '创建窗口失败: ' + e.message
-    setStatusMsg('创建失败', 3000)
+    output.value = t('message.createWindowFailed', { err: e.message })
+    setStatusMsg(t('status.createFailed'), 3000)
   }
 }
 
@@ -4791,10 +4791,10 @@ async function selectProjectParent() {
 
 async function confirmCreateProject() {
   const parent = createProjectParent.value
-  const name = createProjectName.value.trim() || '未命名项目'
+  const name = createProjectName.value.trim() || t('message.untitledProject')
   if (!parent) {
-    output.value = '请先选择项目存放目录'
-    setStatusMsg('创建失败', 3000)
+    output.value = t('message.selectProjectDirFirst')
+    setStatusMsg(t('status.createFailed'), 3000)
     return
   }
   try {
@@ -4810,17 +4810,17 @@ async function confirmCreateProject() {
       err = await IDEService.CreateProject(parent, name, builtinKey)
     }
     if (err) {
-      output.value = '创建项目失败: ' + err
-      setStatusMsg('创建失败', 3000)
+      output.value = t('message.createProjectFailed', { err })
+      setStatusMsg(t('status.createFailed'), 3000)
       return
     }
     const fullPath = parent + '\\' + name
     createProjectVisible.value = false
     await openProjectAt(fullPath)
-    setStatusMsg('项目已创建', 2500)
+    setStatusMsg(t('status.projectCreated'), 2500)
   } catch (e) {
-    output.value = '创建项目失败: ' + e.message
-    setStatusMsg('创建失败', 4000)
+    output.value = t('message.createProjectFailed', { err: e.message })
+    setStatusMsg(t('status.createFailed'), 4000)
   }
 }
 
@@ -4860,7 +4860,7 @@ async function openProjectFile(path) {
   try {
     const data = await IDEService.ReadProjectFile(path)
     if (data.error) {
-      output.value = '读取文件失败: ' + data.error
+      output.value = t('message.readFileFailed', { err: data.error })
       return
     }
     const name = data.name || fileNameFromPath(path)
@@ -4896,9 +4896,9 @@ async function openProjectFile(path) {
         } catch {}
       }
     }
-    setStatusMsg('已打开 ' + name, 2000)
+    setStatusMsg(t('status.opened', { name }), 2000)
   } catch (e) {
-    output.value = '打开文件失败: ' + e.message
+    output.value = t('message.openFileFailed', { err: e.message })
   }
 }
 
@@ -4916,15 +4916,15 @@ function closeProject() {
   tipOutput.value = ''
   refsResults.value = []
   refsQuery.value = ''
-  setStatusMsg('已关闭项目', 2000)
+  setStatusMsg(t('status.projectClosed'), 2000)
 }
 
 async function openProjectAt(path) {
   projectPath.value = path
   projectOpen.value = true
   try {
-    output.value = '已打开项目目录: ' + path
-    setStatusMsg('项目已打开', 2000)
+    output.value = t('message.projectDirOpened', { path })
+    setStatusMsg(t('status.projectOpened'), 2000)
     addRecentProject(path)
     projectConfig.value = await IDEService.ReadProjectConfig(path)
     await loadProjectTree(path)
@@ -4935,7 +4935,7 @@ async function openProjectAt(path) {
       const r = await loadProjectLibs(path)
       if (r && r.count > 0) {
         const names = getProjectLibsSummary().map(s => s.displayName || s.name).join('、')
-        output.value = `已加载 ${r.count} 个扩展包：${names}`
+        output.value = t('message.libsLoadedWithNames', { count: r.count, names })
       }
     } catch (e) {
       console.warn('[lib] 加载项目扩展包失败:', e)
@@ -4967,7 +4967,7 @@ async function openProjectAt(path) {
           files.value = [file]
           activeFileIndex.value = 0
           selectedFunctionIndex.value = null
-          output.value = '已打开项目: ' + path
+          output.value = t('message.projectOpenedWith', { path })
           break
         }
       } catch {}
@@ -4976,8 +4976,8 @@ async function openProjectAt(path) {
     // F7：加载失败时回滚 projectOpen/projectPath，避免半开状态导致 UI 误判
     projectOpen.value = false
     projectPath.value = ''
-    output.value = '打开项目失败: ' + e.message
-    setStatusMsg('打开项目失败', 3000)
+    output.value = t('message.openProjectFailed', { err: e.message })
+    setStatusMsg(t('status.projectOpenFailed'), 3000)
   }
 }
 
@@ -4987,7 +4987,7 @@ async function openProject() {
     if (!path) return
     await openProjectAt(path)
   } catch (e) {
-    output.value = '打开项目失败: ' + e.message
+    output.value = t('message.openProjectFailed', { err: e.message })
   }
 }
 
@@ -5013,7 +5013,7 @@ async function performUndo(op) {
           activeFileIndex.value = 0
         }
       }
-      setStatusMsg('已撤销新建文件: ' + op.file.name, 2000)
+      setStatusMsg(t('status.undoneNewFile', { name: op.file.name }), 2000)
       break
     }
     case 'add-window': {
@@ -5035,7 +5035,7 @@ async function performUndo(op) {
         files.value.push(makeFile('main.eg', DEFAULT_SOURCE))
         activeFileIndex.value = 0
       }
-      setStatusMsg('已撤销新建窗口: ' + op.formFile.name, 2000)
+      setStatusMsg(t('status.undoneNewWindow', { name: op.formFile.name }), 2000)
       break
     }
     case 'delete': {
@@ -5051,7 +5051,7 @@ async function performUndo(op) {
       files.value.push(restored)
       activeFileIndex.value = files.value.length - 1
       if (projectPath.value && op.formWasOnDisk) await loadProjectTree(projectPath.value)
-      setStatusMsg('已恢复文件: ' + op.formFile.name, 2000)
+      setStatusMsg(t('status.restoredFile', { name: op.formFile.name }), 2000)
       break
     }
     case 'delete-window': {
@@ -5081,7 +5081,7 @@ async function performUndo(op) {
       if (projectPath.value && (op.formWasOnDisk || op.codeWasOnDisk)) {
         await loadProjectTree(projectPath.value)
       }
-      setStatusMsg('已恢复窗口: ' + op.formFile.name, 2000)
+      setStatusMsg(t('status.restoredWindow', { name: op.formFile.name }), 2000)
       break
     }
   }
@@ -5094,7 +5094,7 @@ async function performRedo(op) {
       const restored = cloneFile(op.file)
       files.value.push(restored)
       activeFileIndex.value = files.value.length - 1
-      setStatusMsg('已重做新建文件: ' + op.file.name, 2000)
+      setStatusMsg(t('status.redoneNewFile', { name: op.file.name }), 2000)
       break
     }
     case 'add-window': {
@@ -5110,7 +5110,7 @@ async function performRedo(op) {
       files.value.push(cloneFile(op.codeFile))
       activeFileIndex.value = files.value.length - 2
       if (projectPath.value) await loadProjectTree(projectPath.value)
-      setStatusMsg('已重做新建窗口: ' + op.formFile.name, 2000)
+      setStatusMsg(t('status.redoneNewWindow', { name: op.formFile.name }), 2000)
       break
     }
     case 'delete': {
@@ -5128,7 +5128,7 @@ async function performRedo(op) {
         }
       }
       if (projectPath.value && op.formWasOnDisk) await loadProjectTree(projectPath.value)
-      setStatusMsg('已重做删除: ' + op.formFile.name, 2000)
+      setStatusMsg(t('status.redoneDelete', { name: op.formFile.name }), 2000)
       break
     }
     case 'delete-window': {
@@ -5152,7 +5152,7 @@ async function performRedo(op) {
       if (projectPath.value && (op.formWasOnDisk || op.codeWasOnDisk)) {
         await loadProjectTree(projectPath.value)
       }
-      setStatusMsg('已重做删除窗口: ' + op.formFile.name, 2000)
+      setStatusMsg(t('status.redoneDeleteWindow', { name: op.formFile.name }), 2000)
       break
     }
   }
@@ -5161,7 +5161,7 @@ async function performRedo(op) {
 
 async function undo() {
   if (fileUndoStack.value.length === 0) {
-    setStatusMsg('没有可撤销的文件操作', 2000)
+    setStatusMsg(t('status.noUndo'), 2000)
     return
   }
   const op = fileUndoStack.value.pop()
@@ -5171,7 +5171,7 @@ async function undo() {
 
 async function redo() {
   if (fileRedoStack.value.length === 0) {
-    setStatusMsg('没有可重做的文件操作', 2000)
+    setStatusMsg(t('status.noRedo'), 2000)
     return
   }
   const op = fileRedoStack.value.pop()
@@ -5202,9 +5202,9 @@ async function buildExecutable() {
   clearErrorMarkers()
   await saveAllFiles()
   const mode = buildConfig.value.mode
-  output.value = `[1/5] 准备构建可执行文件（${mode}）…\n`
+  output.value = t('message.prepareBuild', { mode }) + '\n'
   errorOutput.value = ''
-  setStatusMsg('构建中…', 0)
+  setStatusMsg(t('status.building'), 0)
   outputTabName.value = 'output'
   buildActive.value = true
   buildStep.value = 'prepare'
@@ -5219,7 +5219,7 @@ async function buildExecutable() {
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + text
       outputTabName.value = 'errors'
       outputCollapsed.value = false
-      setStatusMsg('构建失败', 4000)
+      setStatusMsg(t('status.buildFailed'), 4000)
       const line = extractErrorLine(text)
       if (line) gotoError(line, text)
       return
@@ -5229,7 +5229,7 @@ async function buildExecutable() {
       return
     }
     if (stage === 'done') {
-      setStatusMsg('构建完成', 3000)
+      setStatusMsg(t('status.buildDone'), 3000)
       if (projectPath.value) {
         IDEService.ReadProjectConfig(projectPath.value).then(cfg => { projectConfig.value = cfg })
         if (buildConfig.value.autoOpenFolder) {
@@ -5239,7 +5239,7 @@ async function buildExecutable() {
       if (artifactPath) {
         checkSignatureAndReport(artifactPath)
         navigator.clipboard?.writeText(artifactPath).catch(() => {})
-        output.value += `[产物] ${artifactPath}（路径已复制到剪贴板）\n`
+        output.value += t('message.artifactCopied', { path: artifactPath }) + '\n'
         addBuildHistory({
           time: new Date().toLocaleString('zh-CN'),
           version: projectConfig.value?.version || '',
@@ -5251,11 +5251,11 @@ async function buildExecutable() {
     }
     let prefix = ''
     switch (stage) {
-      case 'transpile': prefix = '[转译] '; break
-      case 'stage':     prefix = '[准备] '; break
-      case 'frontend':  prefix = '[前端] '; break
-      case 'build':     prefix = '[编译] '; break
-      case 'run':       prefix = '[运行] '; break
+      case 'transpile': prefix = t('message.stageTranspile'); break
+      case 'stage':     prefix = t('message.stagePrepare'); break
+      case 'frontend':  prefix = t('message.stageFrontend'); break
+      case 'build':     prefix = t('message.stageBuild'); break
+      case 'run':       prefix = t('message.stageRun'); break
       default:          prefix = `[${stage}] `
     }
     output.value += prefix + text + '\n'
@@ -5264,8 +5264,8 @@ async function buildExecutable() {
     if (!projectPath.value) {
       buildActive.value = false
       buildProgressRef.value?.reset()
-      errorOutput.value = '未打开项目'
-      setStatusMsg('构建失败', 4000)
+      errorOutput.value = t('status.noProject')
+      setStatusMsg(t('status.buildFailed'), 4000)
       return
     }
     const entry = projectConfig.value?.entry || 'main.eg'
@@ -5282,7 +5282,7 @@ async function buildExecutable() {
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + data.error
       outputTabName.value = 'errors'
       outputCollapsed.value = false
-      setStatusMsg('构建失败', 5000)
+      setStatusMsg(t('status.buildFailed'), 5000)
       const line = extractErrorLine(data.error)
       if (line) gotoError(line, data.error)
     } else if (data.output) {
@@ -5291,16 +5291,16 @@ async function buildExecutable() {
   } catch (e) {
     buildActive.value = false
     buildProgressRef.value?.reset()
-    errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + '调用失败: ' + e.message
+    errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + t('message.callFailedWithErr', { err: e.message })
     outputTabName.value = 'errors'
     outputCollapsed.value = false
-    setStatusMsg('构建失败', 5000)
+    setStatusMsg(t('status.buildFailed'), 5000)
   } finally {
     offEvent && offEvent()
   }
 }
 function showAbout() {
-  output.value = '易狗 IDE (EGOU) - 类易语言中文 Go IDE'
+  output.value = t('message.aboutTitle')
   outputTabName.value = 'output'
 }
 function toggleTheme() {

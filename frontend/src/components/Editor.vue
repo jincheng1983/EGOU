@@ -367,7 +367,7 @@ onMounted(() => {
           kind: monaco.languages.CompletionItemKind.Function,
           insertText: alias + '(${1})',
           insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          detail: '支持库命令',
+          detail: t('editor.libCommand'),
           documentation: { value: '`' + sig + '`' },
           range
         })
@@ -626,7 +626,7 @@ onMounted(() => {
         return {
           range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
           contents: [
-            { value: '**' + wd + '** （支持库命令）' },
+            { value: t('editor.libCommandMd', { name: wd }) },
             { value: '```eg\n' + sig + '\n```' }
           ]
         }
@@ -635,13 +635,13 @@ onMounted(() => {
       if (isKeyword(wd)) {
         return {
           range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
-          contents: [{ value: '`' + wd + '` （关键字）' }]
+          contents: [{ value: t('editor.keywordMd', { name: wd }) }]
         }
       }
       if (isTypeKeyword(wd)) {
         return {
           range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
-          contents: [{ value: '`' + wd + '` （数据类型）' }]
+          contents: [{ value: t('editor.dataTypeMd', { name: wd }) }]
         }
       }
       // 5.3 用户符号：调后端 ListSymbols 找到匹配
@@ -654,13 +654,13 @@ onMounted(() => {
             const kindLabel = { function: t('editor.function'), method: t('editor.method'), type: t('editor.type'), const: t('editor.const'), var: t('editor.var') }[sym.kind] || sym.kind
             let md = '**' + kindLabel + ' ' + sym.name + '**'
             if (sym.params && sym.params.length > 0) {
-              md += '\n\n```eg\n参数：\n' + sym.params.map(p => '  ' + p.name + ': ' + p.type).join('\n') + '\n```'
+              md += '\n\n```eg\n' + t('editor.params') + '\n' + sym.params.map(p => '  ' + p.name + ': ' + p.type).join('\n') + '\n```'
             }
             if (sym.returnType) {
-              md += '\n\n返回类型：`' + sym.returnType + '`'
+              md += '\n\n' + t('editor.returnType') + '`' + sym.returnType + '`'
             }
             if (sym.fields && sym.fields.length > 0) {
-              md += '\n\n```eg\n字段：\n' + sym.fields.map(f => '  ' + f.name + ': ' + f.type).join('\n') + '\n```'
+              md += '\n\n```eg\n' + t('editor.fields') + '\n' + sym.fields.map(f => '  ' + f.name + ': ' + f.type).join('\n') + '\n```'
             }
             return {
               range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),

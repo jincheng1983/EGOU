@@ -96,11 +96,11 @@
     <div v-if="pendingToolCall" class="ai-tool-confirm">
       <div class="ai-tool-confirm-header">
         <span class="ai-tool-confirm-icon">⚠️</span>
-        <span class="ai-tool-confirm-title">工具调用确认</span>
+        <span class="ai-tool-confirm-title">{{ t('ai.toolConfirmTitle') }}</span>
         <span class="ai-tool-risk" :class="'risk-' + pendingToolCall.risk">{{ riskLabel(pendingToolCall.risk) }}</span>
       </div>
       <div class="ai-tool-confirm-body">
-        <div class="ai-tool-name">工具：{{ pendingToolCall.tool }}</div>
+        <div class="ai-tool-name">{{ t('ai.toolLabel') }}{{ pendingToolCall.tool }}</div>
         <div class="ai-tool-summary">{{ pendingToolCall.summary }}</div>
         <div v-if="pendingToolCall.params && Object.keys(pendingToolCall.params).length > 0" class="ai-tool-params">
           <div v-for="(v, k) in pendingToolCall.params" :key="k" class="ai-tool-param">
@@ -109,8 +109,8 @@
         </div>
       </div>
       <div class="ai-tool-confirm-actions">
-        <n-button size="small" type="error" @click="rejectToolCall">拒绝</n-button>
-        <n-button size="small" type="primary" @click="approveToolCall">同意执行</n-button>
+        <n-button size="small" type="error" @click="rejectToolCall">{{ t('ai.reject') }}</n-button>
+        <n-button size="small" type="primary" @click="approveToolCall">{{ t('ai.approveExecution') }}</n-button>
       </div>
     </div>
     <div class="ai-input-area" v-if="aiAccepted">
@@ -169,7 +169,7 @@ const message = useMessage()
 const props = defineProps({
   agents: { type: Array, default: () => [] },
   currentAgentId: { type: String, default: DEFAULT_AGENT_ID },
-  aiConfig: { type: Object, default: () => ({ endpoint: '', apiKey: '', model: '', temperature: 0.7, maxTokens: 4096, stream: true, compressThreshold: 6000, keepRecent: 8, supportsVision: false, supportsFiles: false, modelName: '未配置' }) },
+  aiConfig: { type: Object, default: () => ({ endpoint: '', apiKey: '', model: '', temperature: 0.7, maxTokens: 4096, stream: true, compressThreshold: 6000, keepRecent: 8, supportsVision: false, supportsFiles: false, modelName: t('ai.notConfigured') }) },
   models: { type: Array, default: () => [] },
   activeModelId: { type: String, default: '' },
   getCurrentFile: { type: Function, default: null },
@@ -381,11 +381,11 @@ function insertFileContext() {
   if (!props.getCurrentFile) return
   const file = props.getCurrentFile()
   if (!file || !file.content) {
-    messages.value.push({ role: 'assistant', content: '⚠️ 当前没有打开的文件。' })
+    messages.value.push({ role: 'assistant', content: t('ai.noFileOpen') })
     return
   }
-  const snippet = file.content.length > 8000 ? file.content.slice(0, 8000) + '\n...（文件过长，已截断前8000字符）' : file.content
-  const block = `\n\n【当前文件：${file.name}】\n\`\`\`egou\n${snippet}\n\`\`\`\n`
+  const snippet = file.content.length > 8000 ? file.content.slice(0, 8000) + '\n' + t('ai.fileTruncatedSuffix') : file.content
+  const block = `\n\n${t('ai.currentFileLabel', { name: file.name })}\n\`\`\`egou\n${snippet}\n\`\`\`\n`
   input.value = input.value + block
 }
 
@@ -405,9 +405,9 @@ onMounted(() => {
     }
     if (data.error) {
       if (activeAssistantMsg.value) {
-        activeAssistantMsg.value.content += '\n\n❌ 错误: ' + data.error
+        activeAssistantMsg.value.content += '\n\n' + t('ai.errorPrefix') + data.error
       } else {
-        messages.value.push({ role: 'assistant', content: '❌ 错误: ' + data.error })
+        messages.value.push({ role: 'assistant', content: t('ai.errorPrefix') + data.error })
       }
       loading.value = false
       activeAssistantMsg.value = null
@@ -470,7 +470,7 @@ async function rejectToolCall() {
 }
 
 function riskLabel(risk) {
-  const map = { safe: '安全', moderate: '中等', dangerous: '危险' }
+  const map = { safe: t('ai.riskSafe'), moderate: t('ai.riskModerate'), dangerous: t('ai.riskDangerous') }
   return map[risk] || risk
 }
 
@@ -580,7 +580,7 @@ async function send() {
     loading.value = false
     messages.value.push({
       role: 'assistant',
-      content: '⚠️ AI 模型尚未配置。\n\n请在「系统设置 → AI → 模型管理」中添加并配置模型。'
+      content: t('ai.modelNotConfigured')
     })
     return
   }
@@ -597,7 +597,7 @@ async function send() {
       if (pickedAgent) {
         messages.value.push({
           role: 'assistant',
-          content: `💡 已自动切换到【${pickedAgent.emoji || ''} ${pickedAgent.name}】`
+          content: t('ai.autoSwitchedAgent', { name: `${pickedAgent.emoji || ''} ${pickedAgent.name}` })
         })
       }
     }
@@ -612,7 +612,7 @@ async function send() {
     if (skill) {
       messages.value.push({
         role: 'assistant',
-        content: `🔧 正在使用技能【${skill.icon || ''} ${skill.name}】...`
+        content: t('ai.usingSkill', { name: `${skill.icon || ''} ${skill.name}` })
       })
       skillContext = await executeSkill(matchedSkillId, text.includes('当前文件') ? {} : { keyword: text.match(/["']?([^"']+)["']?/)?.[1] || text })
     }
@@ -692,7 +692,7 @@ async function send() {
     activeAssistantMsg.value = null
     messages.value.push({
       role: 'assistant',
-      content: '❌ 调用失败: ' + (e.message || String(e))
+      content: t('ai.callFailedPrefix') + (e.message || String(e))
     })
   }
 }
