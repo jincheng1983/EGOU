@@ -75,6 +75,26 @@ func detectBundledGo() string {
 // v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一的防逆向手段。
 var garbleLevel = "basic"
 
+// buildGoEnv 构造 go 子进程的环境变量。
+// 关键修复：os.Environ() 可能已包含用户系统的 GOROOT（指向旧版本 Go），
+// 直接 append 会导致子进程收到两个 GOROOT，go.exe 用第一个（用户系统的），
+// 但 go.exe 本身是内置 SDK 的新版本，引发 "version X does not match go tool version Y" 错误。
+// 此函数先剔除已有的 GOROOT，再追加内置/用户指定的 goRoot。
+func buildGoEnv() []string {
+	env := os.Environ()
+	if goRoot != "" {
+		// 剔除已有 GOROOT，避免版本冲突
+		filtered := make([]string, 0, len(env)+1)
+		for _, e := range env {
+			if !strings.HasPrefix(e, "GOROOT=") {
+				filtered = append(filtered, e)
+			}
+		}
+		env = append(filtered, "GOROOT="+goRoot)
+	}
+	return env
+}
+
 // SetGoBinary 设置 Go 编译器路径（如 C:\Program Files\Go\bin\go.exe）。
 // 传入空字符串恢复为内置 Go SDK 或 "go"（从 PATH 查找）。
 // 自动推断 GOROOT（go.exe 的上级目录的上级目录）。
@@ -1186,11 +1206,8 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 	}
 	cmd.Dir = dir
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	// 构建 env：继承系统环境 + GOROOT（内置 Go SDK 时必须设置） + CGO 开关
-	env := os.Environ()
-	if goRoot != "" {
-		env = append(env, "GOROOT="+goRoot)
-	}
+	// 构建 env：继承系统环境 + GOROOT（内置 Go SDK 时必须设置，剔除用户系统旧 GOROOT 避免版本冲突） + CGO 开关
+	env := buildGoEnv()
 	if hasCgo {
 		env = append(env, "CGO_ENABLED=1")
 	} else {
@@ -1474,11 +1491,7 @@ func buildFrontendDist(dir string, sink EventSink) error {
 	tidyCmd := exec.Command(goBinary, "mod", "tidy")
 	tidyCmd.Dir = dir
 	tidyCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	tidyEnv := os.Environ()
-	if goRoot != "" {
-		tidyEnv = append(tidyEnv, "GOROOT="+goRoot)
-	}
-	tidyCmd.Env = tidyEnv
+	tidyCmd.Env = buildGoEnv()
 	if output, err := tidyCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("go mod tidy 失败: %s", string(output))
 	}
@@ -2109,7 +2122,7 @@ func garbleCompatible(garblePath string) bool {
 	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main\nfunc main(){}\n"), 0644)
 	cmd := exec.Command(garblePath, "build", "-o", filepath.Join(tmpDir, "test.exe"), ".")
 	cmd.Dir = tmpDir
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.Env = append(buildGoEnv(), "CGO_ENABLED=0")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
