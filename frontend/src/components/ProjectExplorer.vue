@@ -1,8 +1,8 @@
 <template>
   <div class="project-explorer" @contextmenu="onContainerContextMenu">
     <div class="explorer-header">
-      <n-text depth="3" class="tree-label">项目</n-text>
-      <n-button size="tiny" quaternary title="刷新" @click="$emit('refresh')">
+      <n-text depth="3" class="tree-label">{{ t('projectTree.project') }}</n-text>
+      <n-button size="tiny" quaternary :title="t('projectTree.refresh')" @click="$emit('refresh')">
         <n-icon :component="RefreshOutline" />
       </n-button>
     </div>
@@ -27,7 +27,7 @@
       @update:expanded-keys="onExpandedKeys"
       @update:selected-keys="onSelect"
     />
-    <n-empty v-else description="请先打开或创建一个项目" size="small" style="margin-top: 24px;" />
+    <n-empty v-else :description="t('projectTree.empty')" size="small" style="margin-top: 24px;" />
     <n-dropdown
       :show="contextMenuShow"
       :options="contextMenuOptions"
@@ -47,6 +47,7 @@ import { NTree, NText, NButton, NIcon, NEmpty, NDropdown } from 'naive-ui'
 import { RefreshOutline } from '@vicons/ionicons5'
 import { TYPE_COLOR, FLOW_RAINBOW } from '../utils/colors.js'
 import { getCurrentProjectRoot } from '../lib/index.js'
+import { t } from '../i18n/index.js'
 
 const props = defineProps({
   files: {
@@ -208,7 +209,7 @@ const treeData = computed(() => {
 
   // 1. 源码文件
   roots.push({
-    label: '源码文件',
+    label: t('projectTree.sourceFiles'),
     key: 'source-root',
     nodeType: NODE_TYPE.SOURCE,
     categoryKey: 'source',
@@ -225,7 +226,7 @@ const treeData = computed(() => {
 
   // 2. Dll命令
   roots.push({
-    label: 'Dll命令',
+    label: t('projectTree.dllCommands'),
     key: 'dll-root',
     nodeType: NODE_TYPE.DLL,
     categoryKey: 'dll',
@@ -242,7 +243,7 @@ const treeData = computed(() => {
 
   // 3. 窗口
   roots.push({
-    label: '窗口',
+    label: t('projectTree.windows'),
     key: 'windows-root',
     nodeType: NODE_TYPE.WINDOW,
     categoryKey: 'windows',
@@ -262,7 +263,7 @@ const treeData = computed(() => {
     const resChildren = []
     if (sounds.length) {
       resChildren.push({
-        label: '声音',
+        label: t('projectTree.sound'),
         key: 'res-sound-root',
         nodeType: NODE_TYPE.SOUND,
         isDir: true,
@@ -277,7 +278,7 @@ const treeData = computed(() => {
     }
     if (images.length) {
       resChildren.push({
-        label: '图片或图片组',
+        label: t('projectTree.images'),
         key: 'res-image-root',
         nodeType: NODE_TYPE.IMAGE,
         isDir: true,
@@ -291,7 +292,7 @@ const treeData = computed(() => {
       })
     }
     roots.push({
-      label: '资源表',
+      label: t('projectTree.resources'),
       key: 'resources-root',
       nodeType: NODE_TYPE.RESOURCE,
       categoryKey: 'resources',
@@ -303,7 +304,7 @@ const treeData = computed(() => {
 
   // 5. 模块引用表
   roots.push({
-    label: '模块引用表',
+    label: t('projectTree.modulesRef'),
     key: 'libs-root',
     nodeType: NODE_TYPE.LIB_REF,
     categoryKey: 'libs',
@@ -321,7 +322,7 @@ const treeData = computed(() => {
 
   // 6. 模块
   roots.push({
-    label: '模块',
+    label: t('projectTree.modules'),
     key: 'modules-root',
     nodeType: NODE_TYPE.MODULE,
     categoryKey: 'modules',
@@ -338,7 +339,7 @@ const treeData = computed(() => {
 
   // 7. 类
   roots.push({
-    label: '类',
+    label: t('projectTree.classes'),
     key: 'classes-root',
     nodeType: NODE_TYPE.CLASS,
     categoryKey: 'classes',
@@ -387,13 +388,13 @@ const contextMenuNode = ref(null)
 const contextMenuIsBlank = ref(false)
 
 const blankMenuOptions = computed(() => [
-  { label: '新建代码文件', key: 'new-code' },
-  { label: '新建窗口', key: 'new-window' },
-  { label: '新建类', key: 'new-class' },
-  { label: '新建模块', key: 'new-module' },
+  { label: t('projectTree.newCodeFile'), key: 'new-code' },
+  { label: t('projectTree.newWindow'), key: 'new-window' },
+  { label: t('projectTree.newClass'), key: 'new-class' },
+  { label: t('projectTree.newModule'), key: 'new-module' },
   { type: 'divider', key: 'd-blank' },
-  { label: '全部展开', key: 'expand-all' },
-  { label: '全部收缩', key: 'collapse-all' },
+  { label: t('projectTree.expandAll'), key: 'expand-all' },
+  { label: t('projectTree.collapseAll'), key: 'collapse-all' },
 ])
 
 const contextMenuOptions = computed(() => {
@@ -404,16 +405,16 @@ const contextMenuOptions = computed(() => {
   if (node.isCategory) {
     switch (node.categoryKey) {
       case 'source':
-        opts.push({ label: '新建代码文件', key: 'new-code' })
+        opts.push({ label: t('projectTree.newCodeFile'), key: 'new-code' })
         break
       case 'windows':
-        opts.push({ label: '新建窗口', key: 'new-window' })
+        opts.push({ label: t('projectTree.newWindow'), key: 'new-window' })
         break
       case 'modules':
-        opts.push({ label: '新建模块', key: 'new-module' })
+        opts.push({ label: t('projectTree.newModule'), key: 'new-module' })
         break
       case 'classes':
-        opts.push({ label: '新建类', key: 'new-class' })
+        opts.push({ label: t('projectTree.newClass'), key: 'new-class' })
         break
       case 'dll':
       case 'resources':
@@ -421,11 +422,11 @@ const contextMenuOptions = computed(() => {
         break
     }
     if (opts.length > 0) opts.push({ type: 'divider' })
-    opts.push({ label: '全部展开', key: 'expand-all' })
-    opts.push({ label: '全部收缩', key: 'collapse-all' })
+    opts.push({ label: t('projectTree.expandAll'), key: 'expand-all' })
+    opts.push({ label: t('projectTree.collapseAll'), key: 'collapse-all' })
   } else {
     if (node.path) {
-      opts.push({ label: '打开', key: 'open' })
+      opts.push({ label: t('projectTree.open'), key: 'open' })
       const deletable = node.nodeType === NODE_TYPE.SRC_FILE ||
         node.nodeType === NODE_TYPE.WINDOW ||
         node.nodeType === NODE_TYPE.MODULE ||
@@ -435,14 +436,14 @@ const contextMenuOptions = computed(() => {
         node.nodeType === NODE_TYPE.DLL
       if (deletable) {
         opts.push({ type: 'divider' })
-        opts.push({ label: '删除', key: 'delete' })
+        opts.push({ label: t('projectTree.delete'), key: 'delete' })
       }
     } else if (node.nodeType === NODE_TYPE.LIB_REF && node.libName) {
       // 规约 §6：.elib 节点支持 打开 / 重命名 / 删除
-      opts.push({ label: '打开', key: 'open-elib' })
+      opts.push({ label: t('projectTree.open'), key: 'open-elib' })
       opts.push({ type: 'divider' })
-      opts.push({ label: '重命名', key: 'rename-elib' })
-      opts.push({ label: '删除', key: 'delete-elib' })
+      opts.push({ label: t('projectTree.rename'), key: 'rename-elib' })
+      opts.push({ label: t('projectTree.delete'), key: 'delete-elib' })
     }
   }
   return opts
@@ -563,7 +564,7 @@ function onContextMenuSelect(key) {
     case 'rename-elib': {
       const root = getCurrentProjectRoot()
       if (root && node.libName && window.IDEService?.RenameElib) {
-        const newName = window.prompt('输入新的扩展包名称', node.libName)
+        const newName = window.prompt(t('projectTree.inputLibName'), node.libName)
         if (newName && newName !== node.libName) {
           window.IDEService.RenameElib(root, node.libName, newName).then(() => emit('refresh'))
         }
@@ -573,7 +574,7 @@ function onContextMenuSelect(key) {
     case 'delete-elib': {
       const root = getCurrentProjectRoot()
       if (root && node.libName && window.IDEService?.DeleteElib) {
-        if (window.confirm(`确定删除扩展包 "${node.libName}" 吗？`)) {
+        if (window.confirm(t('projectTree.confirmDeleteLib', { name: node.libName }))) {
           window.IDEService.DeleteElib(root, node.libName).then(() => emit('refresh'))
         }
       }

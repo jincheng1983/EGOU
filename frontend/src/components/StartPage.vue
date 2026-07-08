@@ -2,26 +2,26 @@
   <div class="start-page">
     <div class="start-content">
       <img src="/appicon.png" class="start-logo" alt="logo">
-      <h1 class="start-title">易狗 IDE</h1>
-      <p class="start-subtitle">中文 Go 语言集成开发环境</p>
+      <h1 class="start-title">{{ t('startpage.title') }}</h1>
+      <p class="start-subtitle">{{ t('startpage.subtitle') }}</p>
 
       <div class="start-actions">
         <n-button size="large" type="primary" class="start-btn" @click="$emit('create-project')">
           <template #icon><n-icon :component="AddCircleOutline" /></template>
-          创建项目
+          {{ t('startpage.createProject') }}
         </n-button>
         <n-button size="large" class="start-btn" @click="$emit('open-project')">
           <template #icon><n-icon :component="FolderOpenOutline" /></template>
-          打开项目
+          {{ t('startpage.openProject') }}
         </n-button>
       </div>
 
       <div class="recent-section">
         <div class="recent-header">
           <n-icon :component="TimeOutline" />
-          <span>最近打开</span>
+          <span>{{ t('startpage.recent') }}</span>
         </div>
-        <n-empty v-if="!recent.length" description="暂无最近项目" size="small" />
+        <n-empty v-if="!recent.length" :description="t('startpage.emptyRecent')" size="small" />
         <div v-else class="recent-list">
           <div
             v-for="(item, idx) in recent"
@@ -41,6 +41,7 @@
 <script setup>
 import { NButton, NIcon, NEmpty } from 'naive-ui'
 import { AddCircleOutline, FolderOpenOutline, TimeOutline } from '@vicons/ionicons5'
+import { t } from '../i18n/index.js'
 
 defineProps({
   recent: { type: Array, default: () => [] }

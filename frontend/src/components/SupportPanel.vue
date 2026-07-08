@@ -1,23 +1,23 @@
 <template>
   <div class="support-panel">
     <div class="panel-header">
-      <span class="panel-title">支持库</span>
+      <span class="panel-title">{{ t('support.title') }}</span>
       <div class="header-actions" v-if="elibCount > 0">
-        <n-tag size="tiny" round :bordered="false" type="info">扩展包 {{ elibCount }}</n-tag>
-        <n-button size="tiny" quaternary circle @click="openLibsDir" title="打开 libs 目录">
+        <n-tag size="tiny" round :bordered="false" type="info">{{ t('support.extPackages', { count: elibCount }) }}</n-tag>
+        <n-button size="tiny" quaternary circle @click="openLibsDir" :title="t('support.openLibsDir')">
           <n-icon :component="FolderOpenOutline" />
         </n-button>
-        <n-button size="tiny" quaternary circle @click="toggleCreateElib" title="新建扩展包">
+        <n-button size="tiny" quaternary circle @click="toggleCreateElib" :title="t('support.newPackage')">
           <n-icon :component="AddCircleOutline" />
         </n-button>
       </div>
     </div>
     <div class="create-elib-bar" v-if="showCreateElib">
-      <n-input v-model:value="newElibName" size="small" placeholder="扩展包名称（英文）" @keyup.enter="confirmCreateElib" />
-      <n-button size="small" type="primary" @click="confirmCreateElib">创建</n-button>
+      <n-input v-model:value="newElibName" size="small" :placeholder="t('support.packageNamePlaceholder')" @keyup.enter="confirmCreateElib" />
+      <n-button size="small" type="primary" @click="confirmCreateElib">{{ t('support.create') }}</n-button>
     </div>
     <div class="search-box">
-      <n-input v-model:value="keyword" size="small" placeholder="搜索命令" clearable>
+      <n-input v-model:value="keyword" size="small" :placeholder="t('support.searchPlaceholder')" clearable>
         <template #prefix>
           <n-icon :component="SearchOutline" />
         </template>
@@ -58,6 +58,7 @@ import {
   libVersion
 } from '../utils/supportCommands.js'
 import { FLOW_RAINBOW_DARK as FLOW_RAINBOW } from '../utils/colors.js'
+import { t } from '../i18n/index.js'
 
 const emit = defineEmits(['show-help', 'open-file'])
 
@@ -119,11 +120,11 @@ function openCtxMenu(e, pkgName, pkgDir) {
   e.preventDefault()
   ctxTargetPkg.value = { name: pkgName, dir: pkgDir }
   ctxMenuOptions.value = [
-    { label: '打开 source.eg', key: 'open-source' },
-    { label: '打开目录', key: 'open-dir' },
+    { label: t('support.openSource'), key: 'open-source' },
+    { label: t('support.openDir'), key: 'open-dir' },
     { type: 'divider', key: 'd1' },
-    { label: '重命名', key: 'rename' },
-    { label: '删除', key: 'delete' }
+    { label: t('support.rename'), key: 'rename' },
+    { label: t('support.delete'), key: 'delete' }
   ]
   ctxMenuX.value = e.clientX
   ctxMenuY.value = e.clientY
@@ -141,16 +142,16 @@ async function onCtxMenuSelect(key) {
   } else if (key === 'open-dir') {
     if (window.IDEService?.OpenInExplorer) {
       const err = await window.IDEService.OpenInExplorer(target.dir)
-      if (err) message?.warning?.('打开失败: ' + err)
+      if (err) message?.warning?.(t('support.openFailed', { err }))
     }
   } else if (key === 'rename') {
     // 规约 §6：用 Naive UI dialog 替代 window.prompt
     let newName = target.name
     dialog.create({
-      title: '重命名扩展包',
+      title: t('support.renameTitle'),
       content: () => h(NInput, {
         defaultValue: target.name,
-        placeholder: '新名称（英文）',
+        placeholder: t('support.renamePlaceholder'),
         onUpdateValue: (v) => { newName = v },
         autofocus: true
       }),
@@ -162,9 +163,9 @@ async function onCtxMenuSelect(key) {
           const newDir = await window.IDEService.RenameElib(root, target.name, newName)
           if (newDir) {
             await loadProjectLibs(root)
-            message?.success?.('已重命名为 ' + newName)
+            message?.success?.(t('support.renamed', { name: newName }))
           } else {
-            message?.error?.('重命名失败')
+            message?.error?.(t('support.renameFailed'))
           }
         }
       }
@@ -172,18 +173,18 @@ async function onCtxMenuSelect(key) {
   } else if (key === 'delete') {
     // 规约 §6：用 Naive UI dialog 替代 window.confirm
     dialog.warning({
-      title: '确认删除',
-      content: '确认删除扩展包 "' + target.name + '"？此操作不可撤销。',
+      title: t('support.deleteTitle'),
+      content: t('support.deleteContent', { name: target.name }),
       positiveText: '删除',
       negativeText: '取消',
       onPositiveClick: async () => {
         if (window.IDEService?.DeleteElib) {
           const err = await window.IDEService.DeleteElib(root, target.name)
           if (err) {
-            message?.error?.('删除失败: ' + err)
+            message?.error?.(t('support.deleteFailed', { err }))
           } else {
             await loadProjectLibs(root)
-            message?.success?.('已删除 ' + target.name)
+            message?.success?.(t('support.deleted', { name: target.name }))
           }
         }
       }
@@ -242,7 +243,7 @@ function nodeProps({ option }) {
     if (meta.version) parts.push('版本 ' + meta.version)
     if (meta.author) parts.push('作者 ' + meta.author)
     if (meta.description) parts.push(meta.description)
-    parts.push('双击打开 source.eg | 右键更多操作')
+    parts.push(t('support.hint'))
     props.title = parts.join(' | ')
     props.ondblclick = () => {
       if (meta.packageDir) {
@@ -272,7 +273,7 @@ function onSelect(keys) {
   if (!key) return
   // 从合并视图拿帮助
   void libVersion.value
-  const help = getMergedCommands()[key] || '暂无说明'
+  const help = getMergedCommands()[key] || t('support.noDesc')
   emit('show-help', { name: key, help })
 }
 </script>

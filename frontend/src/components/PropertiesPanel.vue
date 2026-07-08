@@ -1,12 +1,12 @@
 <template>
   <div class="outline-panel" ref="panelRef">
     <div class="panel-header">
-      <span class="header-title">大纲</span>
+      <span class="header-title">{{ t('outline.title') }}</span>
       <div class="header-actions">
         <button
           class="view-toggle"
           :class="{ active: viewMode === 'list' }"
-          title="列表视图"
+          :title="t('outline.listView')"
           @click="viewMode = 'list'"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2zm0 4h12v2H2zm0 4h12v2H2z"/></svg>
@@ -14,7 +14,7 @@
         <button
           class="view-toggle"
           :class="{ active: viewMode === 'table' }"
-          title="表格视图"
+          :title="t('outline.tableView')"
           @click="viewMode = 'table'"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v12H2zm1 4v7h10V6zm0-1h10V3H3z"/></svg>
@@ -28,21 +28,21 @@
         <input
           v-model="searchQuery"
           class="search-input"
-          placeholder="搜索函数/方法..."
+          :placeholder="t('outline.searchPlaceholder')"
           type="text"
         />
       </div>
       <div class="table-content">
         <div v-if="filteredSymbols.length === 0" class="outline-empty">
-          <n-empty :description="searchQuery ? '无匹配结果' : '暂无符号'" size="small" />
+          <n-empty :description="searchQuery ? t('outline.noMatch') : t('outline.empty')" size="small" />
         </div>
         <div v-else class="symbol-table">
           <div class="table-header">
-            <div class="col-name">名称</div>
-            <div class="col-kind">类型</div>
-            <div class="col-params">参数</div>
-            <div class="col-return">返回</div>
-            <div class="col-line">行</div>
+            <div class="col-name">{{ t('outline.colName') }}</div>
+            <div class="col-kind">{{ t('outline.colType') }}</div>
+            <div class="col-params">{{ t('outline.colParams') }}</div>
+            <div class="col-return">{{ t('outline.colReturn') }}</div>
+            <div class="col-line">{{ t('outline.colLine') }}</div>
           </div>
           <div class="table-body">
             <div
@@ -72,13 +72,13 @@
       <div v-if="!parsed || parsed.functions.length === 0 && parsed.globalVars.length === 0 && parsed.constants.length === 0" class="outline-empty">
         <n-empty description="暂无大纲" size="small">
           <template #extra>
-            <n-text depth="3" style="font-size: var(--ide-font-size-sm);">当前文件没有可识别的函数、变量或常量</n-text>
+            <n-text depth="3" style="font-size: var(--ide-font-size-sm);">{{ t('outline.emptyDesc') }}</n-text>
           </template>
         </n-empty>
       </div>
       <template v-else>
         <div v-if="parsed.functions.length > 0" class="outline-section">
-          <div class="section-title">函数/方法 ({{ parsed.functions.length }})</div>
+          <div class="section-title">{{ t('outline.functions', { count: parsed.functions.length }) }}</div>
           <div
             v-for="(fn, i) in parsed.functions"
             :key="'fn-' + i"
@@ -92,7 +92,7 @@
           </div>
         </div>
         <div v-if="parsed.globalVars.length > 0" class="outline-section">
-          <div class="section-title">全局变量 ({{ parsed.globalVars.length }})</div>
+          <div class="section-title">{{ t('outline.variables', { count: parsed.globalVars.length }) }}</div>
           <div
             v-for="(v, i) in parsed.globalVars"
             :key="'var-' + i"
@@ -105,7 +105,7 @@
           </div>
         </div>
         <div v-if="parsed.constants.length > 0" class="outline-section">
-          <div class="section-title">常量 ({{ parsed.constants.length }})</div>
+          <div class="section-title">{{ t('outline.constants', { count: parsed.constants.length }) }}</div>
           <div
             v-for="(c, i) in parsed.constants"
             :key="'const-' + i"
@@ -124,6 +124,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { NEmpty, NText } from 'naive-ui'
+import { t } from '../i18n/index.js'
 
 const props = defineProps({
   parsed: { type: Object, default: () => ({ functions: [], globalVars: [], constants: [] }) },
@@ -153,7 +154,7 @@ const allSymbols = computed(() => {
     out.push({
       name: fn.name,
       displayName,
-      kindLabel: isMethod ? '方法' : '函数',
+      kindLabel: isMethod ? t('outline.kindMethod') : t('outline.kindFunction'),
       iconClass: isMethod ? 'sym-method' : 'sym-func',
       iconText: isMethod ? 'M' : 'ƒ',
       paramsCount: (fn.params || []).length,
@@ -168,7 +169,7 @@ const allSymbols = computed(() => {
     out.push({
       name: v.name,
       displayName: v.name,
-      kindLabel: '变量',
+      kindLabel: t('outline.kindVariable'),
       iconClass: 'sym-var',
       iconText: 'V',
       paramsCount: '—',
@@ -184,7 +185,7 @@ const allSymbols = computed(() => {
     out.push({
       name: c.name,
       displayName: c.name,
-      kindLabel: '常量',
+      kindLabel: t('outline.kindConstant'),
       iconClass: 'sym-const',
       iconText: 'C',
       paramsCount: '—',

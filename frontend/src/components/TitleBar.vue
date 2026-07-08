@@ -2,7 +2,7 @@
   <div class="title-bar" @dblclick="toggleMaximise">
     <div class="title-bar-left">
       <img src="/appicon.png" class="app-logo" alt="logo">
-      <span class="app-name">易狗 IDE</span>
+      <span class="app-name">{{ t('startpage.title') }}</span>
       <n-divider vertical style="height: 20px; margin: 0 8px;" />
       <button class="title-btn" :title="t('titlebar.saveHint')" @click="$emit('quick-save')">
         <n-icon :component="SaveOutline" />
@@ -107,9 +107,9 @@ const props = defineProps({
 const emit = defineEmits(['save', 'quick-save', 'undo', 'redo', 'run', 'build', 'debug', 'about', 'select-theme', 'settings', 'snippets'])
 
 const buildOptions = [
-  { label: '生成可执行文件 (Windows/Linux/macOS)', key: 'build-all' },
+  { label: t('titlebar.buildAll'), key: 'build-all' },
   { type: 'divider', key: 'd1' },
-  { label: '编译选项...', key: 'build-options' },
+  { label: t('titlebar.buildOptions'), key: 'build-options' },
 ]
 
 function onBuildSelect(key) {
