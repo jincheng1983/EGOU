@@ -175,6 +175,50 @@ function cprop(c: ComponentData, key: string, def: any = '') {
   return c.props?.[key] ?? def
 }
 
+// ===== 外置组件运行时渲染 =====
+// externalComponents 存储从后端 GetEmbeddedComponents() 获取的外置组件配置。
+// key 是组件类型（如 "datepicker"），value 包含 HTML 模板和事件映射。
+// 由 runner.writeEmbeddedAssets 嵌入到 embeddedComponents，供前端渲染外置组件。
+interface ComponentRuntimeConfig {
+  html: string
+  events: Record<string, string> // DOM 事件名 → EGOU 事件名
+}
+const externalComponents = ref<Record<string, ComponentRuntimeConfig>>({})
+
+// isExternal 判断组件类型是否为外置组件（即不在内置 14 种类型中但有运行时配置）。
+function isExternal(type: string): boolean {
+  return !!externalComponents.value[type]
+}
+
+// renderExternalHTML 根据外置组件的 runtime.html 模板渲染组件 HTML。
+// 模板中的 {{propName}} 占位符会被组件对应的属性值替换。
+function renderExternalHTML(c: ComponentData): string {
+  const cfg = externalComponents.value[c.type]
+  if (!cfg) return ''
+  let html = cfg.html
+  // 替换 {{propName}} 占位符为属性值
+  if (c.props) {
+    for (const [k, v] of Object.entries(c.props)) {
+      html = html.replaceAll('{{' + k + '}}', String(v ?? ''))
+    }
+  }
+  // 替换 {{text}} 为组件文本
+  html = html.replaceAll('{{text}}', c.text || '')
+  return html
+}
+
+// handleExternalEvent 外置组件事件路由：根据 runtime.events 映射，
+// 把 DOM 事件名（如 "change"）转换为 EGOU 事件名（如 "值被改变"），再透传给后端。
+function handleExternalEvent(c: ComponentData, domEvent: string) {
+  if (c.enabled === false) return
+  const cfg = externalComponents.value[c.type]
+  if (!cfg || !cfg.events) return
+  const egEvent = cfg.events[domEvent]
+  if (!egEvent) return
+  UIService.HandleEvent(c.name, egEvent)
+}
+// ===== 外置组件运行时渲染结束 =====
+
 // 各类型组件的内联样式，与设计器 ComponentPreview.vue 完全一致，保证 WYSIWYG。
 function btnStyle(c: ComponentData) {
   return {
@@ -246,6 +290,16 @@ onMounted(async () => {
     }
   } catch (e) {
     console.warn('GetState failed:', e)
+  }
+
+  // 加载外置组件运行时配置（由 runner.writeEmbeddedAssets 嵌入）
+  try {
+    const comps = await UIService.GetEmbeddedComponents()
+    if (comps) {
+      externalComponents.value = comps as Record<string, ComponentRuntimeConfig>
+    }
+  } catch (e) {
+    // 无外置组件时正常忽略
   }
 
   // 监听后续状态更新（兼容多种事件参数格式）
@@ -425,6 +479,18 @@ onMounted(async () => {
         >
           <span v-if="c.text && !cprop(c, 'vertical')" class="divider-title">{{ c.text }}</span>
         </div>
+
+        <!-- 外置组件：根据 embeddedComponents 中的 runtime.html 模板渲染，事件委托路由 -->
+        <div
+          v-else-if="isExternal(c.type)"
+          class="real-control real-external"
+          :style="{ opacity: c.enabled === false ? 0.6 : 1 }"
+          v-html="renderExternalHTML(c)"
+          @click="handleExternalEvent(c, 'click')"
+          @change="handleExternalEvent(c, 'change')"
+          @focusin="handleExternalEvent(c, 'focus')"
+          @focusout="handleExternalEvent(c, 'blur')"
+        ></div>
 
         <span v-else class="real-control" :style="{ opacity: c.enabled === false ? 0.6 : 1 }">{{ c.text }}</span>
       </div>
@@ -680,5 +746,14 @@ html, body, #app { width: 100%; height: 100%; overflow: hidden; font-family: var
   width: 1px;
   height: auto;
   flex: 1;
+}
+/* 外置组件：容器填满，内部 HTML 由 runtime.html 模板决定 */
+.real-external {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+.real-external :where(input, div, select, button) {
+  box-sizing: border-box;
 }
 </style>

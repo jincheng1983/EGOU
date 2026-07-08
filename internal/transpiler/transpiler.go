@@ -60,6 +60,76 @@ var knownEventSuffixes = []string{
 	"获得焦点", "失去焦点",
 }
 
+// knownEventSuffixesMap 是 knownEventSuffixes 的 set 形式，用于 O(1) 查找。
+var knownEventSuffixesMap = func() map[string]bool {
+	m := make(map[string]bool, len(knownEventSuffixes))
+	for _, s := range knownEventSuffixes {
+		m[s] = true
+	}
+	return m
+}()
+
+// externalCreateCmds 存储外置组件的动态创建命令映射。
+// key 是中文别名（如 "创建日期选择器"），value 是组件类型标识（如 "datepicker"）。
+// 转译时 "创建日期选择器(名称, 文本, x, y, w, h)" 会被替换为
+// "runtimeUIService.CreateComponent("datepicker", 名称, 文本, x, y, w, h)"。
+// 由 runner 在 Transpile 前根据 IDE components/ 目录下已安装组件包动态注册。
+var (
+	externalCreateCmds = map[string]string{}
+	externalCreateMu   sync.RWMutex
+)
+
+// RegisterExternalCreate 注册一个外置组件的创建命令别名。
+// alias 形如 "创建日期选择器"，componentType 形如 "datepicker"。
+func RegisterExternalCreate(alias, componentType string) {
+	externalCreateMu.Lock()
+	externalCreateCmds[alias] = componentType
+	externalCreateMu.Unlock()
+}
+
+// ClearExternalCreates 清空已注册的外置组件创建命令。
+// 每次编译前调用，避免上一次注册残留。
+func ClearExternalCreates() {
+	externalCreateMu.Lock()
+	externalCreateCmds = map[string]string{}
+	externalCreateMu.Unlock()
+}
+
+func getExternalCreate(alias string) (string, bool) {
+	externalCreateMu.RLock()
+	t, ok := externalCreateCmds[alias]
+	externalCreateMu.RUnlock()
+	return t, ok
+}
+
+// externalEventSuffixes 存储外置组件的自定义事件后缀（如 "节点被点击"），
+// 供 parseEventHandlerName 自动识别事件处理函数名（如 "树形框1_节点被点击"）。
+var (
+	externalEventSuffixes = map[string]bool{}
+	externalEventMu       sync.RWMutex
+)
+
+// RegisterExternalEventSuffix 注册一个外置组件事件后缀，使自动事件注册能识别该事件。
+func RegisterExternalEventSuffix(suffix string) {
+	externalEventMu.Lock()
+	externalEventSuffixes[suffix] = true
+	externalEventMu.Unlock()
+}
+
+// ClearExternalEventSuffixes 清空已注册的外置组件事件后缀。
+func ClearExternalEventSuffixes() {
+	externalEventMu.Lock()
+	externalEventSuffixes = map[string]bool{}
+	externalEventMu.Unlock()
+}
+
+func isExternalEventSuffix(suffix string) bool {
+	externalEventMu.RLock()
+	ok := externalEventSuffixes[suffix]
+	externalEventMu.RUnlock()
+	return ok
+}
+
 var supportLibrary = map[string]supportCmd{
 	"信息框":       {english: "MessageBox", runtimeMethod: "MessageBox"},
 	"确认框":       {english: "QuestionBox", runtimeMethod: "QuestionBox"},
@@ -270,6 +340,7 @@ func getExtraAlias(alias string) (string, bool) {
 //   - GenerateGo 失败 → 回退
 //   - gofmt 失败（生成的代码语法不正确）→ 回退
 //   - 否则采用 AST 输出（即使有少量非致命解析错误，错误恢复后仍可能生成可用代码）
+//
 // 依赖 gofmt 作为最终质量门禁：语法正确性由 Go 官方格式化器背书
 const maxASTErrors = 20
 
@@ -866,6 +937,20 @@ func parseEventHandlerName(name string) (string, string, bool) {
 			return strings.TrimSuffix(name, sep), suffix, true
 		}
 	}
+	// 外置组件自定义事件后缀（如 "节点被点击"）
+	externalEventMu.RLock()
+	for suffix := range externalEventSuffixes {
+		// 跳过已知后缀，避免重复
+		if _, ok := knownEventSuffixesMap[suffix]; ok {
+			continue
+		}
+		sep := "_" + suffix
+		if strings.HasSuffix(name, sep) {
+			externalEventMu.RUnlock()
+			return strings.TrimSuffix(name, sep), suffix, true
+		}
+	}
+	externalEventMu.RUnlock()
 	return "", "", false
 }
 
@@ -1064,7 +1149,8 @@ func translateExpression(expr string) string {
 
 // translateTypeLiterals 把中文化类型字面量替换为 Go 字面量。
 // 例如：整数数组{1,2} -> []int{1,2}；映射 文本型 整数型{"a":1} -> map[string]int{"a":1}
-//      文本型(字符) -> string(字符)（类型转换）
+//
+//	文本型(字符) -> string(字符)（类型转换）
 func translateTypeLiterals(expr string) string {
 	// 数组字面量：整数数组{ -> []int{
 	expr = reArrLiteral.ReplaceAllStringFunc(expr, func(s string) string {
@@ -1425,6 +1511,13 @@ func replaceSupportCallsInLine(line string) string {
 				beforePlain := i == 0 || !isIdentRune(prev)
 
 				if beforeRuntime {
+					// 外置组件创建命令：创建日期选择器(...) → runtimeUIService.CreateComponent("datepicker", ...)
+					// 需要消耗 '(' 并注入组件类型作为第一个参数
+					if compType, ok := getExternalCreate(ident); ok && j < len(runes) && runes[j] == '(' {
+						out.WriteString("runtimeUIService.CreateComponent(\"" + compType + "\", ")
+						i = j + 1 // 跳过 '('，让后续参数原样处理
+						continue
+					}
 					// 中文别名 → runtimeUIService.English
 					if cmd, ok := supportLibrary[ident]; ok && cmd.runtimeMethod != "" {
 						out.WriteString("runtimeUIService." + cmd.english)

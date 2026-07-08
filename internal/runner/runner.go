@@ -308,9 +308,15 @@ func bumpPatch(ver string) (string, error) {
 	patch, err3 := strconv.Atoi(parts[2])
 	if err1 != nil || err2 != nil || err3 != nil {
 		// 非数字段视为 0
-		if err1 != nil { major = 0 }
-		if err2 != nil { minor = 0 }
-		if err3 != nil { patch = 0 }
+		if err1 != nil {
+			major = 0
+		}
+		if err2 != nil {
+			minor = 0
+		}
+		if err3 != nil {
+			patch = 0
+		}
 	}
 	patch++
 	return fmt.Sprintf("%d.%d.%d", major, minor, patch), nil
@@ -327,6 +333,7 @@ func emit(sink EventSink, stage, output string, isOutput bool) {
 //   - `# 程序集 ...` 头部（避免出现两个 package）
 //   - 顶层 `导入 ()` 整段（由主入口统一提供）
 //   - 顶层 `函数 主函数() … 结束函数`（避免两个 mainImpl）
+//
 // 普通函数（事件处理函数 / 辅助函数）会原样保留。
 func stripLibEntryDeclarations(src string) string {
 	lines := strings.Split(src, "\n")
@@ -514,13 +521,20 @@ func prepareRuntimeBuild(src, projectPath string, sink EventSink) (string, error
 		if cacheHit {
 			// 缓存命中：清理别名后直接返回缓存的 Go 代码
 			transpiler.ClearExtraAliases()
+			transpiler.ClearExternalCreates()
+			transpiler.ClearExternalEventSuffixes()
 			emit(sink, "transpile", "源码未变更，跳过转译（命中缓存）", false)
 			transpileCh <- transpileResult{goSrc: cached}
 			return
 		}
+		// 注册外置组件创建命令：扫描 IDE components/ 目录，把带 runtime 字段的组件
+		// 注册为 "创建<label>" → CreateComponent("type", ...) 命令映射。
+		registerExternalComponents()
 		goSrc, err := transpiler.Transpile(merged)
-		// 无论 Transpile 是否成功，都清理别名，避免跨项目污染
+		// 无论 Transpile 是否成功，都清理别名和外置命令，避免跨项目污染
 		transpiler.ClearExtraAliases()
+		transpiler.ClearExternalCreates()
+		transpiler.ClearExternalEventSuffixes()
 		if err != nil {
 			emit(sink, "transpile", "转译失败: "+err.Error(), false)
 			transpileCh <- transpileResult{err: err}
@@ -681,8 +695,87 @@ func writeCgoLinkFile(tmpDir string, sink EventSink) error {
 	return nil
 }
 
+// externalComponentConfig 是外置组件运行时配置的精简结构，仅保留运行时渲染所需字段。
+// 完整 config.json 由 IDE 端 components.go 的 ComponentDef 解析，这里只提取运行时部分。
+type externalComponentConfig struct {
+	Type         string            `json:"type"`
+	Label        string            `json:"label"`
+	HTML         string            `json:"html"`
+	Events       map[string]string `json:"events"`       // runtime.events: DOM 事件 → EGOU 事件名
+	EventNames   []string          `json:"eventNames"`   // 顶层 events 声明：所有 EGOU 事件名
+}
+
+// scanExternalComponents 扫描 IDE components/ 目录下所有组件包，
+// 返回带 runtime 字段的组件配置列表（用于嵌入用户程序 + 注册转译命令）。
+func scanExternalComponents() []externalComponentConfig {
+	exePath, err := os.Executable()
+	if err != nil {
+		return nil
+	}
+	componentsRoot := filepath.Join(filepath.Dir(exePath), "components")
+	entries, err := os.ReadDir(componentsRoot)
+	if err != nil {
+		return nil
+	}
+	var out []externalComponentConfig
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		pkgComponentsDir := filepath.Join(componentsRoot, e.Name(), "components")
+		compEntries, err := os.ReadDir(pkgComponentsDir)
+		if err != nil {
+			continue
+		}
+		for _, ce := range compEntries {
+			if !ce.IsDir() {
+				continue
+			}
+			configPath := filepath.Join(pkgComponentsDir, ce.Name(), "config.json")
+			data, err := os.ReadFile(configPath)
+			if err != nil {
+				continue
+			}
+			var raw struct {
+				Type    string            `json:"type"`
+				Label   string            `json:"label"`
+				Events  []string          `json:"events"`
+				Runtime *struct {
+					HTML   string            `json:"html"`
+					Events map[string]string `json:"events"`
+				} `json:"runtime"`
+			}
+			if err := json.Unmarshal(data, &raw); err != nil || raw.Type == "" || raw.Runtime == nil {
+				continue
+			}
+			out = append(out, externalComponentConfig{
+				Type:       raw.Type,
+				Label:      raw.Label,
+				HTML:       raw.Runtime.HTML,
+				Events:     raw.Runtime.Events,
+				EventNames: raw.Events,
+			})
+		}
+	}
+	return out
+}
+
+// registerExternalComponents 扫描 IDE 已安装的外置组件包，
+// 把带 runtime 字段的组件注册为转译命令："创建<label>" → CreateComponent("type", ...)，
+// 同时注册自定义事件后缀（如 "节点被点击"），使事件处理函数能自动注册。
+func registerExternalComponents() {
+	for _, c := range scanExternalComponents() {
+		transpiler.RegisterExternalCreate("创建"+c.Label, c.Type)
+		// 注册顶层 events 中不在已知后缀表里的事件名
+		for _, evt := range c.EventNames {
+			transpiler.RegisterExternalEventSuffix(evt)
+		}
+	}
+}
+
 // writeEmbeddedAssets 扫描项目下的 .ew 窗口设计文件和 assets/ 资源文件，
 // 生成 embedded_assets.go，让运行时 LoadWindow 和 载入资源/读资源文本 优先从嵌入数据加载。
+// 同时嵌入 IDE 已安装的外置组件运行时配置（runtime 字段），供运行时前端渲染外置组件。
 // 这样导出的 exe 是单文件，资源文件无需随 exe 一起分发。
 func writeEmbeddedAssets(tmpDir, projectPath string, sink EventSink) error {
 	type windowAsset struct {
@@ -702,7 +795,7 @@ func writeEmbeddedAssets(tmpDir, projectPath string, sink EventSink) error {
 		"bin": true, "build": true, "dist": true,
 		"node_modules": true, ".git": true, "libs": true,
 		"runtime-frontend": true,
-		".vscode": true, ".idea": true, ".vs": true,
+		".vscode":          true, ".idea": true, ".vs": true,
 		"temp": true, "tmp": true, "cache": true, ".cache": true,
 		"obj": true, "target": true, "out": true,
 		"coverage": true, ".next": true, ".nuxt": true,
@@ -754,6 +847,11 @@ func writeEmbeddedAssets(tmpDir, projectPath string, sink EventSink) error {
 	if len(fileAssets) > 0 {
 		emit(sink, "stage", fmt.Sprintf("嵌入 %d 个资源文件", len(fileAssets)), false)
 	}
+	// 扫描 IDE 外置组件，嵌入带 runtime 字段的组件配置
+	externalComps := scanExternalComponents()
+	if len(externalComps) > 0 {
+		emit(sink, "stage", fmt.Sprintf("嵌入 %d 个外置组件配置", len(externalComps)), false)
+	}
 
 	var b strings.Builder
 	b.WriteString("// Code generated by EGOU runner. DO NOT EDIT.\n")
@@ -774,6 +872,23 @@ func writeEmbeddedAssets(tmpDir, projectPath string, sink EventSink) error {
 		// 用 strconv.Quote 转义路径，用 Go 字面量格式嵌入字节
 		b.WriteString("\t" + strconv.Quote(a.relPath) + ": " + goBytesLiteral(a.data) + ",\n")
 	}
+	b.WriteString("}\n\n")
+	// 外置组件运行时配置：供运行时前端渲染外置组件（datepicker/treeview/colorpicker 等）
+	b.WriteString("// embeddedComponents 存储外置组件的运行时渲染配置（HTML 模板 + 事件映射）。\n")
+	b.WriteString("// 前端 App.vue 根据 type 查找此表，用 runtime.html 模板渲染组件并路由事件。\n")
+	b.WriteString("var embeddedComponents = map[string]ComponentRuntimeConfig{\n")
+	for _, c := range externalComps {
+		// 事件 map 序列化为 Go 字面量
+		eventsLiteral := "map[string]string{}"
+		if len(c.Events) > 0 {
+			var ev []string
+			for domEvt, egEvt := range c.Events {
+				ev = append(ev, strconv.Quote(domEvt)+": "+strconv.Quote(egEvt))
+			}
+			eventsLiteral = "map[string]string{" + strings.Join(ev, ", ") + "}"
+		}
+		b.WriteString("\t" + strconv.Quote(c.Type) + ": {HTML: " + strconv.Quote(c.HTML) + ", Events: " + eventsLiteral + "},\n")
+	}
 	b.WriteString("}\n")
 	return os.WriteFile(filepath.Join(tmpDir, "embedded_assets.go"), []byte(b.String()), 0644)
 }
@@ -786,17 +901,18 @@ func goBytesLiteral(data []byte) string {
 
 // nativeLibExts 是被识别为原生库的文件扩展名（小写）。
 var nativeLibExts = map[string]bool{
-	".dll":  true, // Windows
-	".so":   true, // Linux
+	".dll":   true, // Windows
+	".so":    true, // Linux
 	".dylib": true, // macOS
-	".lib":  true, // Windows 静态库导入文件（部分场景需要）
-	".a":    true, // GCC/MinGW 静态库
+	".lib":   true, // Windows 静态库导入文件（部分场景需要）
+	".a":     true, // GCC/MinGW 静态库
 }
 
 // copyNativeLibs 复制原生库到运行时临时目录，让运行时程序能加载。
 // 来源（按优先级，项目级覆盖全局同名）：
 //  1. exe 同级 native/（G3 全局原生库，所有项目共享）
 //  2. <项目>/native/（P3 项目级原生库）
+//
 // 复制到 tmpDir 根目录（与 exe 同级，Windows DLL 搜索路径默认包含 exe 目录）。
 func copyNativeLibs(tmpDir, projectPath string, sink EventSink) error {
 	count := 0
@@ -1892,6 +2008,7 @@ func copyFile(src, dst string) error {
 // 查找顺序：
 //  1. IDE exe 同级 tools/garble.exe（build.py 预编译并随包分发，离线可用）
 //  2. PATH 查找（用户自行 go install mvdan.cc/garble@latest 安装）
+//
 // v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一防逆向手段。
 func findGarble() string {
 	// 1. 优先从 IDE exe 同级 tools/ 目录查找（随发布包自带）

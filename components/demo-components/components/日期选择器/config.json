@@ -8,6 +8,14 @@
   "preview": {
     "html": "<input type=\"text\" style=\"width:100%;height:100%;border:1px solid #a0a0a0;border-radius:4px;padding:0 6px;font-size:12px;box-sizing:border-box;\" value=\"{{value}}\" placeholder=\"{{format}}\" readonly />"
   },
+  "runtime": {
+    "html": "<input type=\"text\" style=\"width:100%;height:100%;border:1px solid #a0a0a0;border-radius:4px;padding:0 6px;font-size:12px;box-sizing:border-box;\" value=\"{{value}}\" placeholder=\"{{format}}\" />",
+    "events": {
+      "change": "值被改变",
+      "focus": "获得焦点",
+      "blur": "失去焦点"
+    }
+  },
   "props": [
     {
       "key": "format",

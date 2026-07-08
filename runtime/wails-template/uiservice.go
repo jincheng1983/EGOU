@@ -15,6 +15,13 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
+// ComponentRuntimeConfig 是外置组件的运行时渲染配置，由 runner.writeEmbeddedAssets 嵌入。
+// 前端 App.vue 根据组件 type 查找此表，用 HTML 模板渲染组件，按 Events 映射路由事件。
+type ComponentRuntimeConfig struct {
+	HTML   string            `json:"html"`   // HTML 模板（支持 {{propName}} 占位符）
+	Events map[string]string `json:"events"` // DOM 事件名 → EGOU 事件名（如 "change" → "值被改变"）
+}
+
 // Component 描述窗口中的一个组件。
 // 坐标与尺寸使用 float64，兼容设计器可能输出的浮点数值。
 
@@ -729,6 +736,20 @@ func (u *UIService) CreateCard(name string, text string, x float64, y float64, w
 // CreateDivider 创建分割线。
 func (u *UIService) CreateDivider(name string, text string, x float64, y float64, width float64, height float64) {
 	u.addComponent(Component{Type: "divider", Name: name, Text: text, X: x, Y: y, Width: width, Height: height, Visible: true, Enabled: true})
+}
+
+// CreateComponent 通用组件创建方法，支持外置组件（datepicker/treeview/colorpicker 等）。
+// componentType 是组件类型标识，对应外置组件 config.json 的 type 字段。
+// 转译器把 "创建日期选择器(名称, 文本, x, y, w, h)" 替换为
+// "runtimeUIService.CreateComponent("datepicker", 名称, 文本, x, y, w, h)"。
+func (u *UIService) CreateComponent(componentType string, name string, text string, x float64, y float64, width float64, height float64) {
+	u.addComponent(Component{Type: componentType, Name: name, Text: text, X: x, Y: y, Width: width, Height: height, Visible: true, Enabled: true})
+}
+
+// GetEmbeddedComponents 返回嵌入的外置组件运行时配置，供前端 App.vue 渲染外置组件。
+// 前端在 onMounted 时调用此方法获取配置，根据组件 type 查找对应的 HTML 模板和事件映射。
+func (u *UIService) GetEmbeddedComponents() map[string]ComponentRuntimeConfig {
+	return embeddedComponents
 }
 
 // SetText 修改组件文本。
