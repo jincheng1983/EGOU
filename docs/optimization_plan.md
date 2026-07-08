@@ -103,6 +103,7 @@
 |---|---|---|
 | i18n 框架 | v0.5.0 | 零依赖自研，约 273 行 |
 | 核心组件接入 | v0.10.1 | 7 组件 130+ 处调用，字典扩展到 631 行 |
+| 全量覆盖 | v0.11.22 | 所有组件 UI 字符串接入 i18n（SettingsPanel 199 处 / App.vue 5 批 / Editor / AIPanel / FileExplorer / SupportPanel / PropertiesPanel），字典扩展到 21 个命名空间 |
 
 ---
 
@@ -115,7 +116,7 @@
 | dlv 1.25.2 + Go 1.26.4 不兼容 | State() 返回 threads=0 | 需用户配置匹配的 dlv 版本 |
 | `runtime/wails-template` 报 embeddedFiles undefined | build-tag 问题 | 预先存在，与 IDE 无关 |
 | 计划文档位置不一致 | 文档引用 | 实际在根目录，计划中写 docs/ |
-| i18n 覆盖率不足 | 部分组件仍硬编码中文 | SettingsPanel 76 处 / App.vue 500+ 处 / WindowDesigner 263 处待迁移 |
+| ~~i18n 覆盖率不足~~ | ~~部分组件仍硬编码中文~~ | ✅ v0.11.22 全量覆盖完成 |
 
 ### 2.2 已修复的关键 Bug
 
@@ -139,15 +140,16 @@
 
 ### 3.1 i18n 国际化（渐进迁移）
 
-**当前状态**：7 组件 130+ 处调用，字典 631 行。
+**当前状态**：✅ v0.11.22 全量覆盖完成。所有组件 UI 字符串已接入 i18n，字典扩展到 21 个命名空间（common/menu/settings/leftmenu/titlebar/debug/editor/output/command/startpage/projectTree/support/outline/designer/buildprogress/status/health/confirm/modal/message/fileTree/ai）。
 
-**待迁移**：
-- SettingsPanel.vue：76 处设置项标签
-- App.vue：500+ 处对话框/状态栏/右键菜单文案
-- WindowDesigner.vue：263 处中文文案
-- PropertiesPanel.vue / FileExplorer.vue / ProjectExplorer.vue / SupportPanel.vue / StartPage.vue：尚未接入
+**已完成迁移**：
+- ✅ SettingsPanel.vue：199 处（v0.11.11-14，新增 172 个 key，9 个 option 数组改 computed）
+- ✅ App.vue：5 批（v0.11.17-21，状态栏/健康检查/视图工具栏/4 弹窗/命令面板/Script 消息，新增 ~144 个 key）
+- ✅ Editor.vue（v0.11.15）/ AIPanel.vue（v0.11.16）
+- ✅ FileExplorer.vue / SupportPanel.vue / PropertiesPanel.vue（v0.11.22，15 处）
+- ✅ WindowDesigner.vue（v0.11.6）/ ProjectExplorer.vue / StartPage.vue / DebugPanel.vue / LeftMenu.vue / TitleBar.vue / BuildProgress.vue：已迁移完成，残留仅注释
 
-**策略**：每次聚焦一个组件，高 ROI 优先。
+**保留不迁移**：代码注释、console 调试日志、品牌名（EGOU）、技术术语（UTF-8/CRLF）、EGOU 语言关键字、后端消息匹配字符串。
 
 ### 3.2 AST 编译器前端（实验性）
 
@@ -167,9 +169,9 @@
 
 | 优化项 | 优先级 | 说明 |
 |---|---|---|
-| 外置组件代码生成 | 高 | 转译器需认识外置组件类型，生成 Go 代码 |
-| i18n 全量覆盖 | 中 | 渐进迁移剩余组件 |
-| dlv 版本自动检测 | 中 | 启动时检测 dlv 与 Go 版本兼容性 |
+| ~~外置组件代码生成~~ | ~~高~~ | ✅ v0.10.3 已完成（转译器识别外置组件类型 + 生成 CreateComponent 调用 + 注册事件后缀） |
+| ~~i18n 全量覆盖~~ | ~~中~~ | ✅ v0.11.22 已完成（所有组件 UI 字符串接入 i18n，含 SettingsPanel/App.vue/Editor/AIPanel 等） |
+| ~~dlv 版本自动检测~~ | ~~中~~ | ✅ v0.11.4 已完成（启动时检测 dlv 与 Go 版本兼容性） |
 | 条件断点 | 低 | dlv 支持条件断点，前端需暴露 UI |
 
 ### 4.2 中期

@@ -80,5 +80,5 @@ components/
 
 ## 已知限制
 
-- 外置组件的代码生成（转译为 Go 代码）尚未实现（v0.10.0 后续）
+- ~~外置组件的代码生成（转译为 Go 代码）尚未实现~~ ✅ v0.10.3 已实现（转译器识别 `创建<Label>` 命令 → 生成 `runtimeUIService.CreateComponent(type, ...)` 调用 + 自动注册事件后缀）
 - preview.html 用 `v-html` 渲染，仅支持静态 HTML（无法响应交互），设计时预览足够
