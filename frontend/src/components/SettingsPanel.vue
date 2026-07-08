@@ -37,7 +37,7 @@
         <!-- 主题 -->
         <div v-show="activeMenu === 'theme'">
           <div class="section-title">
-            <span>内置主题</span>
+            <span>{{ t('settings.themeSectionBuiltin') }}</span>
           </div>
           <div class="theme-cards">
             <div
@@ -70,8 +70,8 @@
           </div>
 
           <div class="section-title">
-            <span>自定义主题</span>
-            <n-button size="tiny" @click="copyCurrentAsCustom">复制当前主题为自定义</n-button>
+            <span>{{ t('settings.themeSectionCustom') }}</span>
+            <n-button size="tiny" @click="copyCurrentAsCustom">{{ t('settings.themeBtnCopy') }}</n-button>
           </div>
 
           <n-space v-if="customNames.length" size="small" style="margin-bottom: 12px; flex-wrap: wrap;">
@@ -86,15 +86,15 @@
               {{ getTheme(name).label }}
             </n-tag>
           </n-space>
-          <n-empty v-else description="暂无自定义主题" size="small" style="margin-bottom: 12px;" />
+          <n-empty v-else :description="t('settings.themeNoCustom')" size="small" style="margin-bottom: 12px;" />
 
           <template v-if="!isBuiltInTheme(modelValue)">
-            <div class="section-title">编辑自定义主题</div>
+            <div class="section-title">{{ t('settings.themeSectionEdit') }}</div>
             <n-form label-placement="left" label-width="90" size="small">
-              <n-form-item label="名称">
+              <n-form-item :label="t('settings.themeNameLabel')">
                 <n-input v-model:value="current.label" size="small" />
               </n-form-item>
-              <n-form-item label="深色模式">
+              <n-form-item :label="t('settings.themeDarkMode')">
                 <n-switch v-model:value="current.isDark" size="small" />
               </n-form-item>
               <n-form-item v-for="(label, key) in varLabels" :key="key" :label="label">
@@ -106,7 +106,7 @@
               </n-form-item>
             </n-form>
             <n-button size="small" type="primary" block @click="saveCurrent">
-              保存并应用
+              {{ t('settings.themeBtnSaveApply') }}
             </n-button>
           </template>
         </div>
@@ -114,10 +114,10 @@
         <!-- 编辑器 -->
         <div v-show="activeMenu === 'editor'">
           <!-- 编辑器主题（独立于 IDE 主题） -->
-          <div class="section-title"><span>编辑器主题</span></div>
+          <div class="section-title"><span>{{ t('settings.editorSectionTheme') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">Monaco 主题（独立于 IDE 主题）</label>
+              <label class="prop-cell-label">{{ t('settings.editorMonacoTheme') }}</label>
               <n-select
                 v-model:value="editorThemeLocal"
                 size="small"
@@ -126,112 +126,112 @@
               />
             </div>
           </div>
-          <div class="prop-hint">编辑器主题与 IDE 主题解耦，可独立切换。深色适合夜间编码，浅色适合白天。</div>
+          <div class="prop-hint">{{ t('settings.editorThemeHint') }}</div>
 
           <!-- 外观分组 -->
-          <div class="section-title"><span>外观</span></div>
+          <div class="section-title"><span>{{ t('settings.editorSectionAppearance') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">字体大小</label>
+              <label class="prop-cell-label">{{ t('settings.editorFontSizeLabel') }}</label>
               <n-input-number v-model:value="fontSizeLocal" size="small" :min="10" :max="28" :step="1" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">字体族</label>
+              <label class="prop-cell-label">{{ t('settings.editorFontFamilyLabel') }}</label>
               <n-select v-model:value="fontFamilyLocal" size="small" :options="fontFamilyOptions" filterable style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">行高（0=默认）</label>
+              <label class="prop-cell-label">{{ t('settings.editorLineHeightLabel') }}</label>
               <n-input-number v-model:value="lineHeightLocal" size="small" :min="0" :max="40" :step="1" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">Tab 缩进</label>
+              <label class="prop-cell-label">{{ t('settings.editorTabSizeLabel') }}</label>
               <n-select v-model:value="tabSizeLocal" size="small" :options="tabSizeOptions" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">行号栏字符数</label>
+              <label class="prop-cell-label">{{ t('settings.editorLineNumbersMinChars') }}</label>
               <n-input-number v-model:value="lineNumbersMinCharsLocal" size="small" :min="1" :max="10" :step="1" style="width: 100%;" />
             </div>
           </div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="lineNumbersLocal">显示行号</n-checkbox>
-            <n-checkbox v-model:checked="wordWrapLocal">自动换行</n-checkbox>
-            <n-checkbox v-model:checked="fontLigaturesLocal">字体连字</n-checkbox>
-            <n-checkbox v-model:checked="renderFinalNewlineLocal">末尾换行</n-checkbox>
-            <n-checkbox v-model:checked="bracketPairColorizationLocal">括号对配色</n-checkbox>
-            <n-checkbox v-model:checked="guidesBracketPairsLocal">括号对参考线</n-checkbox>
-            <n-checkbox v-model:checked="autoConvertSymbolsLocal">中文符号自动转换</n-checkbox>
+            <n-checkbox v-model:checked="lineNumbersLocal">{{ t('settings.editorShowLineNumbers') }}</n-checkbox>
+            <n-checkbox v-model:checked="wordWrapLocal">{{ t('settings.editorWordWrap') }}</n-checkbox>
+            <n-checkbox v-model:checked="fontLigaturesLocal">{{ t('settings.editorFontLigatures') }}</n-checkbox>
+            <n-checkbox v-model:checked="renderFinalNewlineLocal">{{ t('settings.editorRenderFinalNewline') }}</n-checkbox>
+            <n-checkbox v-model:checked="bracketPairColorizationLocal">{{ t('settings.editorBracketPairColorization') }}</n-checkbox>
+            <n-checkbox v-model:checked="guidesBracketPairsLocal">{{ t('settings.editorGuidesBracketPairs') }}</n-checkbox>
+            <n-checkbox v-model:checked="autoConvertSymbolsLocal">{{ t('settings.editorAutoConvertSymbols') }}</n-checkbox>
           </div>
 
           <!-- 小地图分组 -->
-          <div class="section-title"><span>小地图</span></div>
+          <div class="section-title"><span>{{ t('settings.editorSectionMinimap') }}</span></div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="minimapLocal">显示小地图</n-checkbox>
-            <n-checkbox v-model:checked="minimapRenderCharactersLocal">渲染字符</n-checkbox>
+            <n-checkbox v-model:checked="minimapLocal">{{ t('settings.editorShowMinimap') }}</n-checkbox>
+            <n-checkbox v-model:checked="minimapRenderCharactersLocal">{{ t('settings.editorMinimapRenderCharacters') }}</n-checkbox>
           </div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">滑块显示</label>
+              <label class="prop-cell-label">{{ t('settings.editorMinimapShowSlider') }}</label>
               <n-select v-model:value="minimapShowSliderLocal" size="small" :options="minimapShowSliderOptions" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">最大列数</label>
+              <label class="prop-cell-label">{{ t('settings.editorMinimapMaxColumn') }}</label>
               <n-input-number v-model:value="minimapMaxColumnLocal" size="small" :min="40" :max="300" :step="10" style="width: 100%;" />
             </div>
           </div>
 
           <!-- 光标分组 -->
-          <div class="section-title"><span>光标</span></div>
+          <div class="section-title"><span>{{ t('settings.editorSectionCursor') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">光标闪烁</label>
+              <label class="prop-cell-label">{{ t('settings.editorCursorBlinkingLabel') }}</label>
               <n-select v-model:value="cursorBlinkingLocal" size="small" :options="cursorBlinkingOptions" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">光标宽度</label>
+              <label class="prop-cell-label">{{ t('settings.editorCursorWidthLabel') }}</label>
               <n-input-number v-model:value="cursorWidthLocal" size="small" :min="0" :max="10" :step="1" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">空白字符</label>
+              <label class="prop-cell-label">{{ t('settings.editorRenderWhitespaceLabel') }}</label>
               <n-select v-model:value="renderWhitespaceLocal" size="small" :options="renderWhitespaceOptions" style="width: 100%;" />
             </div>
           </div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="cursorSmoothCaretAnimationLocal">平滑移动动画</n-checkbox>
+            <n-checkbox v-model:checked="cursorSmoothCaretAnimationLocal">{{ t('settings.editorCursorSmooth') }}</n-checkbox>
           </div>
 
           <!-- 行为分组 -->
-          <div class="section-title"><span>行为</span></div>
+          <div class="section-title"><span>{{ t('settings.editorSectionBehavior') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">自动保存（毫秒）</label>
+              <label class="prop-cell-label">{{ t('settings.editorAutoSaveLabel') }}</label>
               <n-input-number v-model:value="autoSaveLocal" size="small" :min="0" :max="30000" :step="500" style="width: 100%;" />
             </div>
           </div>
-          <div class="prop-hint">自动保存设为 0 表示禁用，仅对已有路径的文件生效，无弹窗。</div>
+          <div class="prop-hint">{{ t('settings.editorAutoSaveHint') }}</div>
         </div>
 
         <!-- 设计器 -->
         <div v-show="activeMenu === 'designer'">
-          <div class="section-title"><span>网格</span></div>
+          <div class="section-title"><span>{{ t('settings.designerSectionGrid') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">网格大小（px）</label>
+              <label class="prop-cell-label">{{ t('settings.designerGridSize') }}</label>
               <n-input-number v-model:value="gridSizeLocal" size="small" :min="4" :max="32" :step="2" style="width: 100%;" />
             </div>
           </div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="showGridLocal">显示网格</n-checkbox>
-            <n-checkbox v-model:checked="snapGridLocal">网格吸附</n-checkbox>
+            <n-checkbox v-model:checked="showGridLocal">{{ t('settings.designerShowGrid') }}</n-checkbox>
+            <n-checkbox v-model:checked="snapGridLocal">{{ t('settings.designerSnapGrid') }}</n-checkbox>
           </div>
 
-          <div class="section-title"><span>控件默认值</span></div>
+          <div class="section-title"><span>{{ t('settings.designerSectionDefault') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">默认圆角（px）</label>
+              <label class="prop-cell-label">{{ t('settings.designerDefaultRadius') }}</label>
               <n-input-number v-model:value="defaultRadiusLocal" size="small" :min="0" :max="24" :step="1" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">默认边框宽度（px）</label>
+              <label class="prop-cell-label">{{ t('settings.designerDefaultBorder') }}</label>
               <n-input-number v-model:value="defaultBorderWidthLocal" size="small" :min="0" :max="4" :step="1" style="width: 100%;" />
             </div>
           </div>
@@ -239,117 +239,109 @@
 
         <!-- 编译 -->
         <div v-show="activeMenu === 'build'">
-          <div class="section-title"><span>编译选项</span></div>
+          <div class="section-title"><span>{{ t('settings.buildSectionOptions') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">默认编译模式</label>
+              <label class="prop-cell-label">{{ t('settings.buildDefaultMode') }}</label>
               <n-select v-model:value="defaultBuildModeLocal" size="small" :options="buildModeOptions" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">Garble 混淆强度</label>
+              <label class="prop-cell-label">{{ t('settings.buildGarbleLevel') }}</label>
               <n-select v-model:value="garbleLevelLocal" size="small" :options="garbleLevelOptions" style="width: 100%;" />
             </div>
           </div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="autoOpenFolderLocal">构建完成后自动打开产物目录</n-checkbox>
-            <n-checkbox v-model:checked="showBuildHistoryLocal">保留构建历史记录</n-checkbox>
+            <n-checkbox v-model:checked="autoOpenFolderLocal">{{ t('settings.buildAutoOpenFolder') }}</n-checkbox>
+            <n-checkbox v-model:checked="showBuildHistoryLocal">{{ t('settings.buildShowHistory') }}</n-checkbox>
           </div>
-          <div class="prop-hint">
-            Garble 混淆强度（v0.8.0 起替代 UPX）：
-            <strong>关闭</strong>＝普通编译，便于调试；
-            <strong>基础</strong>＝garble -tiny，仅混淆变量名/函数名（推荐，无杀软误报）；
-            <strong>完整</strong>＝garble -literals -tiny，再加字符串字面量混淆（最强，但可能触发杀软误报 TrojanSpy/Stealer）。
-          </div>
+          <div class="prop-hint" v-html="t('settings.buildGarbleHint')"></div>
 
-          <div class="section-title"><span>工具链路径</span></div>
-          <div class="prop-hint">
-            IDE 优先使用内置 Go SDK（exe 同级 go/ 目录），无需用户安装。
-            以下路径留空则自动使用内置环境；仅在需要指定自定义版本时填写。
-          </div>
+          <div class="section-title"><span>{{ t('settings.buildSectionToolchain') }}</span></div>
+          <div class="prop-hint">{{ t('settings.buildSdkHint') }}</div>
           <div class="prop-grid">
             <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">Go 编译器路径（留空则优先使用内置 SDK）</label>
+              <label class="prop-cell-label">{{ t('settings.buildGoPathLabel') }}</label>
               <n-input-group>
-                <n-input v-model:value="goPathLocal" size="small" placeholder="留空自动使用内置 Go SDK" clearable />
-                <n-button size="small" @click="browseGoPath">浏览...</n-button>
+                <n-input v-model:value="goPathLocal" size="small" :placeholder="t('settings.buildGoPathPh')" clearable />
+                <n-button size="small" @click="browseGoPath">{{ t('settings.buildBtnBrowse') }}</n-button>
               </n-input-group>
             </div>
             <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">Delve 调试器路径（留空则自动查找）</label>
+              <label class="prop-cell-label">{{ t('settings.buildDelvePathLabel') }}</label>
               <n-input-group>
-                <n-input v-model:value="delvePathLocal" size="small" placeholder="留空自动查找" clearable />
-                <n-button size="small" @click="browseDelvePath">浏览...</n-button>
+                <n-input v-model:value="delvePathLocal" size="small" :placeholder="t('settings.buildDelvePathPh')" clearable />
+                <n-button size="small" @click="browseDelvePath">{{ t('settings.buildBtnBrowse') }}</n-button>
               </n-input-group>
             </div>
           </div>
 
-          <div class="section-title"><span>输出</span></div>
+          <div class="section-title"><span>{{ t('settings.buildSectionOutput') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">默认产物目录（相对于项目根目录）</label>
-              <n-input v-model:value="outputDirLocal" size="small" placeholder="bin" />
+              <label class="prop-cell-label">{{ t('settings.buildOutputDirLabel') }}</label>
+              <n-input v-model:value="outputDirLocal" size="small" :placeholder="t('settings.buildOutputDirPh')" />
             </div>
           </div>
-          <div class="prop-hint">release 模式构建后版本号自动递增，并计算 SHA256 校验和。</div>
+          <div class="prop-hint">{{ t('settings.buildReleaseHint') }}</div>
         </div>
 
         <!-- 界面 -->
         <div v-show="activeMenu === 'ui'">
-          <div class="section-title"><span>启动</span></div>
+          <div class="section-title"><span>{{ t('settings.uiSectionStartup') }}</span></div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="openLastProjectLocal">启动时打开上次项目</n-checkbox>
+            <n-checkbox v-model:checked="openLastProjectLocal">{{ t('settings.uiOpenLastProject') }}</n-checkbox>
           </div>
 
-          <div class="section-title"><span>字体</span></div>
+          <div class="section-title"><span>{{ t('settings.uiSectionFont') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">IDE 界面字体</label>
+              <label class="prop-cell-label">{{ t('settings.uiFontFamilyLabel') }}</label>
               <n-select v-model:value="uiFontFamilyLocal" size="small" :options="uiFontFamilyOptions" filterable style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">界面字号（px，11-18）</label>
+              <label class="prop-cell-label">{{ t('settings.uiFontSizeLabel') }}</label>
               <n-input-number v-model:value="uiFontSizeLocal" size="small" :min="11" :max="18" :step="1" style="width: 100%;" />
             </div>
           </div>
 
-          <div class="section-title"><span>面板</span></div>
+          <div class="section-title"><span>{{ t('settings.uiSectionPanel') }}</span></div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">左侧面板宽度（px）</label>
+              <label class="prop-cell-label">{{ t('settings.uiLeftPanelWidth') }}</label>
               <n-input-number v-model:value="leftWidthLocal" size="small" :min="180" :max="400" :step="10" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">右侧面板宽度（px）</label>
+              <label class="prop-cell-label">{{ t('settings.uiRightPanelWidth') }}</label>
               <n-input-number v-model:value="rightWidthLocal" size="small" :min="200" :max="500" :step="10" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">输出面板高度（px）</label>
+              <label class="prop-cell-label">{{ t('settings.uiOutputPanelHeight') }}</label>
               <n-input-number v-model:value="outputHeightLocal" size="small" :min="80" :max="400" :step="10" style="width: 100%;" />
             </div>
           </div>
 
-          <div class="section-title"><span>状态栏显示项</span></div>
+          <div class="section-title"><span>{{ t('settings.uiSectionStatus') }}</span></div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="sbShowCursorLocal">光标位置</n-checkbox>
-            <n-checkbox v-model:checked="sbShowIndentLocal">缩进大小</n-checkbox>
-            <n-checkbox v-model:checked="sbShowEncodingLocal">编码</n-checkbox>
-            <n-checkbox v-model:checked="sbShowEolLocal">换行符</n-checkbox>
-            <n-checkbox v-model:checked="sbShowLangLocal">语言</n-checkbox>
-            <n-checkbox v-model:checked="sbShowHealthLocal">后端健康状态</n-checkbox>
+            <n-checkbox v-model:checked="sbShowCursorLocal">{{ t('settings.uiSbShowCursor') }}</n-checkbox>
+            <n-checkbox v-model:checked="sbShowIndentLocal">{{ t('settings.uiSbShowIndent') }}</n-checkbox>
+            <n-checkbox v-model:checked="sbShowEncodingLocal">{{ t('settings.uiSbShowEncoding') }}</n-checkbox>
+            <n-checkbox v-model:checked="sbShowEolLocal">{{ t('settings.uiSbShowEol') }}</n-checkbox>
+            <n-checkbox v-model:checked="sbShowLangLocal">{{ t('settings.uiSbShowLang') }}</n-checkbox>
+            <n-checkbox v-model:checked="sbShowHealthLocal">{{ t('settings.uiSbShowHealth') }}</n-checkbox>
           </div>
 
-          <div class="section-title"><span>输出面板</span></div>
+          <div class="section-title"><span>{{ t('settings.uiSectionOutput') }}</span></div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="autoSwitchOutputTabLocal">新内容自动切换到对应标签</n-checkbox>
-            <n-checkbox v-model:checked="smartScrollLocal">智能滚动（用户上滚时暂停自动滚动）</n-checkbox>
+            <n-checkbox v-model:checked="autoSwitchOutputTabLocal">{{ t('settings.uiAutoSwitchOutput') }}</n-checkbox>
+            <n-checkbox v-model:checked="smartScrollLocal">{{ t('settings.uiSmartScroll') }}</n-checkbox>
           </div>
         </div>
 
         <!-- AI -->
         <div v-show="activeMenu === 'ai'">
           <div class="section-title">
-            <span>模型管理</span>
-            <n-button size="tiny" type="primary" @click="startAddModel">+ 添加模型</n-button>
+            <span>{{ t('settings.aiSectionModels') }}</span>
+            <n-button size="tiny" type="primary" @click="startAddModel">{{ t('settings.aiBtnAddModel') }}</n-button>
           </div>
           <div class="model-settings-list">
             <div
@@ -361,102 +353,102 @@
               <div class="model-setting-header" @click="toggleModelEdit(m.id)">
                 <div class="model-setting-info">
                   <span class="model-setting-name">{{ m.name || m.model }}</span>
-                  <span v-if="m.id === activeModelIdLocal" class="model-setting-active">✓ 当前使用</span>
+                  <span v-if="m.id === activeModelIdLocal" class="model-setting-active">{{ t('settings.aiCurrentUsing') }}</span>
                 </div>
                 <div class="model-setting-caps">
-                  <n-tag v-if="m.supportsVision" size="tiny" type="info" :bordered="false">🖼️ 视觉</n-tag>
-                  <n-tag v-if="m.supportsFiles" size="tiny" type="info" :bordered="false">📎 文件</n-tag>
+                  <n-tag v-if="m.supportsVision" size="tiny" type="info" :bordered="false">{{ t('settings.aiVisionCap') }}</n-tag>
+                  <n-tag v-if="m.supportsFiles" size="tiny" type="info" :bordered="false">{{ t('settings.aiFileCap') }}</n-tag>
                 </div>
-                <n-button text size="tiny" type="error" @click.stop="removeModel(m.id)" v-if="modelsLocal.length > 1">删除</n-button>
-                <n-button text size="tiny" @click.stop="toggleModelEdit(m.id)">{{ editingModelId === m.id ? '收起' : '编辑' }}</n-button>
+                <n-button text size="tiny" type="error" @click.stop="removeModel(m.id)" v-if="modelsLocal.length > 1">{{ t('settings.aiBtnDelete') }}</n-button>
+                <n-button text size="tiny" @click.stop="toggleModelEdit(m.id)">{{ editingModelId === m.id ? t('settings.aiBtnCollapse') : t('settings.aiBtnEdit') }}</n-button>
               </div>
               <div v-if="editingModelId === m.id" class="model-setting-body">
                 <div class="prop-grid">
                   <div class="prop-cell">
-                    <label class="prop-cell-label">名称</label>
-                    <n-input v-model:value="m.name" size="small" placeholder="例如：GPT-4o" @update:value="() => updateModel(m)" />
+                    <label class="prop-cell-label">{{ t('settings.aiName') }}</label>
+                    <n-input v-model:value="m.name" size="small" :placeholder="t('settings.aiNamePh')" @update:value="() => updateModel(m)" />
                   </div>
                   <div class="prop-cell">
-                    <label class="prop-cell-label">模型 ID</label>
-                    <n-input v-model:value="m.model" size="small" placeholder="gpt-4o" @update:value="() => updateModel(m)" />
+                    <label class="prop-cell-label">{{ t('settings.aiModelId') }}</label>
+                    <n-input v-model:value="m.model" size="small" :placeholder="t('settings.aiModelIdPh')" @update:value="() => updateModel(m)" />
                   </div>
                 </div>
                 <div class="prop-grid">
                   <div class="prop-cell" style="grid-column: 1 / -1;">
-                    <label class="prop-cell-label">API Endpoint</label>
-                    <n-input v-model:value="m.endpoint" size="small" placeholder="https://api.openai.com/v1/chat/completions" @update:value="() => updateModel(m)" />
+                    <label class="prop-cell-label">{{ t('settings.aiEndpoint') }}</label>
+                    <n-input v-model:value="m.endpoint" size="small" :placeholder="t('settings.aiEndpointPh')" @update:value="() => updateModel(m)" />
                   </div>
                   <div class="prop-cell" style="grid-column: 1 / -1;">
-                    <label class="prop-cell-label">API Key</label>
-                    <n-input v-model:value="m.apiKey" size="small" type="password" show-password-on="click" placeholder="sk-..." @update:value="() => updateModel(m)" />
+                    <label class="prop-cell-label">{{ t('settings.aiApiKey') }}</label>
+                    <n-input v-model:value="m.apiKey" size="small" type="password" show-password-on="click" :placeholder="t('settings.aiApiKeyPh')" @update:value="() => updateModel(m)" />
                   </div>
                 </div>
                 <div class="prop-grid">
                   <div class="prop-cell">
-                    <label class="prop-cell-label">Temperature</label>
+                    <label class="prop-cell-label">{{ t('settings.aiTemperature') }}</label>
                     <n-input-number v-model:value="m.temperature" size="small" :min="0" :max="2" :step="0.1" style="width: 100%;" @update:value="() => updateModel(m)" />
                   </div>
                   <div class="prop-cell">
-                    <label class="prop-cell-label">上下文窗口</label>
+                    <label class="prop-cell-label">{{ t('settings.aiContextWindow') }}</label>
                     <n-input-number v-model:value="m.contextWindow" size="small" :min="4096" :max="1048576" :step="4096" style="width: 100%;" @update:value="() => updateModel(m)" />
                   </div>
                   <div class="prop-cell">
-                    <label class="prop-cell-label">最大输出 Token</label>
+                    <label class="prop-cell-label">{{ t('settings.aiMaxTokens') }}</label>
                     <n-input-number v-model:value="m.maxTokens" size="small" :min="256" :max="1048576" :step="256" style="width: 100%;" @update:value="() => updateModel(m)" />
                   </div>
                 </div>
                 <div class="prop-checks">
-                  <n-checkbox v-model:checked="m.supportsVision" @update:checked="() => updateModel(m)">支持图片（视觉模型）</n-checkbox>
-                  <n-checkbox v-model:checked="m.supportsFiles" @update:checked="() => updateModel(m)">支持文件上传</n-checkbox>
-                  <n-button v-if="m.id !== activeModelIdLocal" size="tiny" @click="switchToModel(m.id)">设为当前</n-button>
+                  <n-checkbox v-model:checked="m.supportsVision" @update:checked="() => updateModel(m)">{{ t('settings.aiSupportsVision') }}</n-checkbox>
+                  <n-checkbox v-model:checked="m.supportsFiles" @update:checked="() => updateModel(m)">{{ t('settings.aiSupportsFiles') }}</n-checkbox>
+                  <n-button v-if="m.id !== activeModelIdLocal" size="tiny" @click="switchToModel(m.id)">{{ t('settings.aiBtnSetCurrent') }}</n-button>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="section-title"><span>对话参数</span></div>
+          <div class="section-title"><span>{{ t('settings.aiSectionParams') }}</span></div>
           <div class="prop-checks">
-            <n-checkbox v-model:checked="aiStreamLocal">流式输出</n-checkbox>
+            <n-checkbox v-model:checked="aiStreamLocal">{{ t('settings.aiStream') }}</n-checkbox>
           </div>
           <div class="prop-grid">
             <div class="prop-cell">
-              <label class="prop-cell-label">压缩阈值（字符）</label>
+              <label class="prop-cell-label">{{ t('settings.aiCompressThreshold') }}</label>
               <n-input-number v-model:value="aiCompressThresholdLocal" size="small" :min="2000" :max="20000" :step="500" style="width: 100%;" />
             </div>
             <div class="prop-cell">
-              <label class="prop-cell-label">保留最近消息数</label>
+              <label class="prop-cell-label">{{ t('settings.aiKeepRecent') }}</label>
               <n-input-number v-model:value="aiKeepRecentLocal" size="small" :min="2" :max="20" :step="1" style="width: 100%;" />
             </div>
           </div>
-          <div class="prop-hint">上下文超过压缩阈值时自动将旧消息截断为摘要，保留最近 N 条原文。</div>
+          <div class="prop-hint">{{ t('settings.aiCompressHint') }}</div>
 
-          <div class="section-title"><span>智能体</span></div>
-          <div class="prop-hint">智能体深度融合EGOU语法规范，AI会根据问题自动选择合适的智能体。</div>
+          <div class="section-title"><span>{{ t('settings.aiSectionAgents') }}</span></div>
+          <div class="prop-hint">{{ t('settings.aiAgentHint') }}</div>
           <div class="agent-list">
             <div v-for="a in allAgentsList" :key="a.id" class="agent-card">
               <div class="agent-card-header">
                 <span class="agent-emoji">{{ a.emoji || '🤖' }}</span>
                 <span class="agent-name">{{ a.name }}</span>
-                <n-tag v-if="a.isBuiltin" size="tiny" type="info" :bordered="false">内置</n-tag>
-                <n-tag v-else size="tiny" :bordered="false">自定义</n-tag>
+                <n-tag v-if="a.isBuiltin" size="tiny" type="info" :bordered="false">{{ t('settings.aiBuiltin') }}</n-tag>
+                <n-tag v-else size="tiny" :bordered="false">{{ t('settings.aiCustom') }}</n-tag>
               </div>
               <div class="agent-desc">{{ a.desc }}</div>
               <div class="agent-keywords" v-if="a.autoSelect && a.autoSelect.length > 0">
-                <span class="agent-kw-label">自动触发关键词：</span>
+                <span class="agent-kw-label">{{ t('settings.aiAutoTriggerKw') }}</span>
                 <span v-for="kw in a.autoSelect.slice(0,8)" :key="kw" class="agent-kw">{{ kw }}</span>
                 <span v-if="a.autoSelect.length > 8" class="agent-kw">...</span>
               </div>
             </div>
           </div>
 
-          <div class="section-title"><span>技能</span></div>
-          <div class="prop-hint">技能是AI可以调用的IDE工具，用于获取上下文、操作文件等。内置技能自动可用；项目目录下 <code>skills/*.json</code> 文件会自动加载为自定义技能。</div>
+          <div class="section-title"><span>{{ t('settings.aiSectionSkills') }}</span></div>
+          <div class="prop-hint" v-html="t('settings.aiSkillHint')"></div>
           <div class="skill-list">
             <div v-for="s in allSkillsList" :key="s.id" class="skill-card">
               <div class="skill-card-header">
                 <span class="skill-icon">{{ s.icon || '🔧' }}</span>
                 <span class="skill-name">{{ s.name }}</span>
-                <n-tag v-if="s.builtin" size="tiny" type="success" :bordered="false">内置</n-tag>
+                <n-tag v-if="s.builtin" size="tiny" type="success" :bordered="false">{{ t('settings.aiBuiltin') }}</n-tag>
               </div>
               <div class="skill-desc">{{ s.desc }}</div>
             </div>
@@ -466,10 +458,10 @@
         <!-- 插件 -->
         <div v-show="activeMenu === 'plugins'">
           <div class="section-title">
-            <span>插件管理</span>
-            <n-button size="tiny" @click="reloadPlugins">重新加载</n-button>
+            <span>{{ t('settings.pluginSectionManage') }}</span>
+            <n-button size="tiny" @click="reloadPlugins">{{ t('settings.pluginBtnReload') }}</n-button>
           </div>
-          <n-empty v-if="loadedPlugins.length === 0" description="暂无已加载插件" size="small" style="margin-bottom: 12px;" />
+          <n-empty v-if="loadedPlugins.length === 0" :description="t('settings.pluginNoPlugins')" size="small" style="margin-bottom: 12px;" />
           <div v-else class="plugin-list">
             <div v-for="p in loadedPlugins" :key="p.dir" class="plugin-card">
               <div class="plugin-card-header">
@@ -477,8 +469,8 @@
                 <n-tag size="tiny" :bordered="false">v{{ p.version || '0.0.0' }}</n-tag>
               </div>
               <div class="plugin-meta">
-                <span v-if="p.author">作者: {{ p.author }}</span>
-                <span>目录: {{ p.dir }}</span>
+                <span v-if="p.author">{{ t('settings.pluginAuthor') }}{{ p.author }}</span>
+                <span>{{ t('settings.pluginDir') }}{{ p.dir }}</span>
               </div>
               <div v-if="p.description" class="plugin-desc">{{ p.description }}</div>
             </div>
@@ -488,21 +480,21 @@
         <!-- 模板 -->
         <div v-show="activeMenu === 'templates'">
           <div class="section-title">
-            <span>项目模板</span>
-            <n-button size="tiny" @click="$emit('refresh-templates')">刷新</n-button>
+            <span>{{ t('settings.templateSectionTitle') }}</span>
+            <n-button size="tiny" @click="$emit('refresh-templates')">{{ t('settings.templateBtnRefresh') }}</n-button>
           </div>
           <div v-if="projectPath" class="template-save-row">
-            <n-input v-model:value="newTemplateName" size="small" placeholder="模板名" style="flex: 1;" />
-            <n-input v-model:value="newTemplateDesc" size="small" placeholder="描述（可选）" style="flex: 1;" />
-            <n-input v-model:value="newTemplateIcon" size="small" placeholder="图标" style="width: 60px;" />
-            <n-button size="small" type="primary" @click="saveAsTemplate">保存为模板</n-button>
+            <n-input v-model:value="newTemplateName" size="small" :placeholder="t('settings.templateNamePh')" style="flex: 1;" />
+            <n-input v-model:value="newTemplateDesc" size="small" :placeholder="t('settings.templateDescPh')" style="flex: 1;" />
+            <n-input v-model:value="newTemplateIcon" size="small" :placeholder="t('settings.templateIconPh')" style="width: 60px;" />
+            <n-button size="small" type="primary" @click="saveAsTemplate">{{ t('settings.templateBtnSave') }}</n-button>
           </div>
-          <n-empty v-if="globalTemplates.length === 0" description="暂无全局模板" size="small" style="margin-bottom: 12px;" />
+          <n-empty v-if="globalTemplates.length === 0" :description="t('settings.templateNoTemplates')" size="small" style="margin-bottom: 12px;" />
           <div v-else class="plugin-list">
             <div v-for="t in globalTemplates" :key="t.dir" class="plugin-card">
               <div class="plugin-card-header">
                 <span class="plugin-name">{{ t.icon ? t.icon + ' ' : '' }}{{ t.name }}</span>
-                <n-button size="tiny" quaternary type="error" @click="deleteTemplate(t.dir)">删除</n-button>
+                <n-button size="tiny" quaternary type="error" @click="deleteTemplate(t.dir)">{{ t('settings.templateBtnDelete') }}</n-button>
               </div>
               <div v-if="t.description" class="plugin-desc">{{ t.description }}</div>
             </div>
@@ -567,7 +559,7 @@ const menuItems = [
 // ===== i18n 语言切换 =====
 const currentLocale = ref(getLocale())
 const localeOptions = computed(() => {
-  const labels = { 'zh-CN': '简体中文', 'en-US': 'English' }
+  const labels = { 'zh-CN': t('settings.generalLocaleZhCn'), 'en-US': 'English' }
   return listLocales().map(loc => ({ label: labels[loc] || loc, value: loc }))
 })
 function onLocaleChange(loc) {
@@ -662,44 +654,44 @@ watch(() => props.activeMenuKey, (v) => {
 })
 
 // 编辑器主题选项
-const editorThemeOptions = [
-  { label: '自动（跟随 IDE 主题）', value: 'auto' },
-  { label: '深色', value: 'dark' },
-  { label: '浅色', value: 'light' },
-  { label: '高对比度深色', value: 'hc-black' },
-  { label: '高对比度浅色', value: 'hc-light' }
-]
+const editorThemeOptions = computed(() => [
+  { label: t('settings.editorThemeOptAuto'), value: 'auto' },
+  { label: t('settings.editorThemeOptDark'), value: 'dark' },
+  { label: t('settings.editorThemeOptLight'), value: 'light' },
+  { label: t('settings.editorThemeOptHcDark'), value: 'hc-black' },
+  { label: t('settings.editorThemeOptHcLight'), value: 'hc-light' }
+])
 const editorThemeLocal = ref(props.editorTheme)
 watch(() => props.editorTheme, (v) => { editorThemeLocal.value = v })
 watch(editorThemeLocal, (v) => emit('update:editorTheme', v))
 
-const fontFamilyOptions = [
-  { label: 'EGOU 内置字体 (egou)', value: "'IdeFont', 'Consolas', 'Courier New', monospace" },
-  { label: 'Consolas (Windows 默认)', value: 'Consolas, "Courier New", monospace' },
-  { label: 'Cascadia Code (微软新字体)', value: '"Cascadia Code", Consolas, monospace' },
-  { label: 'JetBrains Mono', value: '"JetBrains Mono", Consolas, monospace' },
-  { label: 'Fira Code', value: '"Fira Code", Consolas, monospace' },
-  { label: 'Source Code Pro', value: '"Source Code Pro", Consolas, monospace' },
-  { label: 'Menlo (macOS)', value: 'Menlo, Monaco, Consolas, monospace' },
-  { label: 'Monaco (macOS)', value: 'Monaco, Menlo, Consolas, monospace' },
-  { label: '等宽更纱黑体', value: '"Sarasa Mono SC", Consolas, monospace' },
-  { label: '系统默认等宽', value: 'monospace' }
-]
+const fontFamilyOptions = computed(() => [
+  { label: t('settings.fontFamilyOptBuiltin'), value: "'IdeFont', 'Consolas', 'Courier New', monospace" },
+  { label: t('settings.fontFamilyOptConsolas'), value: 'Consolas, "Courier New", monospace' },
+  { label: t('settings.fontFamilyOptCascadia'), value: '"Cascadia Code", Consolas, monospace' },
+  { label: t('settings.fontFamilyOptJetBrains'), value: '"JetBrains Mono", Consolas, monospace' },
+  { label: t('settings.fontFamilyOptFiraCode'), value: '"Fira Code", Consolas, monospace' },
+  { label: t('settings.fontFamilyOptSourceCodePro'), value: '"Source Code Pro", Consolas, monospace' },
+  { label: t('settings.fontFamilyOptMenlo'), value: 'Menlo, Monaco, Consolas, monospace' },
+  { label: t('settings.fontFamilyOptMonaco'), value: 'Monaco, Menlo, Consolas, monospace' },
+  { label: t('settings.fontFamilyOptSarasa'), value: '"Sarasa Mono SC", Consolas, monospace' },
+  { label: t('settings.fontFamilyOptSystemDefault'), value: 'monospace' }
+])
 const fontFamilyLocal = ref(props.fontFamily)
 watch(() => props.fontFamily, (v) => { fontFamilyLocal.value = v })
 watch(fontFamilyLocal, (v) => emit('update:fontFamily', v))
 
 // IDE 界面字体（动态修改 --ide-font CSS 变量，持久化到 localStorage）
-const uiFontFamilyOptions = [
-  { label: 'EGOU 内置字体 (egou)', value: "'IdeFont', system-ui, sans-serif" },
-  { label: '微软雅黑', value: "'Microsoft YaHei', system-ui, sans-serif" },
-  { label: 'Segoe UI (Windows)', value: "'Segoe UI', system-ui, sans-serif" },
-  { label: '苹方 (PingFang SC, macOS)', value: "'PingFang SC', system-ui, sans-serif" },
-  { label: '思源黑体 (Source Han Sans)', value: "'Source Han Sans SC', system-ui, sans-serif" },
-  { label: '黑体 (SimHei)', value: "'SimHei', system-ui, sans-serif" },
-  { label: '宋体 (SimSun)', value: "'SimSun', system-ui, sans-serif" },
-  { label: '系统默认', value: 'system-ui, -apple-system, sans-serif' },
-]
+const uiFontFamilyOptions = computed(() => [
+  { label: t('settings.uiFontOptBuiltin'), value: "'IdeFont', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptYh'), value: "'Microsoft YaHei', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptSegoe'), value: "'Segoe UI', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptPingfang'), value: "'PingFang SC', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptSourceHan'), value: "'Source Han Sans SC', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptSimhei'), value: "'SimHei', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptSimsun'), value: "'SimSun', system-ui, sans-serif" },
+  { label: t('settings.uiFontOptDefault'), value: 'system-ui, -apple-system, sans-serif' },
+])
 const uiFontFamilyLocal = ref(localStorage.getItem('eg-uifont') || "'IdeFont', system-ui, sans-serif")
 watch(uiFontFamilyLocal, (v) => {
   localStorage.setItem('eg-uifont', v)
@@ -745,33 +737,33 @@ const tabSizeLocal = ref(props.tabSize)
 watch(() => props.tabSize, (v) => { tabSizeLocal.value = v })
 watch(tabSizeLocal, (v) => emit('update:tabSize', v))
 // 规约 §4：缩进用 NSelect 提供 2/4 空格选项（替代 n-input-number）
-const tabSizeOptions = [
-  { label: '2 空格', value: 2 },
-  { label: '4 空格', value: 4 },
-  { label: '6 空格', value: 6 },
-  { label: '8 空格', value: 8 },
-]
+const tabSizeOptions = computed(() => [
+  { label: t('settings.tabSizeOpt2'), value: 2 },
+  { label: t('settings.tabSizeOpt4'), value: 4 },
+  { label: t('settings.tabSizeOpt6'), value: 6 },
+  { label: t('settings.tabSizeOpt8'), value: 8 },
+])
 const wordWrapLocal = ref(props.wordWrap)
 watch(() => props.wordWrap, (v) => { wordWrapLocal.value = v })
 watch(wordWrapLocal, (v) => emit('update:wordWrap', v))
 const renderWhitespaceLocal = ref(props.renderWhitespace)
 watch(() => props.renderWhitespace, (v) => { renderWhitespaceLocal.value = v })
 watch(renderWhitespaceLocal, (v) => emit('update:renderWhitespace', v))
-const renderWhitespaceOptions = [
-  { label: '不显示', value: 'none' },
-  { label: '选中区域', value: 'selection' },
-  { label: '全部', value: 'all' }
-]
+const renderWhitespaceOptions = computed(() => [
+  { label: t('settings.renderWhitespaceOptNone'), value: 'none' },
+  { label: t('settings.renderWhitespaceOptSelection'), value: 'selection' },
+  { label: t('settings.renderWhitespaceOptAll'), value: 'all' }
+])
 const cursorBlinkingLocal = ref(props.cursorBlinking)
 watch(() => props.cursorBlinking, (v) => { cursorBlinkingLocal.value = v })
 watch(cursorBlinkingLocal, (v) => emit('update:cursorBlinking', v))
-const cursorBlinkingOptions = [
-  { label: '闪烁（默认）', value: 'blink' },
-  { label: '平滑闪烁', value: 'smooth' },
-  { label: '相位闪烁', value: 'phase' },
-  { label: '展开闪烁', value: 'expand' },
-  { label: '不闪烁', value: 'solid' }
-]
+const cursorBlinkingOptions = computed(() => [
+  { label: t('settings.cursorBlinkingOptBlink'), value: 'blink' },
+  { label: t('settings.cursorBlinkingOptSmooth'), value: 'smooth' },
+  { label: t('settings.cursorBlinkingOptPhase'), value: 'phase' },
+  { label: t('settings.cursorBlinkingOptExpand'), value: 'expand' },
+  { label: t('settings.cursorBlinkingOptSolid'), value: 'solid' }
+])
 const cursorSmoothCaretAnimationLocal = ref(props.cursorSmoothCaretAnimation)
 watch(() => props.cursorSmoothCaretAnimation, (v) => { cursorSmoothCaretAnimationLocal.value = v })
 watch(cursorSmoothCaretAnimationLocal, (v) => emit('update:cursorSmoothCaretAnimation', v))
@@ -802,10 +794,10 @@ watch(minimapRenderCharactersLocal, (v) => emit('update:minimapRenderCharacters'
 const minimapMaxColumnLocal = ref(props.minimapMaxColumn)
 watch(() => props.minimapMaxColumn, (v) => { minimapMaxColumnLocal.value = v })
 watch(minimapMaxColumnLocal, (v) => emit('update:minimapMaxColumn', v))
-const minimapShowSliderOptions = [
-  { label: '总是显示滑块', value: 'always' },
-  { label: '悬停显示滑块', value: 'mouseover' }
-]
+const minimapShowSliderOptions = computed(() => [
+  { label: t('settings.minimapShowSliderOptAlways'), value: 'always' },
+  { label: t('settings.minimapShowSliderOptHover'), value: 'mouseover' }
+])
 
 // 设计器
 const gridSizeLocal = ref(props.gridSize)
@@ -825,10 +817,10 @@ watch(() => props.defaultBorderWidth, (v) => { defaultBorderWidthLocal.value = v
 watch(defaultBorderWidthLocal, (v) => emit('update:defaultBorderWidth', v))
 
 // 编译
-const buildModeOptions = [
-  { label: 'Debug（快速编译，含调试信息）', value: 'debug' },
-  { label: 'Release（优化，版本号自增）', value: 'release' }
-]
+const buildModeOptions = computed(() => [
+  { label: t('settings.buildModeOptDebug'), value: 'debug' },
+  { label: t('settings.buildModeOptRelease'), value: 'release' }
+])
 const defaultBuildModeLocal = ref(props.defaultBuildMode)
 watch(() => props.defaultBuildMode, (v) => { defaultBuildModeLocal.value = v })
 watch(defaultBuildModeLocal, (v) => emit('update:defaultBuildMode', v))
@@ -836,11 +828,11 @@ const autoOpenFolderLocal = ref(props.autoOpenFolder)
 watch(() => props.autoOpenFolder, (v) => { autoOpenFolderLocal.value = v })
 watch(autoOpenFolderLocal, (v) => emit('update:autoOpenFolder', v))
 // v0.8.0 修订：Garble 混淆强度三档下拉（off/basic/full），替代原布尔开关
-const garbleLevelOptions = [
-  { label: '关闭（普通编译，便于调试）', value: 'off' },
-  { label: '基础（garble -tiny，推荐）', value: 'basic' },
-  { label: '完整（garble -literals -tiny，可能误报）', value: 'full' }
-]
+const garbleLevelOptions = computed(() => [
+  { label: t('settings.garbleOptOff'), value: 'off' },
+  { label: t('settings.garbleOptBasic'), value: 'basic' },
+  { label: t('settings.garbleOptFull'), value: 'full' }
+])
 const garbleLevelLocal = ref(props.garbleLevel)
 watch(() => props.garbleLevel, (v) => { garbleLevelLocal.value = v })
 watch(garbleLevelLocal, (v) => emit('update:garbleLevel', v))
@@ -861,13 +853,13 @@ watch(delvePathLocal, (v) => emit('update:delvePath', v))
 // 浏览按钮：调用后端 PickFilePath 弹出文件选择对话框（Wails binding 异步，需 await）
 async function browseGoPath() {
   if (window.IDEService && window.IDEService.PickFilePath) {
-    const path = await window.IDEService.PickFilePath('选择 Go 编译器 (go.exe)', '可执行文件|*.exe')
+    const path = await window.IDEService.PickFilePath(t('settings.buildPickGoTitle'), t('settings.buildExecFilter'))
     if (path) goPathLocal.value = path
   }
 }
 async function browseDelvePath() {
   if (window.IDEService && window.IDEService.PickFilePath) {
-    const path = await window.IDEService.PickFilePath('选择 Delve 调试器 (dlv.exe)', '可执行文件|*.exe')
+    const path = await window.IDEService.PickFilePath(t('settings.buildPickDelveTitle'), t('settings.buildExecFilter'))
     if (path) delvePathLocal.value = path
   }
 }
@@ -925,7 +917,7 @@ function toggleModelEdit(id) {
 function startAddModel() {
   const newModel = {
     id: 'm_' + Date.now(),
-    name: '新模型',
+    name: t('settings.aiNewModel'),
     endpoint: '',
     apiKey: '',
     model: '',
@@ -938,7 +930,7 @@ function startAddModel() {
   modelsLocal.value.push(newModel)
   emit('add-model', newModel)
   editingModelId.value = newModel.id
-  useMsg.success('已添加新模型，请配置参数')
+  useMsg.success(t('settings.aiMsgAdded'))
 }
 
 function updateModel(m) {
@@ -957,7 +949,7 @@ function updateModel(m) {
 
 function removeModel(id) {
   if (modelsLocal.value.length <= 1) {
-    useMsg.warning('至少保留一个模型')
+    useMsg.warning(t('settings.aiMsgKeepOne'))
     return
   }
   const idx = modelsLocal.value.findIndex(m => m.id === id)
@@ -965,14 +957,14 @@ function removeModel(id) {
     modelsLocal.value.splice(idx, 1)
     emit('delete-model', id)
     if (editingModelId.value === id) editingModelId.value = null
-    useMsg.success('模型已删除')
+    useMsg.success(t('settings.aiMsgDeleted'))
   }
 }
 
 function switchToModel(id) {
   activeModelIdLocal.value = id
   emit('switch-model', id)
-  useMsg.success('已切换当前模型')
+  useMsg.success(t('settings.aiMsgSwitched'))
 }
 
 const aiStreamLocal = ref(props.aiStream)
@@ -1015,28 +1007,28 @@ function previewStyle(name) {
   }
 }
 
-const varLabels = {
-  '--bg-primary': '主背景',
-  '--bg-secondary': '次背景',
-  '--bg-tertiary': '第三背景',
-  '--bg-hover': '悬停背景',
-  '--bg-active': '选中背景',
-  '--bg-sidebar': '侧边栏背景',
-  '--bg-output': '输出面板背景',
-  '--bg-input': '输入框背景',
-  '--border-color': '边框',
-  '--border-light': '浅边框',
-  '--text-primary': '主文字',
-  '--text-secondary': '次文字',
-  '--text-muted': '标签文字',
-  '--text-dim': '备注文字',
-  '--text-faint': '占位文字',
-  '--text-darker': '最低对比',
-  '--accent-color': '强调色',
-  '--accent-hover': '强调悬停',
-  '--accent-light': '强调高亮',
-  '--accent-bg': '强调背景'
-}
+const varLabels = computed(() => ({
+  '--bg-primary': t('settings.themeVarBgPrimary'),
+  '--bg-secondary': t('settings.themeVarBgSecondary'),
+  '--bg-tertiary': t('settings.themeVarBgTertiary'),
+  '--bg-hover': t('settings.themeVarBgHover'),
+  '--bg-active': t('settings.themeVarBgSelected'),
+  '--bg-sidebar': t('settings.themeVarBgSidebar'),
+  '--bg-output': t('settings.themeVarBgOutput'),
+  '--bg-input': t('settings.themeVarBgInput'),
+  '--border-color': t('settings.themeVarBorder'),
+  '--border-light': t('settings.themeVarBorderLight'),
+  '--text-primary': t('settings.themeVarTextPrimary'),
+  '--text-secondary': t('settings.themeVarTextSecondary'),
+  '--text-muted': t('settings.themeVarTextLabel'),
+  '--text-dim': t('settings.themeVarTextNote'),
+  '--text-faint': t('settings.themeVarTextPlaceholder'),
+  '--text-darker': t('settings.themeVarTextContrast'),
+  '--accent-color': t('settings.themeVarAccent'),
+  '--accent-hover': t('settings.themeVarAccentHover'),
+  '--accent-light': t('settings.themeVarAccentHighlight'),
+  '--accent-bg': t('settings.themeVarAccentBg')
+}))
 
 // 编辑自定义主题时使用本地副本
 const current = reactive({
@@ -1069,7 +1061,7 @@ function copyCurrentAsCustom() {
   const source = getTheme(props.modelValue)
   const name = makeCustomName()
   const theme = {
-    label: `${source.label} 副本`,
+    label: source.label + t('settings.themeCopySuffix'),
     isDark: source.isDark,
     variables: { ...source.variables }
   }
@@ -1115,7 +1107,7 @@ async function reloadPlugins() {
       }
     })
   } catch (e) {
-    console.warn('[plugin] 重新加载失败:', e)
+    console.warn(t('settings.pluginReloadFailed') + ':', e)
   }
 }
 
@@ -1126,11 +1118,11 @@ const newTemplateIcon = ref('📦')
 
 async function saveAsTemplate() {
   if (!newTemplateName.value.trim()) {
-    useMsg.warning('请输入模板名')
+    useMsg.warning(t('settings.templateMsgNameEmpty'))
     return
   }
   if (!props.projectPath) {
-    useMsg.warning('未打开项目')
+    useMsg.warning(t('settings.templateMsgNoProject'))
     return
   }
   try {
@@ -1141,15 +1133,15 @@ async function saveAsTemplate() {
       newTemplateIcon.value.trim() || '📦'
     )
     if (err) {
-      useMsg.error('保存模板失败: ' + err)
+      useMsg.error(t('settings.templateMsgSaveFailed') + ': ' + err)
     } else {
-      useMsg.success('模板已保存: ' + newTemplateName.value.trim())
+      useMsg.success(t('settings.templateMsgSaved') + ': ' + newTemplateName.value.trim())
       newTemplateName.value = ''
       newTemplateDesc.value = ''
       emit('refresh-templates')
     }
   } catch (e) {
-    useMsg.error('保存模板异常: ' + (e && e.message ? e.message : String(e)))
+    useMsg.error(t('settings.templateMsgSaveError') + ': ' + (e && e.message ? e.message : String(e)))
   }
 }
 
@@ -1157,13 +1149,13 @@ async function deleteTemplate(dir) {
   try {
     const err = await IDEService.DeleteGlobalTemplate(dir)
     if (err) {
-      useMsg.error('删除模板失败: ' + err)
+      useMsg.error(t('settings.templateMsgDeleteFailed') + ': ' + err)
     } else {
-      useMsg.success('模板已删除: ' + dir)
+      useMsg.success(t('settings.templateMsgDeleted') + ': ' + dir)
       emit('refresh-templates')
     }
   } catch (e) {
-    useMsg.error('删除模板异常: ' + (e && e.message ? e.message : String(e)))
+    useMsg.error(t('settings.templateMsgDeleteError') + ': ' + (e && e.message ? e.message : String(e)))
   }
 }
 </script>
