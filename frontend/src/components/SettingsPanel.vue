@@ -256,16 +256,9 @@
           </div>
           <div class="prop-hint" v-html="t('settings.buildGarbleHint')"></div>
 
-          <div class="section-title"><span>{{ t('settings.buildSectionToolchain') }}</span></div>
-          <div class="prop-hint">{{ t('settings.buildSdkHint') }}</div>
+          <div class="section-title"><span>{{ t('settings.buildSectionDebugger') }}</span></div>
+          <div class="prop-hint">{{ t('settings.buildDebuggerHint') }}</div>
           <div class="prop-grid">
-            <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">{{ t('settings.buildGoPathLabel') }}</label>
-              <n-input-group>
-                <n-input v-model:value="goPathLocal" size="small" :placeholder="t('settings.buildGoPathPh')" clearable />
-                <n-button size="small" @click="browseGoPath">{{ t('settings.buildBtnBrowse') }}</n-button>
-              </n-input-group>
-            </div>
             <div class="prop-cell" style="grid-column: 1 / -1;">
               <label class="prop-cell-label">{{ t('settings.buildDelvePathLabel') }}</label>
               <n-input-group>
@@ -612,8 +605,7 @@ const props = defineProps({
   garbleLevel: { type: String, default: 'basic' },
   showBuildHistory: { type: Boolean, default: true },
   outputDir: { type: String, default: 'bin' },
-  // 工具链路径（v0.9.2：用户可指定 Go/dlv 路径，适用于版本不匹配或企业锁版本场景）
-  goPath: { type: String, default: '' },
+  // 工具链路径（v0.9.2：用户可指定 dlv 路径，Go 使用内置 SDK 自动检测）
   delvePath: { type: String, default: '' },
   // 界面
   openLastProject: { type: Boolean, default: true },
@@ -639,7 +631,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:minimapEnabled', 'update:fontSize', 'update:lineNumbersEnabled', 'update:lineHeight', 'update:autoSaveDelay', 'update:tabSize', 'update:wordWrap', 'update:renderWhitespace', 'update:cursorBlinking', 'update:cursorSmoothCaretAnimation', 'update:cursorWidth', 'update:bracketPairColorization', 'update:guidesBracketPairs', 'update:fontLigatures', 'update:lineNumbersMinChars', 'update:renderFinalNewline', 'update:minimapShowSlider', 'update:minimapRenderCharacters', 'update:minimapMaxColumn', 'update:editorTheme', 'update:fontFamily', 'update:autoConvertSymbols',
   'update:gridSize', 'update:showGrid', 'update:snapGrid', 'update:defaultRadius', 'update:defaultBorderWidth',
   'update:defaultBuildMode', 'update:autoOpenFolder', 'update:garbleLevel', 'update:showBuildHistory', 'update:outputDir',
-  'update:goPath', 'update:delvePath',
+  'update:delvePath',
   'update:openLastProject', 'update:leftPanelWidth', 'update:rightPanelWidth', 'update:outputPanelHeight',
   'update:sbShowCursor', 'update:sbShowIndent', 'update:sbShowEncoding', 'update:sbShowEol', 'update:sbShowLang', 'update:sbShowHealth',
   'update:autoSwitchOutputTab', 'update:smartScroll',
@@ -842,21 +834,11 @@ watch(showBuildHistoryLocal, (v) => emit('update:showBuildHistory', v))
 const outputDirLocal = ref(props.outputDir)
 watch(() => props.outputDir, (v) => { outputDirLocal.value = v })
 watch(outputDirLocal, (v) => emit('update:outputDir', v))
-// v0.9.2：Go/dlv 路径可配置（企业锁版本或 dlv 版本不匹配时用户自行指定）
-const goPathLocal = ref(props.goPath)
-watch(() => props.goPath, (v) => { goPathLocal.value = v })
-watch(goPathLocal, (v) => emit('update:goPath', v))
+// v0.9.2：dlv 路径可配置（调试器版本不匹配时用户自行指定，Go 使用内置 SDK）
 const delvePathLocal = ref(props.delvePath)
 watch(() => props.delvePath, (v) => { delvePathLocal.value = v })
 watch(delvePathLocal, (v) => emit('update:delvePath', v))
 
-// 浏览按钮：调用后端 PickFilePath 弹出文件选择对话框（Wails binding 异步，需 await）
-async function browseGoPath() {
-  if (window.IDEService && window.IDEService.PickFilePath) {
-    const path = await window.IDEService.PickFilePath(t('settings.buildPickGoTitle'), t('settings.buildExecFilter'))
-    if (path) goPathLocal.value = path
-  }
-}
 async function browseDelvePath() {
   if (window.IDEService && window.IDEService.PickFilePath) {
     const path = await window.IDEService.PickFilePath(t('settings.buildPickDelveTitle'), t('settings.buildExecFilter'))

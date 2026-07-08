@@ -1,25 +1,6 @@
 <template>
   <div class="window-designer">
     <aside class="designer-toolbox">
-      <!-- 顶部标签切换：组件箱 / 模板 / 层级（由父组件 App.vue 通过 side-panel prop 控制） -->
-      <div class="toolbox-tabs">
-        <button
-          class="toolbox-tab"
-          :class="{ active: sidePanel === 'toolbox' }"
-          @click="$emit('update:sidePanel', 'toolbox')"
-        >{{ t('designer.toolbox') }}</button>
-        <button
-          class="toolbox-tab"
-          :class="{ active: sidePanel === 'templates' }"
-          @click="$emit('update:sidePanel', 'templates')"
-        >{{ t('designer.template') }}</button>
-        <button
-          class="toolbox-tab"
-          :class="{ active: sidePanel === 'layers' }"
-          @click="$emit('update:sidePanel', 'layers')"
-        >{{ t('designer.layers') }}</button>
-      </div>
-
       <!-- 组件箱视图 -->
       <div v-if="sidePanel === 'toolbox'" class="toolbox-list">
         <div
@@ -37,8 +18,7 @@
 
       <!-- 模板视图 -->
       <template v-else-if="sidePanel === 'templates'">
-        <div class="panel-header layer-header template-header">
-          <span>{{ t('designer.template') }}</span>
+        <div class="template-header">
           <div class="template-actions">
             <button class="tpl-action-btn" :title="t('designer.exportTemplate')" @click="exportTemplates">
               <n-icon :component="DownloadOutline" size="14" />
@@ -68,7 +48,6 @@
 
       <!-- 层级视图 -->
       <template v-else>
-        <div class="panel-header layer-header">{{ t('designer.layers') }}</div>
         <div class="layer-list">
           <div
             v-for="comp in layersList"
@@ -300,21 +279,37 @@
             <span class="prop-label">{{ t('designer.propTitle') }}</span>
             <n-input v-model:value="form.title" size="small" @update:value="emitChange" />
           </div>
-          <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propWidth') }}</span><n-input-number v-model:value="form.width" size="small" :min="120" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propHeight') }}</span><n-input-number v-model:value="form.height" size="small" :min="80" @update:value="emitChange" /></div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propWidth') }}</span>
+            <n-input-number v-model:value="form.width" size="small" :min="120" :show-button="false" @update:value="emitChange" />
           </div>
-          <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propX') }}</span><n-input-number v-model:value="form.x" size="small" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propY') }}</span><n-input-number v-model:value="form.y" size="small" @update:value="emitChange" /></div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propHeight') }}</span>
+            <n-input-number v-model:value="form.height" size="small" :min="80" :show-button="false" @update:value="emitChange" />
           </div>
-          <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMinW') }}</span><n-input-number v-model:value="form.minWidth" size="small" :min="0" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMinH') }}</span><n-input-number v-model:value="form.minHeight" size="small" :min="0" @update:value="emitChange" /></div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propX') }}</span>
+            <n-input-number v-model:value="form.x" size="small" :show-button="false" @update:value="emitChange" />
           </div>
-          <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMaxW') }}</span><n-input-number v-model:value="form.maxWidth" size="small" :min="0" @update:value="emitChange" /></div>
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propMaxH') }}</span><n-input-number v-model:value="form.maxHeight" size="small" :min="0" @update:value="emitChange" /></div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propY') }}</span>
+            <n-input-number v-model:value="form.y" size="small" :show-button="false" @update:value="emitChange" />
+          </div>
+          <div class="prop-row">
+            <span class="prop-label prop-label-wide">{{ t('designer.propMinW') }}</span>
+            <n-input-number v-model:value="form.minWidth" size="small" :min="0" :show-button="false" @update:value="emitChange" />
+          </div>
+          <div class="prop-row">
+            <span class="prop-label prop-label-wide">{{ t('designer.propMinH') }}</span>
+            <n-input-number v-model:value="form.minHeight" size="small" :min="0" :show-button="false" @update:value="emitChange" />
+          </div>
+          <div class="prop-row">
+            <span class="prop-label prop-label-wide">{{ t('designer.propMaxW') }}</span>
+            <n-input-number v-model:value="form.maxWidth" size="small" :min="0" :show-button="false" @update:value="emitChange" />
+          </div>
+          <div class="prop-row">
+            <span class="prop-label prop-label-wide">{{ t('designer.propMaxH') }}</span>
+            <n-input-number v-model:value="form.maxHeight" size="small" :min="0" :show-button="false" @update:value="emitChange" />
           </div>
           <div class="prop-section">{{ t('designer.secAppearance') }}</div>
           <div class="prop-row prop-row-full">
@@ -331,30 +326,24 @@
           </div>
           <div class="prop-row">
             <span class="prop-label">{{ t('designer.propEffect') }}</span>
-            <n-input-number v-model:value="form.opacity" size="small" :min="1" :max="100" :step="1" @update:value="emitChange" />
+            <n-input-number v-model:value="form.opacity" size="small" :min="1" :max="100" :step="1" :show-button="false" @update:value="emitChange" />
           </div>
-          <div class="prop-row">
-            <span class="prop-label">{{ t('designer.propBgEffect') }}</span>
+          <div class="prop-row prop-row-full">
+            <span class="prop-label prop-label-wide">{{ t('designer.propBgEffect') }}</span>
             <n-select v-model:value="form.backdrop" size="small" :options="backdropOptions" @update:value="emitChange" />
           </div>
           <div class="prop-section">{{ t('designer.secBehavior') }}</div>
-          <div class="prop-row row-checks">
+          <div class="prop-row row-checks row-checks-3">
             <n-checkbox v-model:checked="form.resizable" @update:checked="emitChange">{{ t('designer.propResizable') }}</n-checkbox>
             <n-checkbox v-model:checked="form.centered" @update:checked="emitChange">{{ t('designer.propCenter') }}</n-checkbox>
-          </div>
-          <div class="prop-row row-checks">
             <n-checkbox v-model:checked="form.minimizable" @update:checked="emitChange">{{ t('designer.propMinBtn') }}</n-checkbox>
             <n-checkbox v-model:checked="form.maximizable" @update:checked="emitChange">{{ t('designer.propMaxBtn') }}</n-checkbox>
-          </div>
-          <div class="prop-row row-checks">
             <n-checkbox :checked="form.closable !== false" @update:checked="v => { form.closable = v; emitChange() }">{{ t('designer.propCloseBtn') }}</n-checkbox>
             <n-checkbox v-model:checked="form.fullScreen" @update:checked="emitChange">{{ t('designer.propFullscreen') }}</n-checkbox>
-          </div>
-          <div class="prop-row row-checks">
             <n-checkbox v-model:checked="form.alwaysOnTop" @update:checked="emitChange">{{ t('designer.propTopmost') }}</n-checkbox>
           </div>
           <div class="prop-section">{{ t('designer.secWindowEffect') }}</div>
-          <div class="prop-row row-checks">
+          <div class="prop-row row-checks row-checks-3">
             <n-checkbox v-model:checked="form.rounded" @update:checked="emitChange">{{ t('designer.propRadius') }}</n-checkbox>
             <n-checkbox v-model:checked="form.shadow" @update:checked="emitChange">{{ t('designer.propShadow') }}</n-checkbox>
           </div>
@@ -385,22 +374,30 @@
               @update:value="emitChange"
             />
           </div>
-          <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propX') }}</span><n-input-number :value="multiValue('x')" size="small" :placeholder="multiPlaceholder('x')" @update:value="v => setMulti('x', v)" /></div>
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propY') }}</span><n-input-number :value="multiValue('y')" size="small" :placeholder="multiPlaceholder('y')" @update:value="v => setMulti('y', v)" /></div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propX') }}</span>
+            <n-input-number :value="multiValue('x')" size="small" :placeholder="multiPlaceholder('x')" :show-button="false" @update:value="v => setMulti('x', v)" />
           </div>
-          <div class="prop-row-2col">
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propWidth') }}</span><n-input-number :value="multiValue('width')" size="small" :min="10" :placeholder="multiPlaceholder('width')" @update:value="v => setMulti('width', v)" /></div>
-            <div class="prop-col"><span class="prop-label-sm">{{ t('designer.propHeight') }}</span><n-input-number :value="multiValue('height')" size="small" :min="10" :placeholder="multiPlaceholder('height')" @update:value="v => setMulti('height', v)" /></div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propY') }}</span>
+            <n-input-number :value="multiValue('y')" size="small" :placeholder="multiPlaceholder('y')" :show-button="false" @update:value="v => setMulti('y', v)" />
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propWidth') }}</span>
+            <n-input-number :value="multiValue('width')" size="small" :min="10" :placeholder="multiPlaceholder('width')" :show-button="false" @update:value="v => setMulti('width', v)" />
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">{{ t('designer.propHeight') }}</span>
+            <n-input-number :value="multiValue('height')" size="small" :min="10" :placeholder="multiPlaceholder('height')" :show-button="false" @update:value="v => setMulti('height', v)" />
           </div>
           <div v-if="selectedIds.size === 1" class="prop-row">
-            <span class="prop-label">{{ t('designer.propTabOrder') }}</span>
-            <n-input-number v-model:value="firstSelectedComponent.tabOrder" size="small" :min="0" @update:value="emitChange" />
+            <span class="prop-label prop-label-wide">{{ t('designer.propTabOrder') }}</span>
+            <n-input-number v-model:value="firstSelectedComponent.tabOrder" size="small" :min="0" :show-button="false" @update:value="emitChange" />
           </div>
           <div class="prop-section">{{ t('designer.secStyle') }}</div>
           <div class="prop-row">
-            <span class="prop-label">{{ t('designer.propFont') }}</span>
-            <n-input-number :value="multiValue('fontSize')" size="small" :min="8" :placeholder="multiPlaceholder('fontSize')" @update:value="v => setMulti('fontSize', v)" />
+            <span class="prop-label prop-label-wide">{{ t('designer.propFont') }}</span>
+            <n-input-number :value="multiValue('fontSize')" size="small" :min="8" :placeholder="multiPlaceholder('fontSize')" :show-button="false" @update:value="v => setMulti('fontSize', v)" />
           </div>
           <div class="prop-row">
             <span class="prop-label">{{ t('designer.propColor') }}</span>
@@ -438,6 +435,7 @@
                 :min="s.min"
                 :max="s.max"
                 :step="s.step"
+                :show-button="false"
                 @update:value="v => setProp(s.key, v)"
               />
               <n-input
@@ -2876,34 +2874,6 @@ onUnmounted(() => {
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
 }
-/* 顶部标签切换条：组件箱 / 模板 / 层级 */
-.toolbox-tabs {
-  display: flex;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-tertiary);
-}
-.toolbox-tab {
-  flex: 1;
-  padding: 6px 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: var(--ide-font-size-xs);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-}
-.toolbox-tab:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-.toolbox-tab.active {
-  color: var(--accent-color);
-  border-bottom-color: var(--accent-color);
-  background: var(--bg-secondary);
-}
 .toolbox-list {
   flex: 1 1 0;
   min-height: 0;
@@ -2912,9 +2882,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-.layer-header {
-  border-top: 1px solid var(--border-color);
 }
 .grid-config {
   display: flex;
@@ -3041,11 +3008,13 @@ onUnmounted(() => {
   height: 16px;
   fill: currentColor;
 }
-/* 模板 header：标题 + 操作按钮 */
+/* 模板 header：操作按钮（标题在顶部标签栏） */
 .template-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  flex-shrink: 0;
 }
 .template-actions {
   display: flex;
@@ -3465,14 +3434,11 @@ onUnmounted(() => {
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  min-width: 36px;
+  min-width: 28px;
   white-space: nowrap;
 }
-.prop-label-sm {
-  font-size: 10px;
-  color: var(--text-secondary);
-  margin-bottom: 2px;
-  display: block;
+.prop-label-wide {
+  min-width: 48px;
 }
 .prop-value {
   font-size: var(--ide-font-size-sm);
@@ -3488,16 +3454,6 @@ onUnmounted(() => {
   padding: 4px 0 2px 2px;
   border-bottom: 1px solid var(--border-color);
   margin-top: 2px;
-}
-.prop-row-2col {
-  grid-column: span 2;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.prop-col {
-  display: flex;
-  flex-direction: column;
 }
 /* 颜色选择器：只显示颜色块，隐藏色号文本 */
 .color-block-only :deep(.n-color-picker-trigger) {
@@ -3523,9 +3479,18 @@ onUnmounted(() => {
 .row-checks {
   grid-column: span 2;
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 6px 12px;
   justify-content: flex-start;
   padding-left: 4px;
+}
+.row-checks-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 8px;
+}
+.row-checks-3 :deep(.n-checkbox) {
+  margin-right: 0;
 }
 .events-row {
   grid-column: span 2;
