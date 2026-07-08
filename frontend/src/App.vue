@@ -20,6 +20,13 @@
         @snippets="showSnippets"
       />
 
+      <BuildProgress
+        ref="buildProgressRef"
+        :active="buildActive"
+        :step="buildStep"
+        :percent="buildPercent"
+      />
+
       <div class="main-container">
         <StartPage
           v-if="!projectOpen"
@@ -949,6 +956,7 @@ import SettingsPanel from './components/SettingsPanel.vue'
 import WindowDesigner from './components/WindowDesigner.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
 import DebugPanel from './components/DebugPanel.vue'
+import BuildProgress from './components/BuildProgress.vue'
 import { t } from './i18n/index.js'
 
 const themes = getThemes()
@@ -2810,6 +2818,27 @@ onMounted(() => {
     const errMsg = ev?.data?.error || '调试器发生未知错误'
     setStatusMsg('调试错误: ' + errMsg, 5000)
   })
+  // v0.11.7：全局监听编译进度事件，驱动 BuildProgress 进度条（覆盖 run/build/debug 三种场景）
+  offBuildProgress = Events.On('ide:run-event', (ev) => {
+    const data = ev?.data || {}
+    const stage = data.stage
+    const text = data.output || ''
+    if (stage === 'progress') {
+      const colon = text.indexOf(':')
+      if (colon > 0) {
+        const step = text.substring(0, colon)
+        const pct = parseInt(text.substring(colon + 1), 10)
+        if (!isNaN(pct)) {
+          buildActive.value = true
+          buildStep.value = step
+          buildPercent.value = pct
+        }
+      }
+    } else if (stage === 'error') {
+      buildActive.value = false
+      buildProgressRef.value?.reset()
+    }
+  })
 })
 
 // G10：加载 exe 同级 templates/ 全局项目模板
@@ -2838,6 +2867,7 @@ onUnmounted(() => {
   if (offDebugExit) { offDebugExit(); offDebugExit = null }
   if (offDebugHalt) { offDebugHalt(); offDebugHalt = null }
   if (offDebugError) { offDebugError(); offDebugError = null }
+  if (offBuildProgress) { offBuildProgress(); offBuildProgress = null }
 })
 
 const DEFAULT_SOURCE = `# 程序集 main
@@ -3008,6 +3038,7 @@ const isDebugging = ref(false)
 let offDebugExit = null
 let offDebugHalt = null
 let offDebugError = null
+let offBuildProgress = null
 // G9：插件组件注册后同步到 WindowDesigner（通过 defineExpose 的方法）
 watch(pluginComponents, (list) => {
   const d = designerRef.value
@@ -3083,6 +3114,37 @@ const tipPreRef = ref(null)
 const outputAutoScroll = ref(true)
 const errorAutoScroll = ref(true)
 const tipAutoScroll = ref(true)
+const buildProgressRef = ref(null)
+const buildActive = ref(false)
+const buildStep = ref('')
+const buildPercent = ref(0)
+
+function handleBuildProgress(stage, output) {
+  if (stage === 'progress') {
+    const colon = output.indexOf(':')
+    if (colon > 0) {
+      const step = output.substring(0, colon)
+      const pct = parseInt(output.substring(colon + 1), 10)
+      if (!isNaN(pct)) {
+        buildActive.value = true
+        buildStep.value = step
+        buildPercent.value = pct
+      }
+    }
+    return true
+  }
+  if (stage === 'error') {
+    buildActive.value = false
+    buildProgressRef.value?.reset()
+    return false
+  }
+  if (stage === 'done') {
+    buildStep.value = 'done'
+    buildPercent.value = 100
+    return false
+  }
+  return false
+}
 
 function onOutputScroll(e) {
   const el = e.target
@@ -4588,19 +4650,21 @@ async function saveAllFiles() {
 
 async function runCode() {
   clearErrorMarkers()
-  // 编译运行前自动保存所有文件，确保 .ew 设计文件和代码文件写入磁盘
   await saveAllFiles()
   output.value = '[1/5] 准备编译运行…\n'
   errorOutput.value = ''
   tipOutput.value = ''
   setStatusMsg('运行中…', 0)
   outputTabName.value = 'output'
-  // 订阅运行时的实时进度事件
+  buildActive.value = true
+  buildStep.value = 'prepare'
+  buildPercent.value = 0
   const offEvent = Events.On('ide:run-event', (ev) => {
     const data = ev?.data || {}
     const stage = data.stage || 'run'
     const text = data.output || ''
     const isOutput = !!data.isOutput
+    if (handleBuildProgress(stage, text)) return
     if (stage === 'error') {
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + text
       outputTabName.value = 'errors'
@@ -4624,14 +4688,13 @@ async function runCode() {
       default:          prefix = `[${stage}] `
     }
     output.value += prefix + text + '\n'
-    // 运行时实时输出重置自动滚动，确保用户始终看到最新消息
-    // （用户可能在编译间隙滚动输出栏查看历史，但新的运行输出应强制滚到底部）
     outputAutoScroll.value = true
   })
   try {
     const data = await IDEService.RunProject(projectPath.value)
     if (data.error) {
-      // 编译失败时不清空 output，保留转译/编译过程的实时输出（已通过 ide:run-event 累积）
+      buildActive.value = false
+      buildProgressRef.value?.reset()
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + data.error
       outputTabName.value = 'errors'
       outputCollapsed.value = false
@@ -4642,7 +4705,8 @@ async function runCode() {
       output.value += data.output + '\n'
     }
   } catch (e) {
-    // 异常时也不清空 output，保留已累积的过程输出
+    buildActive.value = false
+    buildProgressRef.value?.reset()
     errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + '调用失败: ' + e.message
     outputTabName.value = 'errors'
     outputCollapsed.value = false
@@ -5142,11 +5206,15 @@ async function buildExecutable() {
   errorOutput.value = ''
   setStatusMsg('构建中…', 0)
   outputTabName.value = 'output'
-  let artifactPath = '' // 构建产物路径，由 artifact 事件填充
+  buildActive.value = true
+  buildStep.value = 'prepare'
+  buildPercent.value = 0
+  let artifactPath = ''
   const offEvent = Events.On('ide:run-event', (ev) => {
     const data = ev?.data || {}
     const stage = data.stage || 'build'
     const text = data.output || ''
+    if (handleBuildProgress(stage, text)) return
     if (stage === 'error') {
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + text
       outputTabName.value = 'errors'
@@ -5156,30 +5224,22 @@ async function buildExecutable() {
       if (line) gotoError(line, text)
       return
     }
-    // 捕获构建产物路径
     if (stage === 'artifact') {
       artifactPath = text
       return
     }
     if (stage === 'done') {
       setStatusMsg('构建完成', 3000)
-      // 构建可能递增了版本号，刷新项目配置
       if (projectPath.value) {
         IDEService.ReadProjectConfig(projectPath.value).then(cfg => { projectConfig.value = cfg })
-        // 根据配置决定是否自动打开产物所在文件夹
         if (buildConfig.value.autoOpenFolder) {
           IDEService.OpenInExplorer(projectPath.value)
         }
       }
-      // 构建完成后检查签名状态
       if (artifactPath) {
         checkSignatureAndReport(artifactPath)
-        // 自动复制产物路径到剪贴板，方便用户粘贴分享
-        // 用 .catch() 而非 try/catch：writeText 返回 Promise，try/catch 无法捕获 rejection
-        // 编译完成回调触发时文档可能无焦点（编译过程中窗口失焦），会导致 "Document is not focused" rejection
         navigator.clipboard?.writeText(artifactPath).catch(() => {})
         output.value += `[产物] ${artifactPath}（路径已复制到剪贴板）\n`
-        // 记录到构建历史
         addBuildHistory({
           time: new Date().toLocaleString('zh-CN'),
           version: projectConfig.value?.version || '',
@@ -5202,23 +5262,23 @@ async function buildExecutable() {
   })
   try {
     if (!projectPath.value) {
+      buildActive.value = false
+      buildProgressRef.value?.reset()
       errorOutput.value = '未打开项目'
       setStatusMsg('构建失败', 4000)
       return
     }
-    // 入口文件路径：优先用 project.eg.json 的 Entry 字段，兼容根目录 main.eg 和 src/main.eg
     const entry = projectConfig.value?.entry || 'main.eg'
     const mainPath = projectPath.value + '\\' + entry
     let data
     if (mode === 'release') {
-      // release 模式：调用 BuildProjectRelease，内部会 Garble 混淆、版本自增、SHA256
       data = await IDEService.BuildProjectRelease(projectPath.value)
     } else {
-      // debug 模式：调用 BuildProject，保留调试符号
       data = await IDEService.BuildProject(mainPath, projectPath.value)
     }
     if (data.error) {
-      // 构建失败时不清空 output，保留过程输出（已通过 ide:run-event 累积）
+      buildActive.value = false
+      buildProgressRef.value?.reset()
       errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + data.error
       outputTabName.value = 'errors'
       outputCollapsed.value = false
@@ -5229,13 +5289,14 @@ async function buildExecutable() {
       output.value += data.output + '\n'
     }
   } catch (e) {
+    buildActive.value = false
+    buildProgressRef.value?.reset()
     errorOutput.value = (errorOutput.value ? errorOutput.value + '\n' : '') + '调用失败: ' + e.message
     outputTabName.value = 'errors'
     outputCollapsed.value = false
     setStatusMsg('构建失败', 5000)
   } finally {
     offEvent && offEvent()
-    // F6：不再调用 Events.Off('ide:run-event')，那会清除所有订阅者（含其他调用点）。
   }
 }
 function showAbout() {

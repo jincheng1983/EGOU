@@ -231,6 +231,7 @@ func buildSourceEx(src string, projectPath string, sink EventSink, release bool)
 	}
 	// emit 产物路径，让前端能调用签名检查等后端服务
 	emit(sink, "artifact", destFile, false)
+	emitProgress(sink, "done", 100)
 	return fmt.Sprintf("构建成功（%s）: %s", mode, destFile), nil
 }
 
@@ -327,6 +328,15 @@ func emit(sink EventSink, stage, output string, isOutput bool) {
 		return
 	}
 	sink(Event{Stage: stage, Output: output, IsOutput: isOutput})
+}
+
+// emitProgress 发送编译进度事件（stage="progress"），output 格式为 "step:percent"。
+// step 取值：prepare/transpile/ready/build/link/run/done，前端据此驱动步骤式进度条。
+func emitProgress(sink EventSink, step string, percent int) {
+	if sink == nil {
+		return
+	}
+	sink(Event{Stage: "progress", Output: fmt.Sprintf("%s:%d", step, percent), IsOutput: false})
 }
 
 // stripLibEntryDeclarations 剥离附加 .eg 中的入口声明，避免与主源码冲突：
@@ -498,6 +508,7 @@ func mergeLibsFromDir(b *strings.Builder, extraAliases map[string]string, libsDi
 // 并行优化：转译（路线A）与模板复制（路线B）并行执行；
 // 用户代码写入、资源嵌入、前端资源准备三者也并行执行。
 func prepareRuntimeBuild(src, projectPath string, sink EventSink) (string, error) {
+	emitProgress(sink, "prepare", 5)
 	emit(sink, "transpile", "开始转译 .eg 源码...", false)
 
 	// ===== 第一阶段：路线A（转译）与路线B（模板复制）并行 =====
@@ -583,6 +594,7 @@ func prepareRuntimeBuild(src, projectPath string, sink EventSink) (string, error
 		return "", tRes.err
 	}
 	goSrc := tRes.goSrc
+	emitProgress(sink, "transpile", 25)
 	emit(sink, "transpile", "转译成功", false)
 
 	// 等待路线B完成
@@ -649,6 +661,7 @@ func prepareRuntimeBuild(src, projectPath string, sink EventSink) (string, error
 	}
 
 	emit(sink, "stage", "运行时准备就绪", false)
+	emitProgress(sink, "ready", 40)
 	return tmpDir, nil
 }
 
@@ -1068,6 +1081,7 @@ func copyNativeLibsFromDir(tmpDir, srcDir string, copied map[string]bool, sink E
 // 离线编译支持：检测到 dir/vendor/ 目录时自动添加 -mod=vendor 标志，
 // 让 Go 直接从本地 vendor 读取依赖源码，无需联网下载。
 func buildRuntime(dir, outFile string, sink EventSink, release bool, version string) error {
+	emitProgress(sink, "build", 45)
 	emit(sink, "build", "开始编译运行时...", false)
 	// debug 模式保留 DWARF 调试符号（供 dlv 调试器使用），不用 -trimpath 保留源码路径映射。
 	// release 模式用 -s -w -trimpath 去除符号和路径，减小产物体积。
@@ -1165,6 +1179,7 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 		return fmt.Errorf("编译失败: %s", string(output))
 	}
 	emit(sink, "build", fmt.Sprintf("编译完成（耗时 %s）", time.Since(start).Round(time.Millisecond)), false)
+	emitProgress(sink, "link", 85)
 	// 输出产物体积
 	if fi, err := os.Stat(outFile); err == nil {
 		emit(sink, "build", fmt.Sprintf("产物体积: %.2f MB", float64(fi.Size())/1024/1024), false)
@@ -1332,6 +1347,7 @@ func translateGoError(msg string) string {
 //   - 全局步数上限 MaxLoopIterations（types.go）供未来调试器/解释器模式使用
 //   - 当前架构下，进程隔离是主要的死循环保护机制
 func runRuntime(tmpDir, outFile, projectPath string, sink EventSink) (string, error) {
+	emitProgress(sink, "run", 92)
 	emit(sink, "run", "启动运行时窗口...", false)
 	runCmd := exec.Command(outFile)
 	runCmd.Dir = tmpDir
@@ -1358,6 +1374,7 @@ func runRuntime(tmpDir, outFile, projectPath string, sink EventSink) (string, er
 		return "", fmt.Errorf("启动失败: %w", err)
 	}
 	emit(sink, "run", "运行时已启动，关闭窗口或 Ctrl+C 结束", false)
+	emitProgress(sink, "done", 100)
 
 	go pumpLines(stdout, sink, false)
 	go pumpLines(stderr, sink, true)

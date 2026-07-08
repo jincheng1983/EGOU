@@ -75,6 +75,8 @@ func (s *IDEService) StartDebug(projectPath string, breakpoints []BreakpointSpec
 	if err != nil {
 		return err
 	}
+	// 编译完成，通知前端进度条达到100%（调试模式无运行阶段）
+	sink(runner.Event{Stage: "progress", Output: "done:100", IsOutput: false})
 
 	// 启动 dlv headless
 	client, err := debugger.StartDebug(binaryPath, nil,

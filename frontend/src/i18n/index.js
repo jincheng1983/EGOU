@@ -685,6 +685,14 @@ registerMessages(DEFAULT_LOCALE, {
     tplNoneImported: '未导入任何模板（跳过 {count} 个重名或无效项）',
     tplImportFailed: '导入失败：JSON 解析错误',
   },
+  buildprogress: {
+    preparing: '准备中',
+    transpiling: '生成代码',
+    compiling: '编译中',
+    linking: '链接中',
+    running: '启动运行',
+    done: '完成',
+  },
   status: {
     noReopen: '没有可重新打开的文件',
     navStart: '已到达导航历史起点',
@@ -1278,6 +1286,14 @@ registerMessages('en-US', {
     tplImportedSkipped: ' (skipped {count} duplicate or invalid)',
     tplNoneImported: 'No templates imported (skipped {count} duplicate or invalid)',
     tplImportFailed: 'Import failed: JSON parse error',
+  },
+  buildprogress: {
+    preparing: 'Preparing',
+    transpiling: 'Generating Code',
+    compiling: 'Compiling',
+    linking: 'Linking',
+    running: 'Launching',
+    done: 'Done',
   },
   status: {
     noReopen: 'No files to reopen',
