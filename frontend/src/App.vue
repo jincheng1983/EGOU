@@ -20,13 +20,6 @@
         @snippets="showSnippets"
       />
 
-      <BuildProgress
-        ref="buildProgressRef"
-        :active="buildActive"
-        :step="buildStep"
-        :percent="buildPercent"
-      />
-
       <div class="main-container">
         <StartPage
           v-if="!projectOpen"
@@ -263,6 +256,12 @@
                   <div
                     class="splitter splitter-h"
                     @mousedown="onSplitterMouseDown($event, 'output')"
+                  />
+                  <BuildProgress
+                    ref="buildProgressRef"
+                    :active="buildActive"
+                    :step="buildStep"
+                    :percent="buildPercent"
                   />
                   <div class="output-toolbar">
                     <n-tabs v-model:value="outputTabName" type="line" size="small" display-directive="show" style="flex: 1; height: 100%;">

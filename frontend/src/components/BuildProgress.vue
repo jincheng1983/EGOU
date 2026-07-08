@@ -145,13 +145,14 @@ defineExpose({ reset })
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 8px 20px;
+  gap: 14px;
+  padding: 6px 12px;
   background: var(--bg-secondary);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
-  z-index: 100;
-  min-height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 6px;
+  min-height: 38px;
+  flex-shrink: 0;
 }
 
 .bp-steps {
@@ -293,16 +294,18 @@ defineExpose({ reset })
 }
 
 .bp-fade-leave-active {
-  transition: all 0.4s ease;
+  transition: all 0.35s ease;
 }
 
 .bp-fade-enter-from {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: scaleY(0.8);
+  transform-origin: top;
 }
 
 .bp-fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: scaleY(0.8);
+  transform-origin: top;
 }
 </style>
