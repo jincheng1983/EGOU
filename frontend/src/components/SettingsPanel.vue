@@ -262,19 +262,25 @@
           </div>
 
           <div class="section-title"><span>工具链路径</span></div>
+          <div class="prop-hint">
+            IDE 优先使用内置 Go SDK（exe 同级 go/ 目录），无需用户安装。
+            以下路径留空则自动使用内置环境；仅在需要指定自定义版本时填写。
+          </div>
           <div class="prop-grid">
             <div class="prop-cell" style="grid-column: 1 / -1;">
-              <label class="prop-cell-label">Go 编译器路径（留空则从 PATH 查找）</label>
-              <n-input v-model:value="goPathLocal" size="small" placeholder="如 C:\Program Files\Go\bin\go.exe（留空自动查找）" clearable />
+              <label class="prop-cell-label">Go 编译器路径（留空则优先使用内置 SDK）</label>
+              <n-input-group>
+                <n-input v-model:value="goPathLocal" size="small" placeholder="留空自动使用内置 Go SDK" clearable />
+                <n-button size="small" @click="browseGoPath">浏览...</n-button>
+              </n-input-group>
             </div>
             <div class="prop-cell" style="grid-column: 1 / -1;">
               <label class="prop-cell-label">Delve 调试器路径（留空则自动查找）</label>
-              <n-input v-model:value="delvePathLocal" size="small" placeholder="如 C:\Users\xxx\go\bin\dlv.exe（留空自动查找）" clearable />
+              <n-input-group>
+                <n-input v-model:value="delvePathLocal" size="small" placeholder="留空自动查找" clearable />
+                <n-button size="small" @click="browseDelvePath">浏览...</n-button>
+              </n-input-group>
             </div>
-          </div>
-          <div class="prop-hint">
-            适用于企业环境锁 Go 版本、或 dlv 版本与 Go 版本不匹配时指定自定义路径。
-            dlv 版本滞后于 Go 发布时，IDE 已自动添加 --check-go-version=false 跳过版本检查。
           </div>
 
           <div class="section-title"><span>输出</span></div>
@@ -514,6 +520,7 @@ import {
   NFormItem,
   NSelect,
   NInput,
+  NInputGroup,
   NSwitch,
   NCheckbox,
   NInputNumber,
@@ -850,6 +857,20 @@ watch(goPathLocal, (v) => emit('update:goPath', v))
 const delvePathLocal = ref(props.delvePath)
 watch(() => props.delvePath, (v) => { delvePathLocal.value = v })
 watch(delvePathLocal, (v) => emit('update:delvePath', v))
+
+// 浏览按钮：调用后端 PickFilePath 弹出文件选择对话框（Wails binding 异步，需 await）
+async function browseGoPath() {
+  if (window.IDEService && window.IDEService.PickFilePath) {
+    const path = await window.IDEService.PickFilePath('选择 Go 编译器 (go.exe)', '可执行文件|*.exe')
+    if (path) goPathLocal.value = path
+  }
+}
+async function browseDelvePath() {
+  if (window.IDEService && window.IDEService.PickFilePath) {
+    const path = await window.IDEService.PickFilePath('选择 Delve 调试器 (dlv.exe)', '可执行文件|*.exe')
+    if (path) delvePathLocal.value = path
+  }
+}
 
 // 界面
 const openLastProjectLocal = ref(props.openLastProject)
