@@ -112,7 +112,8 @@ func buildGoEnv() []string {
 			strings.HasPrefix(e, "GOSUMDB=") ||
 			strings.HasPrefix(e, "GONOSUMCHECK=") ||
 			strings.HasPrefix(e, "GONOSUMDB=") ||
-			strings.HasPrefix(e, "GOWORK=") {
+			strings.HasPrefix(e, "GOWORK=") ||
+			strings.HasPrefix(e, "GOTOOLCHAIN=") {
 			continue
 		}
 		if strings.HasPrefix(e, "PATH=") {
@@ -148,6 +149,8 @@ func buildGoEnv() []string {
 		filtered = append(filtered, "PATH="+strings.Join(pathParts, string(filepath.ListSeparator)))
 	}
 	filtered = append(filtered, "GOROOT="+goRoot)
+	// GOTOOLCHAIN=local：禁止自动下载新版工具链（离线环境必须），也避免 go.env 中 CRLF 导致的 "auto\r" 错误
+	filtered = append(filtered, "GOTOOLCHAIN=local")
 	return filtered
 }
 

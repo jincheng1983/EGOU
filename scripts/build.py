@@ -436,14 +436,29 @@ def main():
         if not go_exe_dst.exists():
             print(f"错误：Go SDK 复制失败，{go_exe_dst} 不存在", file=sys.stderr)
         else:
-            # 修正 go.env 中的 GOROOT（硬编码路径会导致找不到工具，运行时由 GOROOT 环境变量覆盖）
+            # 清理 go.env：转换 CRLF→LF，移除会干扰运行时环境的硬编码配置行
+            # 问题：系统 go.env 使用 CRLF，Go 解析时 \r 会成为值的一部分导致
+            #       "invalid GOTOOLCHAIN \"auto\r\"" 错误；且 GOROOT/GOPROXY/GOSUMDB
+            #       等硬编码路径会覆盖运行时 buildGoEnv() 设置的隔离环境。
             go_env_dst = go_sdk_dst / "go.env"
             if go_env_dst.exists():
                 try:
-                    content = go_env_dst.read_text(encoding="utf-8", errors="replace")
-                    import re
-                    content = re.sub(r'^GOROOT=.*$', '', content, flags=re.MULTILINE)
-                    go_env_dst.write_text(content, encoding="utf-8")
+                    raw = go_env_dst.read_bytes()
+                    text = raw.decode("utf-8", errors="replace")
+                    text = text.replace("\r\n", "\n").replace("\r", "\n")
+                    lines = text.split("\n")
+                    cleaned = []
+                    strip_prefixes = ("GOROOT=", "GOTOOLCHAIN=", "GOPROXY=", "GOSUMDB=",
+                                      "GONOSUMCHECK=", "GONOSUMDB=", "GOFLAGS=", "GOWORK=", "GOBIN=")
+                    for line in lines:
+                        stripped = line.strip()
+                        if stripped.startswith(strip_prefixes):
+                            continue
+                        cleaned.append(line)
+                    text = "\n".join(cleaned)
+                    if not text.endswith("\n"):
+                        text += "\n"
+                    go_env_dst.write_bytes(text.encode("utf-8"))
                 except Exception:
                     pass
         # 统计体积
