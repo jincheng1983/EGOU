@@ -259,7 +259,7 @@
                   />
                   <BuildProgress
                     ref="buildProgressRef"
-                    :active="buildActive"
+                    v-model:active="buildActive"
                     :step="buildStep"
                     :percent="buildPercent"
                   />
@@ -4655,6 +4655,7 @@ async function runCode() {
   tipOutput.value = ''
   setStatusMsg('运行中…', 0)
   outputTabName.value = 'output'
+  outputCollapsed.value = false
   buildActive.value = true
   buildStep.value = 'prepare'
   buildPercent.value = 0

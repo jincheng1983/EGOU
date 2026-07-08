@@ -40,6 +40,8 @@ const props = defineProps({
   percent: { type: Number, default: 0 },
 })
 
+const emit = defineEmits(['update:active'])
+
 const visible = ref(false)
 const displayPercent = ref(0)
 const fakeTimer = ref(null)
@@ -115,6 +117,7 @@ watch(() => props.step, (newStep) => {
     clearHideTimer()
     hideTimer.value = setTimeout(() => {
       visible.value = false
+      emit('update:active', false)
     }, 1200)
   } else if (newStep === 'build') {
     startFakeProgress(75)
@@ -135,6 +138,7 @@ function reset() {
   clearHideTimer()
   visible.value = false
   displayPercent.value = 0
+  emit('update:active', false)
 }
 
 defineExpose({ reset })

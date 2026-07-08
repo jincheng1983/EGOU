@@ -1124,18 +1124,22 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 	case "off":
 		emit(sink, "build", "Garble 混淆已关闭（编译选项设置），普通编译", false)
 	case "full":
-		if garblePath != "" {
+		if garblePath != "" && garbleCompatibleCached(garblePath) {
 			useGarble = true
 			garbleFlags = []string{"-literals", "-tiny"}
 			emit(sink, "build", "启用 Garble 完整混淆（-literals -tiny，可能触发杀软误报）", false)
+		} else if garblePath != "" {
+			emit(sink, "build", "Garble 版本与当前 Go 不兼容，已自动回退普通编译", false)
 		} else {
 			emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
 		}
 	default: // "basic" 或其他非法值
-		if garblePath != "" {
+		if garblePath != "" && garbleCompatibleCached(garblePath) {
 			useGarble = true
 			garbleFlags = []string{"-tiny"}
 			emit(sink, "build", "启用 Garble 基础混淆（-tiny，仅变量名/函数名，无杀软误报）", false)
+		} else if garblePath != "" {
+			emit(sink, "build", "Garble 版本与当前 Go 不兼容，已自动回退普通编译", false)
 		} else {
 			emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
 		}
@@ -2051,4 +2055,37 @@ func findGarble() string {
 		}
 	}
 	return ""
+}
+
+func garbleCompatible(garblePath string) bool {
+	tmpDir, err := os.MkdirTemp("", "garble-check-*")
+	if err != nil {
+		return true
+	}
+	defer os.RemoveAll(tmpDir)
+	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module gcheck\n\ngo 1.25.0\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main\nfunc main(){}\n"), 0644)
+	cmd := exec.Command(garblePath, "build", "-o", filepath.Join(tmpDir, "test.exe"), ".")
+	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(out), "too old") {
+			return false
+		}
+		return true
+	}
+	return true
+}
+
+var garbleCompatCache sync.Map
+
+func garbleCompatibleCached(garblePath string) bool {
+	if cached, ok := garbleCompatCache.Load(garblePath); ok {
+		return cached.(bool)
+	}
+	result := garbleCompatible(garblePath)
+	garbleCompatCache.Store(garblePath, result)
+	return result
 }
