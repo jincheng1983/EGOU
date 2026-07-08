@@ -543,14 +543,14 @@ const useMsg = useMessage()
 const activeMenu = ref('theme')
 const menuItems = [
   { key: 'general', icon: '⚙️', label: t('settings.general') },
-  { key: 'theme', icon: '🎨', label: '主题' },
-  { key: 'editor', icon: '📝', label: '编辑器' },
-  { key: 'designer', icon: '🎯', label: '设计器' },
-  { key: 'build', icon: '🔨', label: '编译' },
-  { key: 'ui', icon: '🖥️', label: '界面' },
-  { key: 'ai', icon: '🤖', label: 'AI' },
-  { key: 'plugins', icon: '🔌', label: '插件' },
-  { key: 'templates', icon: '📦', label: '模板' }
+  { key: 'theme', icon: '🎨', label: t('settings.theme') },
+  { key: 'editor', icon: '📝', label: t('settings.editor') },
+  { key: 'designer', icon: '🎯', label: t('settings.designer') },
+  { key: 'build', icon: '🔨', label: t('settings.build') },
+  { key: 'ui', icon: '🖥️', label: t('settings.ui') },
+  { key: 'ai', icon: '🤖', label: t('settings.ai') },
+  { key: 'plugins', icon: '🔌', label: t('settings.plugins') },
+  { key: 'templates', icon: '📦', label: t('settings.templates') }
 ]
 
 // ===== i18n 语言切换 =====

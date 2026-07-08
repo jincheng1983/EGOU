@@ -259,7 +259,7 @@
                   />
                   <div class="output-toolbar">
                     <n-tabs v-model:value="outputTabName" type="line" size="small" display-directive="show" style="flex: 1; height: 100%;">
-                    <n-tab-pane name="output" tab="输出" style="height: 100%;">
+                    <n-tab-pane name="output" :tab="t('output.output')" style="height: 100%;">
                       <pre ref="outputPreRef" class="output-pre" @scroll="onOutputScroll">{{ output }}</pre>
                     </n-tab-pane>
                     <n-tab-pane name="errors" :tab="outputTabLabel" style="height: 100%;">
@@ -272,14 +272,14 @@
                         >{{ entry.text || ' ' }}</div>
                       </div>
                     </n-tab-pane>
-                    <n-tab-pane name="tips" tab="提示" style="height: 100%;">
+                    <n-tab-pane name="tips" :tab="t('output.tips')" style="height: 100%;">
                       <div v-if="refsResults.length > 0" class="output-pre refs-list">
                         <div class="refs-header">
-                          <span>查找引用: {{ refsQuery }}（共 {{ refsResults.length }} 处，{{ groupedRefs.length }} 个文件）</span>
+                          <span>{{ t('output.findRefs', { query: refsQuery, total: refsResults.length, files: groupedRefs.length }) }}</span>
                           <span class="refs-header-actions">
-                            <n-button size="tiny" quaternary @click="expandAllRefFiles">全部展开</n-button>
-                            <n-button size="tiny" quaternary @click="collapseAllRefFiles">全部折叠</n-button>
-                            <n-button size="tiny" quaternary @click="refsResults = []">关闭</n-button>
+                            <n-button size="tiny" quaternary @click="expandAllRefFiles">{{ t('output.expandAll') }}</n-button>
+                            <n-button size="tiny" quaternary @click="collapseAllRefFiles">{{ t('output.collapseAll') }}</n-button>
+                            <n-button size="tiny" quaternary @click="refsResults = []">{{ t('output.close') }}</n-button>
                           </span>
                         </div>
                         <div
@@ -307,14 +307,14 @@
                       </div>
                       <pre v-else ref="tipPreRef" class="output-pre" @scroll="onTipScroll">{{ tipOutput }}</pre>
                     </n-tab-pane>
-                    <n-tab-pane name="bookmarks" tab="书签" style="height: 100%;">
+                    <n-tab-pane name="bookmarks" :tab="t('output.bookmarks')" style="height: 100%;">
                       <div ref="bookmarkListRef" class="output-pre refs-list">
                         <div class="refs-header">
-                          <span>书签（共 {{ bookmarkList.length }} 处）</span>
-                          <n-button size="tiny" quaternary @click="clearAllBookmarks">清除全部</n-button>
+                          <span>{{ t('output.bookmarkList', { count: bookmarkList.length }) }}</span>
+                          <n-button size="tiny" quaternary @click="clearAllBookmarks">{{ t('output.clearAll') }}</n-button>
                         </div>
                         <div v-if="bookmarkList.length === 0" class="ref-item" style="cursor: default;">
-                          <span class="ref-preview">暂无书签。按 Ctrl+F2 在当前行添加书签。</span>
+                          <span class="ref-preview">{{ t('output.emptyBookmarks') }}</span>
                         </div>
                         <div
                           v-for="(b, i) in bookmarkList"
@@ -322,33 +322,33 @@
                           class="ref-item"
                           @click="gotoBookmark(b.line)"
                         >
-                          <span class="ref-loc">行 {{ b.line }}</span>
+                          <span class="ref-loc">{{ t('output.line', { line: b.line }) }}</span>
                           <span class="ref-preview">{{ b.preview }}</span>
                         </div>
                       </div>
                     </n-tab-pane>
-                    <n-tab-pane name="history" tab="历史" style="height: 100%;">
+                    <n-tab-pane name="history" :tab="t('output.history')" style="height: 100%;">
                       <div class="output-pre refs-list">
                         <div class="refs-header">
-                          <span>构建历史（共 {{ buildHistory.length }} 条）</span>
-                          <n-button size="tiny" quaternary @click="clearBuildHistory">清除全部</n-button>
+                          <span>{{ t('output.buildHistory', { count: buildHistory.length }) }}</span>
+                          <n-button size="tiny" quaternary @click="clearBuildHistory">{{ t('output.clearAll') }}</n-button>
                         </div>
                         <div v-if="buildHistory.length === 0" class="ref-item" style="cursor: default;">
-                          <span class="ref-preview">暂无构建历史。构建完成后会自动记录。</span>
+                          <span class="ref-preview">{{ t('output.emptyBuildHistory') }}</span>
                         </div>
                         <div v-for="(h, i) in buildHistory" :key="i" class="ref-item" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                           <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
                             <span class="ref-loc">{{ h.time }} · v{{ h.version || '?' }} · {{ h.mode }}</span>
                             <n-space size="tiny">
-                              <n-button size="tiny" quaternary @click.stop="copyBuildHistoryPath(h.artifact)">复制路径</n-button>
-                              <n-button size="tiny" quaternary @click.stop="openBuildHistoryFolder(h.artifact)">打开</n-button>
+                              <n-button size="tiny" quaternary @click.stop="copyBuildHistoryPath(h.artifact)">{{ t('output.copyPath') }}</n-button>
+                              <n-button size="tiny" quaternary @click.stop="openBuildHistoryFolder(h.artifact)">{{ t('output.open') }}</n-button>
                             </n-space>
                           </div>
                           <span class="ref-preview" style="word-break: break-all; width: 100%;">{{ h.artifact }}</span>
                         </div>
                       </div>
                     </n-tab-pane>
-                    <n-tab-pane name="debug" tab="调试" style="height: 100%;">
+                    <n-tab-pane name="debug" :tab="t('output.debug')" style="height: 100%;">
                       <DebugPanel
                         ref="debugPanelRef"
                         :project-path="projectPath"
@@ -949,6 +949,7 @@ import SettingsPanel from './components/SettingsPanel.vue'
 import WindowDesigner from './components/WindowDesigner.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
 import DebugPanel from './components/DebugPanel.vue'
+import { t } from './i18n/index.js'
 
 const themes = getThemes()
 const themeNames = getThemeNames()
@@ -1220,13 +1221,13 @@ function getCommandList() {
     { id: 'build', label: '生成可执行文件', shortcut: '', category: '运行', action: () => buildExecutable(), enabled: hasProject },
     { id: 'buildOptions', label: '编译选项...', shortcut: '', category: '运行', action: () => openBuildOptions(), enabled: hasProject },
     // 调试
-    { id: 'startDebug', label: '开始调试', shortcut: '', category: '调试', action: () => debugPanelRef.value?.startDebug?.(), enabled: hasProject && !dbg },
-    { id: 'stopDebug', label: '停止调试', shortcut: '', category: '调试', action: () => debugPanelRef.value?.stopDebug?.(), enabled: dbg },
-    { id: 'debugContinue', label: '继续执行', shortcut: 'F5', category: '调试', action: () => IDEService.DebugContinue().catch(() => {}), enabled: dbg },
-    { id: 'debugStepOver', label: '单步跳过', shortcut: 'F10', category: '调试', action: () => IDEService.DebugNext().catch(() => {}), enabled: dbg },
-    { id: 'debugStepInto', label: '单步进入', shortcut: 'F11', category: '调试', action: () => IDEService.DebugStep().catch(() => {}), enabled: dbg },
-    { id: 'debugStepOut', label: '单步跳出', shortcut: 'Shift+F11', category: '调试', action: () => IDEService.DebugStepOut().catch(() => {}), enabled: dbg },
-    { id: 'toggleBreakpoint', label: '切换断点', shortcut: 'F9', category: '调试', action: () => { const ln = editorRef.value?.getCurrentLine?.(); if (ln) onToggleBreakpoint(ln) }, enabled: hasEditor },
+    { id: 'startDebug', label: t('command.startDebug'), shortcut: '', category: t('command.categoryDebug'), action: () => debugPanelRef.value?.startDebug?.(), enabled: hasProject && !dbg },
+    { id: 'stopDebug', label: t('command.stopDebug'), shortcut: '', category: t('command.categoryDebug'), action: () => debugPanelRef.value?.stopDebug?.(), enabled: dbg },
+    { id: 'debugContinue', label: t('command.debugContinue'), shortcut: 'F5', category: t('command.categoryDebug'), action: () => IDEService.DebugContinue().catch(() => {}), enabled: dbg },
+    { id: 'debugStepOver', label: t('command.debugStepOver'), shortcut: 'F10', category: t('command.categoryDebug'), action: () => IDEService.DebugNext().catch(() => {}), enabled: dbg },
+    { id: 'debugStepInto', label: t('command.debugStepInto'), shortcut: 'F11', category: t('command.categoryDebug'), action: () => IDEService.DebugStep().catch(() => {}), enabled: dbg },
+    { id: 'debugStepOut', label: t('command.debugStepOut'), shortcut: 'Shift+F11', category: t('command.categoryDebug'), action: () => IDEService.DebugStepOut().catch(() => {}), enabled: dbg },
+    { id: 'toggleBreakpoint', label: t('command.toggleBreakpoint'), shortcut: 'F9', category: t('command.categoryDebug'), action: () => { const ln = editorRef.value?.getCurrentLine?.(); if (ln) onToggleBreakpoint(ln) }, enabled: hasEditor },
     // 视图
     { id: 'fullscreen', label: '切换全屏', shortcut: 'F11', category: '视图', action: () => IDEService.ToggleFullscreen(), enabled: true },
     { id: 'toggleOutput', label: '切换输出面板', shortcut: 'Ctrl+`', category: '视图', action: () => { outputCollapsed.value = !outputCollapsed.value }, enabled: true },
@@ -1371,14 +1372,14 @@ const shortcutGroups = [
     ]
   },
   {
-    name: '调试',
+    name: t('command.categoryDebug'),
     items: [
-      { key: 'debug-continue', desc: '继续执行（调试中）/ 编译运行', keys: ['F5'] },
-      { key: 'debug-step-over', desc: '单步跳过', keys: ['F10'] },
-      { key: 'debug-step-into', desc: '单步进入', keys: ['F11'] },
-      { key: 'debug-step-out', desc: '单步跳出', keys: ['Shift', 'F11'] },
-      { key: 'toggle-bp', desc: '切换断点', keys: ['F9'] },
-      { key: 'toggle-bp-glyph', desc: '切换断点（行号栏）', keys: ['Shift', '点击行号栏'] },
+      { key: 'debug-continue', desc: t('command.debugContinueDesc'), keys: ['F5'] },
+      { key: 'debug-step-over', desc: t('command.debugStepOver'), keys: ['F10'] },
+      { key: 'debug-step-into', desc: t('command.debugStepInto'), keys: ['F11'] },
+      { key: 'debug-step-out', desc: t('command.debugStepOut'), keys: ['Shift', 'F11'] },
+      { key: 'toggle-bp', desc: t('command.toggleBreakpoint'), keys: ['F9'] },
+      { key: 'toggle-bp-glyph', desc: t('command.toggleBreakpointGlyph'), keys: ['Shift', '点击行号栏'] },
     ]
   },
   {
@@ -1395,11 +1396,11 @@ const shortcutGroups = [
     ]
   },
   {
-    name: '书签',
+    name: t('command.categoryBookmark'),
     items: [
-      { key: 'toggle-bookmark', desc: '切换书签', keys: ['Ctrl', 'F2'] },
-      { key: 'next-bookmark', desc: '下一书签', keys: ['Alt', 'F2'] },
-      { key: 'prev-bookmark', desc: '上一书签', keys: ['Alt', 'Shift', 'F2'] },
+      { key: 'toggle-bookmark', desc: t('command.toggleBookmark'), keys: ['Ctrl', 'F2'] },
+      { key: 'next-bookmark', desc: t('command.nextBookmark'), keys: ['Alt', 'F2'] },
+      { key: 'prev-bookmark', desc: t('command.prevBookmark'), keys: ['Alt', 'Shift', 'F2'] },
     ]
   },
   {
@@ -2844,7 +2845,7 @@ const outputTabName = ref('output')
 // P2-17：错误数量徽标 — 计算 errorEntries 中的非空行数
 const errorCount = computed(() => errorEntries.value.filter(e => e.text && e.text.trim()).length)
 // P2-17：动态标签文本（带数量徽标）
-const outputTabLabel = computed(() => errorCount.value > 0 ? `错误 ${errorCount.value}` : '错误')
+const outputTabLabel = computed(() => errorCount.value > 0 ? t('output.errorsWithCount', { count: errorCount.value }) : t('output.errors'))
 // P2-17：输出条数上限 2000 条防内存膨胀
 const OUTPUT_MAX_LINES = 2000
 function appendOutput(text) {
@@ -2899,15 +2900,25 @@ async function loadExternalComponents() {
     for (const pkg of packages) {
       if (!pkg.components || !pkg.components.length) continue
       for (const comp of pkg.components) {
+        // G9 完善：预加载 icon SVG（comp.icon 指向相对组件目录的文件名）
+        let iconData = null
+        if (comp.icon && window.IDEService.ReadComponentFile) {
+          try {
+            const svg = await window.IDEService.ReadComponentFile(pkg.dir, 'components/' + comp.type + '/' + comp.icon)
+            if (svg) iconData = svg
+          } catch {}
+        }
         defs.push({
           type: comp.type,
           label: comp.label || comp.type,
-          icon: null, // 外置组件用 null，设计器 toolbox computed 会回退到 CubeOutline 默认图标
+          icon: iconData, // G9：传 SVG 字符串，toolbox computed 会处理
+          iconIsSvg: !!iconData,
           width: comp.width || 80,
           height: comp.height || 24,
           text: comp.text || '',
           props: comp.props || [],
           events: comp.events || [],
+          preview: comp.preview || null, // G9：预览 HTML 模板
           packageDir: pkg.dir,
           isExternal: true
         })
@@ -3094,6 +3105,14 @@ watch(activeFileIndex, () => {
   setTimeout(() => {
     if (outputTabName.value === 'bookmarks') refreshBookmarkList()
   }, 300)
+  // v0.9.13：切换文件后同步断点（断点按文件隔离，Editor 单实例复用）
+  nextTick(() => {
+    const fileName = activeFile.value?.name
+    if (!fileName) return
+    const bps = debugPanelRef.value?.getBreakpoints?.() || []
+    const lines = bps.filter(bp => bp.file === fileName).map(bp => bp.line)
+    editorRef.value?.setBreakpoints?.(lines)
+  })
 })
 
 // 项目模块引用表（.elib），libVersion 变化时自动刷新
@@ -4208,12 +4227,17 @@ function onToggleBreakpoint(line) {
   const f = activeFile.value
   if (!f) return
   const fileName = f.name
-  debugPanelRef.value?.addBreakpoint?.(fileName, line)
-  // 同步到编辑器装饰
-  editorRef.value?.toggleBreakpointLine?.(line)
-  // 如果调试器正在运行，通过 IDEService 切换 dlv 断点
-  if (isDebugging.value) {
-    IDEService.DebugToggleBreakpoint(fileName, line).catch(() => {})
+  // v0.9.13：先切换 editor 装饰，根据返回值决定 add/remove DebugPanel 列表
+  const isAdded = editorRef.value?.toggleBreakpointLine?.(line)
+  if (isAdded) {
+    // addBreakpoint 内部会在 isDebugging 时调用 dlv，这里不重复调用
+    debugPanelRef.value?.addBreakpoint?.(fileName, line)
+  } else {
+    debugPanelRef.value?.removeBreakpointByFileLine?.(fileName, line)
+    // removeBreakpointByFileLine 只更新列表，dlv 调用在此统一处理
+    if (isDebugging.value) {
+      IDEService.DebugToggleBreakpoint(fileName, line).catch(() => {})
+    }
   }
 }
 

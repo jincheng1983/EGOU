@@ -6,24 +6,24 @@
         class="debug-btn"
         :class="{ active: !isDebugging }"
         :disabled="isDebugging || !projectPath"
-        title="开始调试"
+        :title="t('debug.start')"
         @click="startDebug"
       >
         <span class="debug-btn-icon">▶</span>
       </button>
-      <button class="debug-btn" :disabled="!isDebugging" title="继续 (F5)" @click="continueDebug">
+      <button class="debug-btn" :disabled="!isDebugging" :title="t('debug.continue')" @click="continueDebug">
         <span class="debug-btn-icon">⏵</span>
       </button>
-      <button class="debug-btn" :disabled="!isDebugging" title="单步跳过 (F10)" @click="stepOver">
+      <button class="debug-btn" :disabled="!isDebugging" :title="t('debug.stepOver')" @click="stepOver">
         <span class="debug-btn-icon">⏭</span>
       </button>
-      <button class="debug-btn" :disabled="!isDebugging" title="单步进入 (F11)" @click="stepInto">
+      <button class="debug-btn" :disabled="!isDebugging" :title="t('debug.stepInto')" @click="stepInto">
         <span class="debug-btn-icon">⏎</span>
       </button>
-      <button class="debug-btn" :disabled="!isDebugging" title="单步跳出 (Shift+F11)" @click="stepOut">
+      <button class="debug-btn" :disabled="!isDebugging" :title="t('debug.stepOut')" @click="stepOut">
         <span class="debug-btn-icon">⏮</span>
       </button>
-      <button class="debug-btn stop" :disabled="!isDebugging" title="停止调试" @click="stopDebug">
+      <button class="debug-btn stop" :disabled="!isDebugging" :title="t('debug.stop')" @click="stopDebug">
         <span class="debug-btn-icon">⏹</span>
       </button>
       <span v-if="debugStatus" class="debug-status">{{ debugStatus }}</span>
@@ -32,11 +32,11 @@
     <!-- 调用栈 -->
     <div class="debug-section">
       <div class="debug-section-header" @click="toggleSection('stack')">
-        <span class="debug-section-title">调用栈</span>
+        <span class="debug-section-title">{{ t('debug.callStack') }}</span>
         <span class="debug-section-count">{{ stacktrace.length }}</span>
       </div>
       <div v-show="sections.stack" class="debug-section-body">
-        <div v-if="stacktrace.length === 0" class="debug-empty">暂无调用栈</div>
+        <div v-if="stacktrace.length === 0" class="debug-empty">{{ t('common.empty') }}</div>
         <div
           v-for="(frame, i) in stacktrace"
           :key="i"
@@ -53,11 +53,11 @@
     <!-- 变量 -->
     <div class="debug-section">
       <div class="debug-section-header" @click="toggleSection('vars')">
-        <span class="debug-section-title">变量</span>
+        <span class="debug-section-title">{{ t('debug.variables') }}</span>
         <span class="debug-section-count">{{ allVars.length }}</span>
       </div>
       <div v-show="sections.vars" class="debug-section-body">
-        <div v-if="allVars.length === 0" class="debug-empty">暂无变量</div>
+        <div v-if="allVars.length === 0" class="debug-empty">{{ t('common.empty') }}</div>
         <div v-for="v in allVars" :key="v._key" class="debug-var">
           <span class="debug-var-name">{{ v.name }}</span>
           <span class="debug-var-value" :title="v.value">{{ v.value }}</span>
@@ -69,11 +69,11 @@
     <!-- 断点列表 -->
     <div class="debug-section">
       <div class="debug-section-header" @click="toggleSection('bp')">
-        <span class="debug-section-title">断点</span>
+        <span class="debug-section-title">{{ t('debug.breakpoints') }}</span>
         <span class="debug-section-count">{{ breakpoints.length }}</span>
       </div>
       <div v-show="sections.bp" class="debug-section-body">
-        <div v-if="breakpoints.length === 0" class="debug-empty">暂无断点（在编辑器行号左侧点击添加）</div>
+        <div v-if="breakpoints.length === 0" class="debug-empty">{{ t('debug.noBreakpoints') }}</div>
         <div
           v-for="(bp, i) in breakpoints"
           :key="i"
@@ -81,7 +81,7 @@
           @click="$emit('jump-to', bp.file, bp.line)"
         >
           <span class="debug-bp-loc">{{ bp.file }}:{{ bp.line }}</span>
-          <button class="debug-bp-del" title="删除断点" @click.stop="removeBreakpoint(i)">✕</button>
+          <button class="debug-bp-del" :title="t('debug.removeBreakpoint')" @click.stop="removeBreakpoint(i)">✕</button>
         </div>
       </div>
     </div>
@@ -92,6 +92,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { IDEService } from '../../bindings/egou/internal/app'
 import { Events } from '@wailsio/runtime'
+import { t } from '../i18n/index.js'
 
 const props = defineProps({
   projectPath: { type: String, default: '' }
@@ -108,8 +109,8 @@ const selectedFrame = ref(0)
 const sections = reactive({ stack: true, vars: true, bp: false })
 
 const allVars = computed(() => {
-  const locals = (variables.value.locals || []).map((v, i) => ({ ...v, _key: 'l' + i, _kind: '局部' }))
-  const args = (variables.value.arguments || []).map((v, i) => ({ ...v, _key: 'a' + i, _kind: '参数' }))
+  const locals = (variables.value.locals || []).map((v, i) => ({ ...v, _key: 'l' + i, _kind: t('debug.localVars') }))
+  const args = (variables.value.arguments || []).map((v, i) => ({ ...v, _key: 'a' + i, _kind: t('debug.argVars') }))
   return [...args, ...locals]
 })
 
@@ -118,7 +119,7 @@ let offHalt, offExit, offLog, offError
 onMounted(() => {
   offHalt = Events.On('debug:halt', (ev) => {
     isDebugging.value = true
-    debugStatus.value = ev.data.exited ? '已退出' : (ev.data.stopReason || '已暂停')
+    debugStatus.value = ev.data.exited ? t('debug.exited') : (ev.data.stopReason || t('debug.paused'))
     if (!ev.data.exited && ev.data.file) {
       emit('jump-to', ev.data.file, ev.data.line)
     }
@@ -126,7 +127,7 @@ onMounted(() => {
   })
   offExit = Events.On('debug:exit', () => {
     isDebugging.value = false
-    debugStatus.value = '程序已退出'
+    debugStatus.value = t('debug.exited')
     stacktrace.value = []
     variables.value = { locals: [], arguments: [] }
   })
@@ -135,10 +136,10 @@ onMounted(() => {
     emit('debug-log', ev.data.line)
   })
   offError = Events.On('debug:error', (ev) => {
-    const errMsg = ev?.data?.error || '未知错误'
-    debugStatus.value = '错误: ' + errMsg
+    const errMsg = ev?.data?.error || t('debug.unknownError')
+    debugStatus.value = t('debug.error', { msg: errMsg })
     // v0.9.7：错误也输出到调试日志面板，让用户看到完整错误信息
-    emit('debug-log', '✗ 调试错误: ' + errMsg)
+    emit('debug-log', '✗ ' + t('debug.error', { msg: errMsg }))
   })
 })
 
@@ -155,31 +156,31 @@ function toggleSection(key) {
 
 async function startDebug() {
   if (!props.projectPath) {
-    debugStatus.value = '未打开项目，无法调试'
-    emit('debug-log', '⚠ 未打开项目，无法启动调试')
+    debugStatus.value = t('debug.noProject')
+    emit('debug-log', '⚠ ' + t('debug.noProject'))
     return
   }
   if (isDebugging.value) {
-    debugStatus.value = '已在调试中'
+    debugStatus.value = t('debug.alreadyDebugging')
     return
   }
-  debugStatus.value = '编译中...'
+  debugStatus.value = t('debug.compiling')
   try {
     const bps = breakpoints.value.map(bp => ({ file: bp.file, line: bp.line }))
     await IDEService.StartDebug(props.projectPath, bps)
     isDebugging.value = true
-    debugStatus.value = '运行到入口断点...' // v0.9.8：后端自动 Continue 到 main.eg 入口
+    debugStatus.value = t('debug.runningToEntry') // v0.9.8：后端自动 Continue 到 main.eg 入口
     emit('debug-started')
   } catch (e) {
-    const msg = e?.message || String(e) || '未知错误'
-    debugStatus.value = '启动失败: ' + msg
+    const msg = e?.message || String(e) || t('debug.unknownError')
+    debugStatus.value = t('debug.startFailed', { msg })
     // dlv 未安装时给出友好提示
     if (msg.includes('未找到 dlv') || msg.includes('Delve')) {
-      emit('debug-log', '⚠ 调试启动失败: 未安装 Delve 调试器')
-      emit('debug-log', '  请在命令行执行: go install github.com/go-delve/delve/cmd/dlv@latest')
-      emit('debug-log', '  或在「设置 → 编译 → 工具链路径」配置 dlv 路径')
+      emit('debug-log', '⚠ ' + t('debug.startFailed', { msg: 'Delve' }))
+      emit('debug-log', '  go install github.com/go-delve/delve/cmd/dlv@latest')
+      emit('debug-log', '  ' + t('settings.toolchainPath') + ' → dlv')
     } else {
-      emit('debug-log', '⚠ 调试启动失败: ' + msg)
+      emit('debug-log', '⚠ ' + t('debug.startFailed', { msg }))
     }
   }
 }
@@ -195,35 +196,35 @@ async function stopDebug() {
 }
 
 async function continueDebug() {
-  debugStatus.value = '运行中...'
+  debugStatus.value = t('debug.running')
   try { await IDEService.DebugContinue() } catch (e) {
     const msg = e?.message || String(e)
-    debugStatus.value = '错误: ' + msg
-    emit('debug-log', '✗ 继续执行失败: ' + msg)
+    debugStatus.value = t('debug.error', { msg })
+    emit('debug-log', '✗ ' + t('debug.continue') + ': ' + msg)
   }
 }
 async function stepOver() {
-  debugStatus.value = '单步跳过...'
+  debugStatus.value = t('debug.stepOverIng')
   try { await IDEService.DebugNext() } catch (e) {
     const msg = e?.message || String(e)
-    debugStatus.value = '错误: ' + msg
-    emit('debug-log', '✗ 单步跳过失败: ' + msg)
+    debugStatus.value = t('debug.error', { msg })
+    emit('debug-log', '✗ ' + t('debug.stepOver') + ': ' + msg)
   }
 }
 async function stepInto() {
-  debugStatus.value = '单步进入...'
+  debugStatus.value = t('debug.stepIntoIng')
   try { await IDEService.DebugStep() } catch (e) {
     const msg = e?.message || String(e)
-    debugStatus.value = '错误: ' + msg
-    emit('debug-log', '✗ 单步进入失败: ' + msg)
+    debugStatus.value = t('debug.error', { msg })
+    emit('debug-log', '✗ ' + t('debug.stepInto') + ': ' + msg)
   }
 }
 async function stepOut() {
-  debugStatus.value = '单步跳出...'
+  debugStatus.value = t('debug.stepOutIng')
   try { await IDEService.DebugStepOut() } catch (e) {
     const msg = e?.message || String(e)
-    debugStatus.value = '错误: ' + msg
-    emit('debug-log', '✗ 单步跳出失败: ' + msg)
+    debugStatus.value = t('debug.error', { msg })
+    emit('debug-log', '✗ ' + t('debug.stepOut') + ': ' + msg)
   }
 }
 
@@ -266,7 +267,15 @@ function removeBreakpoint(index) {
   }
 }
 
-defineExpose({ addBreakpoint, removeBreakpoint, isDebugging, startDebug, stopDebug, continueDebug, stepOver, stepInto, stepOut })
+// v0.9.13：按 file+line 删除断点（F9 切换删除断点时同步 DebugPanel 列表）
+function removeBreakpointByFileLine(file, line) {
+  const idx = breakpoints.value.findIndex(bp => bp.file === file && bp.line === line)
+  if (idx >= 0) {
+    breakpoints.value.splice(idx, 1)
+  }
+}
+
+defineExpose({ addBreakpoint, removeBreakpoint, removeBreakpointByFileLine, isDebugging, startDebug, stopDebug, continueDebug, stepOver, stepInto, stepOut, getBreakpoints: () => breakpoints.value })
 </script>
 
 <style scoped>

@@ -8,10 +8,10 @@
         :render-label="renderAgentLabel"
         class="ai-agent-select"
       />
-      <n-button text size="tiny" class="ai-header-btn" title="历史会话" @click="toggleHistory">
+      <n-button text size="tiny" class="ai-header-btn" :title="t('ai.history')" @click="toggleHistory">
         <n-icon :component="TimeOutline" />
       </n-button>
-      <n-button text size="tiny" class="ai-header-btn" title="新建会话" @click="newChat">
+      <n-button text size="tiny" class="ai-header-btn" :title="t('ai.newChat')" @click="newChat">
         <n-icon :component="AddCircleOutline" />
       </n-button>
     </div>
@@ -25,7 +25,7 @@
     </div>
     <div v-if="historyVisible" class="ai-history-panel">
       <div class="ai-history-header">
-        <span class="ai-history-title">历史会话</span>
+        <span class="ai-history-title">{{ t('ai.history') }}</span>
         <n-button text size="tiny" @click="historyVisible = false">✕</n-button>
       </div>
       <div class="ai-history-list">
@@ -35,28 +35,28 @@
           class="ai-history-item"
           @click="loadHistory(hidx)"
         >
-          <span class="ai-history-preview">{{ h.preview || '新会话' }}</span>
+          <span class="ai-history-preview">{{ h.preview || t('ai.newChatLabel') }}</span>
           <n-button text size="tiny" type="error" @click.stop="deleteHistory(hidx)">✕</n-button>
         </div>
-        <div v-if="chatHistory.length === 0" class="ai-history-empty">暂无历史会话</div>
+        <div v-if="chatHistory.length === 0" class="ai-history-empty">{{ t('ai.emptyHistory') }}</div>
       </div>
     </div>
     <div ref="chatRef" class="ai-chat">
       <div v-if="!aiAccepted" class="ai-empty">
         <div class="ai-permission">
-          <div class="ai-perm-title">AI 助手使用须知</div>
+          <div class="ai-perm-title">{{ t('ai.permission') }}</div>
           <div class="ai-perm-body">
-            <p>AI 助手可以帮助你编写、解释和调试 EGOU 代码。使用前请注意：</p>
+            <p>{{ t('ai.permissionBody') }}</p>
             <ul>
-              <li>AI 可能会生成错误的代码，请在运行前仔细检查</li>
-              <li>对话内容将发送到你在「系统设置 → AI」中配置的模型提供商</li>
-              <li>API Key 保存在本地 localStorage 中，不会上传到任何第三方</li>
-              <li>AI 不会自动修改你的文件，除非你明确确认</li>
+              <li>{{ t('ai.permissionItem1') }}</li>
+              <li>{{ t('ai.permissionItem2') }}</li>
+              <li>{{ t('ai.permissionItem3') }}</li>
+              <li>{{ t('ai.permissionItem4') }}</li>
             </ul>
           </div>
           <div class="ai-perm-actions">
-            <n-button type="primary" size="small" @click="acceptAI">同意并开始使用</n-button>
-            <n-button text size="small" @click="goToSettings">前往 AI 设置</n-button>
+            <n-button type="primary" size="small" @click="acceptAI">{{ t('ai.accept') }}</n-button>
+            <n-button text size="small" @click="goToSettings">{{ t('ai.goToSettings') }}</n-button>
           </div>
         </div>
       </div>
@@ -65,10 +65,10 @@
           <div class="ai-thinking-dots">
             <span></span><span></span><span></span>
           </div>
-          <span class="ai-thinking-text">AI 正在思考...</span>
+          <span class="ai-thinking-text">{{ t('ai.thinking') }}</span>
         </div>
         <div v-else-if="messages.length === 0" class="ai-empty">
-          <n-empty description="输入问题，AI 将协助你编写代码" size="small" />
+          <n-empty :description="t('ai.inputPlaceholder')" size="small" />
         </div>
         <div v-else class="ai-messages">
           <div
@@ -86,7 +86,7 @@
               <div class="ai-thinking-dots">
                 <span></span><span></span><span></span>
               </div>
-              <span class="ai-thinking-text">正在思考...</span>
+              <span class="ai-thinking-text">{{ t('ai.thinking') }}</span>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@
           v-model:value="input"
           type="textarea"
           :autosize="{ minRows: 2, maxRows: 6 }"
-          placeholder="输入问题... (@ 引用当前文件)"
+          :placeholder="t('ai.inputPlaceholder')"
           :disabled="loading"
           class="ai-textarea"
           @keydown="onKeyDown"
@@ -131,22 +131,22 @@
           size="tiny"
           :options="modelOptions"
           class="ai-model-select-bottom"
-          placeholder="选择模型"
+          :placeholder="t('settings.defaultModel')"
         />
-        <n-button text class="ai-tool-btn" title="引用当前文件 (@)" @click="insertFileContext">
+        <n-button text class="ai-tool-btn" :title="t('ai.send') + ' (@)'" @click="insertFileContext">
           @
         </n-button>
-        <n-button v-if="supportsFiles" text class="ai-tool-btn" title="附件">
+        <n-button v-if="supportsFiles" text class="ai-tool-btn" :title="t('common.attach')">
           <n-icon :component="AttachOutline" />
         </n-button>
-        <n-button v-if="supportsVision" text class="ai-tool-btn" title="图片">
+        <n-button v-if="supportsVision" text class="ai-tool-btn" :title="t('common.image')">
           <n-icon :component="ImageOutline" />
         </n-button>
         <div class="ai-tools-spacer"></div>
-        <n-button v-show="loading" text class="ai-stop-btn" title="停止生成" @click="stopGenerate">
+        <n-button v-show="loading" text class="ai-stop-btn" :title="t('ai.stop')" @click="stopGenerate">
           <n-icon :component="StopOutline" />
         </n-button>
-        <n-button v-show="!loading" class="ai-send-btn" title="发送 (Enter)" :disabled="!input.trim()" @click="send">
+        <n-button v-show="!loading" class="ai-send-btn" :title="t('ai.send') + ' (Enter)'" :disabled="!input.trim()" @click="send">
           <n-icon :component="SendOutline" />
         </n-button>
       </div>
@@ -162,6 +162,7 @@ import { IDEService } from '../../bindings/egou/internal/app'
 import { Events } from '@wailsio/runtime'
 import { BUILTIN_AGENTS, autoSelectAgent, DEFAULT_AGENT_ID, CAPABILITY_LABELS } from '../lib/aiAgents.js'
 import { BUILTIN_SKILLS, matchSkill, formatSkillResult, EG_SYNTAX_REFERENCE, injectSkillPrompt } from '../lib/aiSkills.js'
+import { t } from '../i18n/index.js'
 
 const message = useMessage()
 

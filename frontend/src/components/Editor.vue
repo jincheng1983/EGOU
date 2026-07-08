@@ -11,6 +11,7 @@ import {
   BLOCK_STARTS, BLOCK_ENDS, BLOCK_MIDS,
   isKeyword, isTypeKeyword, isBlockStart, isBlockEnd, isSupportAlias
 } from '../utils/egKeywords.js'
+import { t } from '../i18n/index.js'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -161,7 +162,7 @@ onMounted(() => {
         options: {
           isWholeLine: false,
           glyphMarginClassName: 'eg-bookmark-glyph',
-          glyphMarginHoverMessage: { value: '书签 (行 ' + line + ')' },
+          glyphMarginHoverMessage: { value: t('editor.bookmark', { line }) },
           stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
         }
       }))
@@ -247,7 +248,7 @@ onMounted(() => {
         options: {
           isWholeLine: false,
           glyphMarginClassName: 'eg-breakpoint-glyph',
-          glyphMarginHoverMessage: { value: '断点 (行 ' + line + ')' },
+          glyphMarginHoverMessage: { value: t('editor.breakpoint', { line }) },
           stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
         }
       }))
@@ -270,7 +271,7 @@ onMounted(() => {
         options: {
           isWholeLine: false,
           glyphMarginClassName: 'eg-debug-current-glyph',
-          glyphMarginHoverMessage: { value: '当前执行位置' },
+          glyphMarginHoverMessage: { value: t('editor.currentLine') },
           stickiness: monaco.editor.TrackedRange.Stickiness.NeverGrowsWhenTypingAtEdges
         }
       }])
@@ -303,9 +304,13 @@ onMounted(() => {
   }
 
   function clearDebugState() {
-    debugBreakpoints.clear()
+    // v0.9.13：只清当前执行行，不清用户断点（调试结束后断点应保留）
     debugCurrentLine = 0
-    updateBreakpointDecorations()
+    updateCurrentLineDecoration()
+  }
+
+  function clearCurrentLineOnly() {
+    debugCurrentLine = 0
     updateCurrentLineDecoration()
   }
 
@@ -334,24 +339,24 @@ onMounted(() => {
         label: kw,
         kind: monaco.languages.CompletionItemKind.Keyword,
         insertText: kw,
-        detail: '关键字',
+        detail: t('editor.keyword'),
         range
       }))
-      TYPE_KEYWORDS.forEach(t => suggestions.push({
-        label: t,
+      TYPE_KEYWORDS.forEach(tk => suggestions.push({
+        label: tk,
         kind: monaco.languages.CompletionItemKind.TypeParameter,
-        insertText: t,
-        detail: '数据类型',
+        insertText: tk,
+        detail: t('editor.dataType'),
         range
       }))
       // 代码片段补全项
       Object.entries(SNIPPETS).forEach(([trigger, template]) => {
         suggestions.push({
-          label: trigger + ' (代码片段)',
+          label: trigger + ' (' + t('editor.snippet') + ')',
           kind: monaco.languages.CompletionItemKind.Snippet,
           insertText: template,
           insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          detail: '代码片段',
+          detail: t('editor.snippet'),
           range
         })
       })
@@ -646,7 +651,7 @@ onMounted(() => {
         if (resp && resp.symbols) {
           const sym = resp.symbols.find(s => s.name === wd)
           if (sym) {
-            const kindLabel = { function: '函数', method: '方法', type: '类型', const: '常量', var: '变量' }[sym.kind] || sym.kind
+            const kindLabel = { function: t('editor.function'), method: t('editor.method'), type: t('editor.type'), const: t('editor.const'), var: t('editor.var') }[sym.kind] || sym.kind
             let md = '**' + kindLabel + ' ' + sym.name + '**'
             if (sym.params && sym.params.length > 0) {
               md += '\n\n```eg\n参数：\n' + sym.params.map(p => '  ' + p.name + ': ' + p.type).join('\n') + '\n```'
@@ -721,7 +726,7 @@ onMounted(() => {
       let params = []
       if (isSupportAlias(funcName)) {
         label = SUPPORT_ALIASES[funcName] || (funcName + '(...)')
-        docStr = '支持库命令'
+        docStr = t('editor.libCommand')
         // 简单从签名提取参数：foo(a, b) -> ['a', 'b']
         const m = label.match(/\(([^)]*)\)/)
         if (m && m[1].trim()) {
@@ -738,7 +743,7 @@ onMounted(() => {
               const paramList = sym.params.map(p => p.name + ': ' + p.type).join(', ')
               label = funcName + '(' + paramList + ')'
               if (sym.returnType) label += ': ' + sym.returnType
-              docStr = sym.kind === 'method' ? '方法' : '函数'
+              docStr = sym.kind === 'method' ? t('editor.method') : t('editor.function')
               params = sym.params.map(p => ({ label: p.name + ': ' + p.type }))
             }
           }
@@ -847,6 +852,14 @@ onMounted(() => {
   editor._nextBookmark = nextBookmark
   editor._prevBookmark = prevBookmark
   editor._clearAllBookmarks = clearAllBookmarks
+  // 调试器：断点 + 当前执行行（v0.9.12：这些函数定义在 onMounted 内，
+  // 必须挂到 editor 上才能被 defineExpose 访问，否则 ReferenceError）
+  editor._setBreakpoints = setBreakpoints
+  editor._toggleBreakpointLine = toggleBreakpointLine
+  editor._setCurrentLine = setCurrentLine
+  editor._clearDebugState = clearDebugState
+  editor._clearCurrentLineOnly = clearCurrentLineOnly
+  editor._debugBreakpoints = debugBreakpoints
 })
 
 onUnmounted(() => {
@@ -872,6 +885,12 @@ watch(() => props.modelValue, (v) => {
     if (diagTimer) clearTimeout(diagTimer)
     diagTimer = setTimeout(updateDiagnostics, 300)
   }
+})
+
+// v0.9.13：切换文件时清除当前执行行高亮（当前行只属于被调试的文件）
+// 断点不在此清除——由 App.vue 通过 setBreakpoints 按文件同步
+watch(() => props.fileId, () => {
+  editor?._clearCurrentLineOnly?.()
 })
 
 watch(() => props.isDark, () => {
@@ -917,12 +936,12 @@ defineExpose({
   nextBookmark: () => editor?._nextBookmark?.(),
   prevBookmark: () => editor?._prevBookmark?.(),
   clearBookmarks: () => editor?._clearAllBookmarks?.(),
-  // 调试器：断点 + 当前执行行
-  setBreakpoints: (lines) => setBreakpoints?.(lines),
-  toggleBreakpointLine: (line) => toggleBreakpointLine?.(line),
-  setCurrentLine: (line) => setCurrentLine?.(line),
-  clearDebugState: () => clearDebugState?.(),
-  getBreakpoints: () => [...debugBreakpoints],
+  // 调试器：断点 + 当前执行行（v0.9.12：通过 editor 引用，避免 ReferenceError）
+  setBreakpoints: (lines) => editor?._setBreakpoints?.(lines),
+  toggleBreakpointLine: (line) => editor?._toggleBreakpointLine?.(line),
+  setCurrentLine: (line) => editor?._setCurrentLine?.(line),
+  clearDebugState: () => editor?._clearDebugState?.(),
+  getBreakpoints: () => [...(editor?._debugBreakpoints || [])],
   getCurrentLine: () => editor ? editor.getPosition().lineNumber : 0,
   flashLine: () => {},
   runAction: (id) => {
