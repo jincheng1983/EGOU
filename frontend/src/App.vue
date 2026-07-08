@@ -974,9 +974,21 @@ const themeOverrides = computed(() => {
   const accent = preset.variables['--accent-color'] || '#63e2b7'
   const accentHover = preset.variables['--accent-hover'] || accent
   const fs = uiFontSize.value + 'px'
-  // Naive UI 组件根据 size 属性选择不同字号变量（fontSizeTiny/Small/Medium/Large/Huge），
-  // 若只设 common.fontSize 则 size="tiny"/"small" 的组件仍用各自默认值，导致字号不统一。
-  // 这里把所有字号变量统一设为界面字号，确保下拉框/输入框/选择框等无论 size 都字号一致。
+  // Naive UI 字号统一策略：
+  // 1. common.fontSize* 全部设为界面字号 → 覆盖 Input/Button/Select/Checkbox/Radio/Dropdown/
+  //    Empty/Table/Menu/Tree/List/Alert/Popover/Collapse/InternalSelection/InternalSelectMenu 等
+  // 2. 各组件独立命名/硬编码的字号变量（不跟随 common）必须单独覆盖：
+  //    Tabs(tabFontSize*)/Card(titleFontSize*)/Dialog(titleFontSize)/Drawer(titleFontSize)/
+  //    Tag(fontSize*)/Badge(fontSize)/Message(fontSize)/Notification(title/meta/desc)/
+  //    Form(feedback/label*)/Pagination(item/jumper*)/Typography(header*)/PageHeader(title)/
+  //    Anchor(link)/Timeline(title*)/Steps(stepHeader/indicatorIndex*)/Statistic(value)/
+  //    Progress(circle)/TimePicker(item)/Calendar(title)/Transfer(extra/title*)/Result(title/fontSize*)
+  // 3. 保留视觉层级的特殊场景：Statistic 大数字、Progress 圆环、Typography 标题、Result 标题、
+  //    Calendar/CalendarTitle 用稍大字号，不与正文完全一致
+  const sm = (uiFontSize.value - 1) + 'px'  // 小一档（次要文字）
+  const xs = (uiFontSize.value - 2) + 'px'  // 超小档（角标/元信息）
+  const lg = (uiFontSize.value + 1) + 'px'  // 大一档（区域标题）
+  const xl = (uiFontSize.value + 2) + 'px'  // 超大档（面板/对话框标题）
   return {
     common: {
       borderRadius: '8px',
@@ -992,6 +1004,106 @@ const themeOverrides = computed(() => {
       primaryColorHover: accentHover,
       primaryColorPressed: accentHover,
       primaryColorSuppl: accent
+    },
+    // 标签页（输出栏/错误/提示/书签/历史/调试 标签）— 独立字号变量，必须单独覆盖
+    Tabs: {
+      tabFontSizeSmall: fs,
+      tabFontSizeMedium: fs,
+      tabFontSizeLarge: fs,
+      tabFontSizeCard: fs
+    },
+    // 卡片标题
+    Card: {
+      titleFontSizeSmall: lg,
+      titleFontSizeMedium: lg,
+      titleFontSizeLarge: xl,
+      titleFontSizeHuge: xl
+    },
+    // 对话框/抽屉标题
+    Dialog: { titleFontSize: xl },
+    Drawer: { titleFontSize: xl },
+    PageHeader: { titleFontSize: xl },
+    // 标签（能力徽章等）— 重新映射型，比 common 小一档，保持角标视觉
+    Tag: {
+      fontSizeTiny: xs,
+      fontSizeSmall: xs,
+      fontSizeMedium: sm,
+      fontSizeLarge: sm
+    },
+    // 徽标数字
+    Badge: { fontSize: xs },
+    // 消息提示
+    Message: { fontSize: fs },
+    // 通知标题/元信息/描述
+    Notification: {
+      titleFontSize: lg,
+      metaFontSize: xs,
+      descriptionFontSize: sm
+    },
+    // 表单反馈/标签
+    Form: {
+      feedbackFontSizeSmall: sm,
+      feedbackFontSizeMedium: fs,
+      feedbackFontSizeLarge: fs,
+      labelFontSizeLeftSmall: fs,
+      labelFontSizeLeftMedium: fs,
+      labelFontSizeLeftLarge: lg,
+      labelFontSizeTopSmall: sm,
+      labelFontSizeTopMedium: fs,
+      labelFontSizeTopLarge: fs
+    },
+    // 分页
+    Pagination: {
+      itemFontSizeSmall: xs,
+      itemFontSizeMedium: fs,
+      itemFontSizeLarge: fs,
+      jumperFontSizeSmall: xs,
+      jumperFontSizeMedium: fs,
+      jumperFontSizeLarge: fs
+    },
+    // 时间线/步骤
+    Timeline: {
+      titleFontSizeMedium: fs,
+      titleFontSizeLarge: lg
+    },
+    Steps: {
+      stepHeaderFontSizeSmall: fs,
+      stepHeaderFontSizeMedium: lg,
+      indicatorIndexFontSizeSmall: fs,
+      indicatorIndexFontSizeMedium: lg
+    },
+    // 锚点链接
+    Anchor: { linkFontSize: fs },
+    // 时间选择器项
+    TimePicker: { itemFontSize: sm },
+    // 统计数值（保留大字号视觉层级）
+    Statistic: {
+      labelFontSize: fs,
+      valueFontSize: (uiFontSize.value + 6) + 'px'
+    },
+    // 进度条圆环数字（保留大字号）
+    Progress: { fontSizeCircle: (uiFontSize.value + 8) + 'px' },
+    // 日历标题
+    Calendar: { titleFontSize: lg },
+    // 穿梭框
+    Transfer: {
+      extraFontSizeSmall: xs,
+      extraFontSizeMedium: xs,
+      extraFontSizeLarge: sm,
+      titleFontSizeSmall: fs,
+      titleFontSizeMedium: lg,
+      titleFontSizeLarge: lg
+    },
+    // 结果页（保留大标题视觉层级）
+    Result: {
+      titleFontSizeSmall: xl,
+      titleFontSizeMedium: (uiFontSize.value + 4) + 'px',
+      titleFontSizeLarge: (uiFontSize.value + 6) + 'px',
+      titleFontSizeHuge: (uiFontSize.value + 8) + 'px',
+      fontSizeSmall: fs,
+      fontSizeMedium: fs,
+      fontSizeLarge: lg,
+      fontSizeHuge: lg
     }
   }
 })
