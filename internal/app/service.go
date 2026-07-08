@@ -88,15 +88,9 @@ func (s *IDEService) SetResourceDir(dir string) {
 }
 
 // SetBuildOptions 由前端同步"编译选项"设置到后端。
-// garbleLevel 控制用户编译产物的 Garble 源码混淆强度：
-//   - "off"   : 普通 go build，产物保留原始符号（便于调试自己的程序）
-//   - "basic" : garble -tiny，仅混淆变量名/函数名/类型名 + 移除文件名/行号（默认，无杀软误杀）
-//   - "full"  : garble -literals -tiny，再加字符串字面量运行时解密（最强，但可能触发杀软误报）
-// 前端在 IDE 启动时和强度下拉变化时调用此方法。
-// v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一防逆向手段。
-// v0.8.0 修订：原布尔开关改为三档强度，吸取 -literals 触发 TrojanSpy/Stealer.uj 误报的教训。
-func (s *IDEService) SetBuildOptions(garbleLevel string) {
-	runner.SetGarbleLevel(garbleLevel)
+// v0.11.33 起 Garble 已移除（需要 git、兼容性问题多、实际防逆向效果有限），
+// 保留空方法避免前端 Wails 绑定报错。
+func (s *IDEService) SetBuildOptions(_ string) {
 }
 
 // SetGoPath 由前端同步"Go 编译器路径"设置到后端。

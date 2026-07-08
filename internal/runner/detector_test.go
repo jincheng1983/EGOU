@@ -69,8 +69,8 @@ func TestDetectToolchains(t *testing.T) {
 	if tc.CGO.Path != "" && tc.CGO.Version == "" {
 		t.Errorf("CGO.Path 非空但 Version 为空，应能解析版本号")
 	}
-	t.Logf("检测结果: Go=%+v, CGO=%+v, Windres=%+v, NPM=%+v, Garble=%+v, Rsrc=%+v, Wails3=%+v",
-		tc.Go, tc.CGO, tc.Windres, tc.NPM, tc.Garble, tc.Rsrc, tc.Wails3)
+	t.Logf("检测结果: Go=%+v, CGO=%+v, Windres=%+v, NPM=%+v, Rsrc=%+v, Wails3=%+v, Delve=%+v",
+		tc.Go, tc.CGO, tc.Windres, tc.NPM, tc.Rsrc, tc.Wails3, tc.Delve)
 }
 
 // TestHealthCheckWithTempHome 验证 HealthCheck 在隔离 HOME 环境下不污染用户目录。

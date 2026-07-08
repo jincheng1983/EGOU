@@ -63,18 +63,6 @@ func detectBundledGo() string {
 	return "go"
 }
 
-// garbleLevel 控制用户编译产物的 Garble 源码混淆强度，由 IDE 启动时通过 SetGarbleLevel 注入。
-//
-// 三档强度（v0.8.0 修订，吸取 -literals 触发杀软误报 TrojanSpy/Stealer.uj 的教训）：
-//   - "off"   : 普通 go build，产物保留原始符号（便于调试自己的程序）
-//   - "basic" : garble -tiny，仅混淆变量名/函数名/类型名 + 移除文件名/行号信息（默认，无杀软误杀）
-//   - "full"  : garble -literals -tiny，再加字符串字面量运行时解密（最强，但可能触发杀软误报）
-//
-// 默认 "basic"：在不触发杀软的前提下提供基础防逆向。
-// 用户在设置中可切换到 "full"（接受误报风险）或 "off"（便于调试）。
-// v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一的防逆向手段。
-var garbleLevel = "basic"
-
 // buildGoEnv 构造 go 子进程的环境变量。
 // 关键修复（v0.11.23）：强制使用内置 Go SDK 的环境，彻底隔离用户系统 Go。
 //
@@ -88,7 +76,7 @@ var garbleLevel = "basic"
 // 最终方案：当使用内置 SDK 时，剔除 PATH 中的其他 Go 相关路径，并把内置 SDK 的
 // bin 目录前置到 PATH，确保 go tool 命令只找内置 SDK 的工具。
 //
-// v0.11.27 修复：同时将 exe 同级 tools/ 目录加入 PATH（garble/wails3 等工具查找），
+// v0.11.27 修复：同时将 exe 同级 tools/ 目录加入 PATH（wails3 等工具查找），
 // 确保在无 Go 系统安装的环境中也能正常运行。
 func buildGoEnv() []string {
 	env := os.Environ()
@@ -128,7 +116,7 @@ func buildGoEnv() []string {
 				}
 				cleanPaths = append(cleanPaths, p)
 			}
-			// 前置顺序：go/bin（go 命令最优先）→ tools/（garble/wails3）→ 系统 PATH
+			// 前置顺序：go/bin（go 命令最优先）→ tools/（wails3）→ 系统 PATH
 			prepend := []string{bundledBin}
 			if toolsDir != "" {
 				prepend = append(prepend, toolsDir)
@@ -211,19 +199,6 @@ func GetGoBinary() string {
 // 编译用户程序时从该目录复制模板到临时构建目录，替代旧的 go:embed 嵌入方式。
 func SetTemplateDir(dir string) {
 	templateDir = dir
-}
-
-// SetGarbleLevel 设置用户编译产物的 Garble 源码混淆强度。
-// 由前端"编译选项"下拉同步过来（IDEService.SetBuildOptions 调用）。
-// level 取值："off"（关闭）/ "basic"（仅 -tiny，默认）/ "full"（-literals -tiny，可能误报）。
-// 非法值统一回退为 "basic"。
-func SetGarbleLevel(level string) {
-	switch level {
-	case "off", "basic", "full":
-		garbleLevel = level
-	default:
-		garbleLevel = "basic"
-	}
 }
 
 // transpileCache 缓存源码哈希 → 转译后的 Go 代码，实现增量编译。
@@ -352,8 +327,6 @@ func buildSourceEx(src string, projectPath string, sink EventSink, release bool)
 	if release {
 		mode = "release"
 	}
-	// Garble 源码混淆：在 go build 阶段完成（不是后处理），见 buildRuntime 中的 garble 调用。
-	// v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一防逆向手段。
 	if release {
 		// release 构建成功后递增 patch 版本号，写回 project.eg.json
 		// 失败不阻断，仅 emit 警告。让下次构建版本号自动 +1。
@@ -1221,7 +1194,6 @@ func copyNativeLibsFromDir(tmpDir, srcDir string, copied map[string]bool, sink E
 //   - release=true（release）：-s -w -trimpath 去除符号和路径，减小产物体积
 //
 // version 非空时通过 -X main.Version=xxx 注入到运行时二进制。
-// Garble 源码混淆：garbleLevel != "off" 且 tools/garble.exe 存在时，用 garble 替代 go build。
 //
 // 离线编译支持：检测到 dir/vendor/ 目录时自动添加 -mod=vendor 标志，
 // 让 Go 直接从本地 vendor 读取依赖源码，无需联网下载。
@@ -1256,67 +1228,7 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 		emit(sink, "build", "检测到静态库，启用 CGO 编译...", false)
 	}
 
-	// Garble 源码混淆：根据 garbleLevel + garble.exe 存在性决定调用方式
-	// garble 调用形式：garble [garbleFlags] build [goBuildArgs...]
-	//   - off   : 普通 go build
-	//   - basic : garble build           （标识符混淆：包名/变量名/函数名/类型名，不需要 git）
-	//   - full  : garble -literals build （再加字符串字面量混淆，可能触发杀软误报，不需要 git）
-	// 注意：不使用 -tiny（需要 git apply 给 Go linker 打补丁，用户机器可能无 git）
-	//       Go 原生 -ldflags="-w -s" 已去除符号表和调试信息，配合 garble 默认混淆足够防逆向
-	useGarble := false
-	garbleFlags := []string{}
-	garblePath := findGarble()
-
-	if garblePath != "" && garbleLevel != "off" {
-		wantedFlags := []string{}
-		switch garbleLevel {
-		case "full":
-			wantedFlags = []string{"-literals"}
-		default: // basic
-			wantedFlags = []string{}
-		}
-
-		key := garblePath + "|" + strings.Join(wantedFlags, ",")
-		if cached, ok := garbleCompatCache.Load(key); ok {
-			if cached.(bool) {
-				useGarble = true
-				garbleFlags = wantedFlags
-			}
-		} else {
-			compat, detail := garbleCompatibleDetail(garblePath, wantedFlags)
-			garbleCompatCache.Store(key, compat)
-			if compat {
-				useGarble = true
-				garbleFlags = wantedFlags
-			} else {
-				emit(sink, "build", "Garble 与当前 Go 不兼容，已自动回退普通编译", false)
-				if detail != "" {
-					emit(sink, "build", "  原因: "+detail, false)
-				}
-			}
-		}
-
-		if useGarble {
-			desc := "启用 Garble 基础混淆（标识符混淆）"
-			if garbleLevel == "full" {
-				desc = "启用 Garble 完整混淆（标识符+字符串混淆，可能触发杀软误报）"
-			}
-			emit(sink, "build", desc, false)
-		}
-	} else if garbleLevel == "off" {
-		emit(sink, "build", "Garble 混淆已关闭（编译选项设置），普通编译", false)
-	} else {
-		emit(sink, "build", "Garble 未找到，回退普通编译（提示：bin/tools/garble.exe 缺失）", false)
-	}
-
-	var cmd *exec.Cmd
-	if useGarble {
-		buildArgs := append([]string{}, garbleFlags...)
-		buildArgs = append(buildArgs, args...)
-		cmd = exec.Command(garblePath, buildArgs...)
-	} else {
-		cmd = exec.Command(goBinary, args...)
-	}
+	cmd := exec.Command(goBinary, args...)
 	cmd.Dir = dir
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	env := buildGoEnv()
@@ -1329,19 +1241,9 @@ func buildRuntime(dir, outFile string, sink EventSink, release bool, version str
 		env = append(env, "GOPROXY=off")
 	}
 	cmd.Env = env
-	// garble 需要独立的 GARBLE_CACHE 目录（默认 %LocalAppData%\garble 在部分 Windows 环境不可靠）
-	// 用 exe 同级 tools/.garble-cache，路径可控且随 IDE 分发
-	if useGarble {
-		if exePath, err := os.Executable(); err == nil {
-			garbleCacheDir := filepath.Join(filepath.Dir(exePath), "tools", ".garble-cache")
-			os.MkdirAll(garbleCacheDir, 0755)
-			cmd.Env = append(cmd.Env, "GARBLE_CACHE="+garbleCacheDir)
-		}
-	}
 	start := time.Now()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// P1-4：结构化解析 Go 编译错误，输出中文友好提示
 		parsed := parseGoCompileErrors(string(output))
 		if len(parsed) > 0 {
 			formatted := formatCompileErrors(parsed)
@@ -2222,90 +2124,3 @@ func copyFile(src, dst string) error {
 	}
 	return os.WriteFile(dst, data, 0644)
 }
-
-// findGarble 查找 garble 可执行文件路径（Go 源码混淆工具，mvdan.cc/garble）。
-// 查找顺序：
-//  1. IDE exe 同级 tools/garble.exe（build.py 预编译并随包分发，离线可用）
-//  2. 当前工作目录 tools/garble.exe（go run / wails dev 开发模式）
-//  3. IDE exe 上级目录 tools/garble.exe（build 输出在子目录场景）
-//  4. PATH 查找（用户自行 go install 安装）
-//
-// v0.8.0 起 UPX 完全移除（杀软误杀严重），Garble 成为唯一防逆向手段。
-// v0.11.30 固定 garble v0.15.0 兼容 Go 1.25.x。
-func findGarble() string {
-	searchDirs := []string{}
-	if exePath, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exePath)
-		searchDirs = append(searchDirs, exeDir)
-		searchDirs = append(searchDirs, filepath.Dir(exeDir))
-	}
-	if cwd, err := os.Getwd(); err == nil {
-		already := false
-		for _, d := range searchDirs {
-			if d == cwd {
-				already = true
-				break
-			}
-		}
-		if !already {
-			searchDirs = append(searchDirs, cwd)
-		}
-	}
-	for _, dir := range searchDirs {
-		candidates := []string{
-			filepath.Join(dir, "tools", "garble.exe"),
-			filepath.Join(dir, "garble.exe"),
-		}
-		for _, p := range candidates {
-			if _, err := os.Stat(p); err == nil {
-				return p
-			}
-		}
-	}
-	if p, err := exec.LookPath("garble"); err == nil {
-		return p
-	}
-	if runtime.GOOS == "windows" {
-		if p, err := exec.LookPath("garble.exe"); err == nil {
-			return p
-		}
-	}
-	return ""
-}
-
-// garbleCompatibleDetail 测试 garble 能否在当前环境下正常工作（使用实际 garbleFlags）。
-// 返回 (是否兼容, 错误详情)。兼容性测试使用与正式编译相同的 garbleFlags 和环境变量。
-// v0.11.32 起不再使用 -tiny（需要 git apply linker 补丁，用户机器可能无 git），
-// 默认 garble build 已提供标识符混淆，配合 -ldflags="-w -s" 足够防逆向。
-func garbleCompatibleDetail(garblePath string, garbleFlags []string) (bool, string) {
-	tmpDir, err := os.MkdirTemp("", "garble-check-*")
-	if err != nil {
-		return true, ""
-	}
-	defer os.RemoveAll(tmpDir)
-	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module gcheck\n\ngo 1.25.0\n"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main\nfunc main(){}\n"), 0644)
-	args := append([]string{}, garbleFlags...)
-	args = append(args, "build", "-o", filepath.Join(tmpDir, "test.exe"), ".")
-	cmd := exec.Command(garblePath, args...)
-	cmd.Dir = tmpDir
-	cmd.Env = append(buildGoEnv(), "CGO_ENABLED=0", "GOPROXY=off")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		outStr := strings.TrimSpace(string(out))
-		if strings.Contains(outStr, "too old") ||
-			strings.Contains(outStr, "executable file not found") ||
-			strings.Contains(outStr, "Can't find the Go toolchain") ||
-			strings.Contains(outStr, "not found in PATH") ||
-			strings.Contains(outStr, "invalid GOTOOLCHAIN") ||
-			strings.Contains(outStr, "go: unknown directive") ||
-			strings.Contains(outStr, "compile: version") {
-			return false, outStr
-		}
-		return true, ""
-	}
-	return true, ""
-}
-
-var garbleCompatCache sync.Map

@@ -19,7 +19,7 @@ import (
 
 // ToolchainInfo 描述单个工具链的检测信息。
 type ToolchainInfo struct {
-	Name    string `json:"name"`    // 工具名（go/gcc/clang/windres/npm/garble/rsrc/wails3）
+	Name    string `json:"name"`    // 工具名（go/gcc/clang/windres/npm/rsrc/wails3）
 	Path    string `json:"path"`    // 工具路径，空表示未找到
 	Version string `json:"version"` // 工具版本号，空表示未解析
 }
@@ -30,7 +30,6 @@ type ToolchainReport struct {
 	CGO     ToolchainInfo `json:"cgo"`     // C 编译器（gcc 或 clang，cgo 用）
 	Windres ToolchainInfo `json:"windres"` // Windows 资源编译器（生成 .syso）
 	NPM     ToolchainInfo `json:"npm"`     // Node 包管理器（前端构建）
-	Garble  ToolchainInfo `json:"garble"`  // Go 源码混淆工具（v0.8.0 替代 UPX）
 	Rsrc    ToolchainInfo `json:"rsrc"`    // Go 原生 syso 生成工具（回退方案）
 	Wails3  ToolchainInfo `json:"wails3"`  // Wails v3 CLI
 	Delve   ToolchainInfo `json:"delve"`   // Delve 调试器（dlv，P2 调试器用）
@@ -284,13 +283,6 @@ func DetectToolchains() ToolchainReport {
 		npmInfo.Version = detectVersion(npmPath, "--version")
 	}
 
-	// garble（Go 源码混淆工具，v0.8.0 替代 UPX）
-	garblePath := findGarble()
-	garbleInfo := ToolchainInfo{Name: "garble", Path: garblePath}
-	if garblePath != "" {
-		garbleInfo.Version = detectVersion(garblePath, "version")
-	}
-
 	// rsrc
 	rsrcPath := findRsrcCli()
 	rsrcInfo := ToolchainInfo{Name: "rsrc", Path: rsrcPath}
@@ -317,7 +309,6 @@ func DetectToolchains() ToolchainReport {
 		CGO:     cgoInfo,
 		Windres: windresInfo,
 		NPM:     npmInfo,
-		Garble:  garbleInfo,
 		Rsrc:    rsrcInfo,
 		Wails3:  wails3Info,
 		Delve:   delveInfo,

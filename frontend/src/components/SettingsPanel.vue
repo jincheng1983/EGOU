@@ -245,16 +245,11 @@
               <label class="prop-cell-label">{{ t('settings.buildDefaultMode') }}</label>
               <n-select v-model:value="defaultBuildModeLocal" size="small" :options="buildModeOptions" style="width: 100%;" />
             </div>
-            <div class="prop-cell">
-              <label class="prop-cell-label">{{ t('settings.buildGarbleLevel') }}</label>
-              <n-select v-model:value="garbleLevelLocal" size="small" :options="garbleLevelOptions" style="width: 100%;" />
-            </div>
           </div>
           <div class="prop-checks">
             <n-checkbox v-model:checked="autoOpenFolderLocal">{{ t('settings.buildAutoOpenFolder') }}</n-checkbox>
             <n-checkbox v-model:checked="showBuildHistoryLocal">{{ t('settings.buildShowHistory') }}</n-checkbox>
           </div>
-          <div class="prop-hint" v-html="t('settings.buildGarbleHint')"></div>
 
           <div class="section-title"><span>{{ t('settings.buildSectionOutput') }}</span></div>
           <div class="prop-grid">
@@ -588,9 +583,6 @@ const props = defineProps({
   // 编译
   defaultBuildMode: { type: String, default: 'debug' },
   autoOpenFolder: { type: Boolean, default: true },
-  // v0.8.0 修订：原 garbleObfuscate 布尔改为 garbleLevel 三档字符串（off/basic/full）
-  // 旧 prop upxCompress 已删除（v0.8.0 完全移除 UPX）
-  garbleLevel: { type: String, default: 'basic' },
   showBuildHistory: { type: Boolean, default: true },
   outputDir: { type: String, default: 'bin' },
   // 界面
@@ -616,7 +608,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue', 'update:minimapEnabled', 'update:fontSize', 'update:lineNumbersEnabled', 'update:lineHeight', 'update:autoSaveDelay', 'update:tabSize', 'update:wordWrap', 'update:renderWhitespace', 'update:cursorBlinking', 'update:cursorSmoothCaretAnimation', 'update:cursorWidth', 'update:bracketPairColorization', 'update:guidesBracketPairs', 'update:fontLigatures', 'update:lineNumbersMinChars', 'update:renderFinalNewline', 'update:minimapShowSlider', 'update:minimapRenderCharacters', 'update:minimapMaxColumn', 'update:editorTheme', 'update:fontFamily', 'update:autoConvertSymbols',
   'update:gridSize', 'update:showGrid', 'update:snapGrid', 'update:defaultRadius', 'update:defaultBorderWidth',
-  'update:defaultBuildMode', 'update:autoOpenFolder', 'update:garbleLevel', 'update:showBuildHistory', 'update:outputDir',
+  'update:defaultBuildMode', 'update:autoOpenFolder', 'update:showBuildHistory', 'update:outputDir',
   'update:openLastProject', 'update:leftPanelWidth', 'update:rightPanelWidth', 'update:outputPanelHeight',
   'update:sbShowCursor', 'update:sbShowIndent', 'update:sbShowEncoding', 'update:sbShowEol', 'update:sbShowLang', 'update:sbShowHealth',
   'update:autoSwitchOutputTab', 'update:smartScroll',
@@ -804,15 +796,6 @@ watch(defaultBuildModeLocal, (v) => emit('update:defaultBuildMode', v))
 const autoOpenFolderLocal = ref(props.autoOpenFolder)
 watch(() => props.autoOpenFolder, (v) => { autoOpenFolderLocal.value = v })
 watch(autoOpenFolderLocal, (v) => emit('update:autoOpenFolder', v))
-// v0.8.0 修订：Garble 混淆强度三档下拉（off/basic/full），替代原布尔开关
-const garbleLevelOptions = computed(() => [
-  { label: t('settings.garbleOptOff'), value: 'off' },
-  { label: t('settings.garbleOptBasic'), value: 'basic' },
-  { label: t('settings.garbleOptFull'), value: 'full' }
-])
-const garbleLevelLocal = ref(props.garbleLevel)
-watch(() => props.garbleLevel, (v) => { garbleLevelLocal.value = v })
-watch(garbleLevelLocal, (v) => emit('update:garbleLevel', v))
 const showBuildHistoryLocal = ref(props.showBuildHistory)
 watch(() => props.showBuildHistory, (v) => { showBuildHistoryLocal.value = v })
 watch(showBuildHistoryLocal, (v) => emit('update:showBuildHistory', v))

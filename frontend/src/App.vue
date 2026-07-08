@@ -460,7 +460,6 @@
   v-model:default-border-width="designerDefaultBorderWidth"
   v-model:default-build-mode="buildDefaultMode"
   v-model:auto-open-folder="buildAutoOpenFolder"
-  v-model:garble-level="buildGarbleLevel"
   v-model:show-build-history="buildShowHistory"
   v-model:output-dir="buildOutputDir"
   v-model:open-last-project="uiOpenLastProject"
@@ -1653,10 +1652,6 @@ const designerDefaultBorderWidth = persistedInt('eg-designer-borderwidth', 1)
 // 编译
 const buildDefaultMode = persistedStr('eg-build-mode', 'debug')
 const buildAutoOpenFolder = persistedBoolNotFalse('eg-build-autofolder')
-// v0.11.32 修订：Garble 混淆强度三档（off/basic/full），默认 basic（标识符混淆，不需要 git，无杀软误报）
-// v0.8.0 旧：basic 曾用 -tiny（需 git apply linker 补丁，用户机器可能无 git），v0.11.32 起去掉 -tiny
-// 旧 localStorage 键 'eg-build-garble'（布尔）已废弃，新键 'eg-build-garble-level'（字符串）
-const buildGarbleLevel = persistedStr('eg-build-garble-level', 'basic')
 const buildShowHistory = persistedBoolNotFalse('eg-build-history')
 const buildOutputDir = persistedStr('eg-build-outputdir', 'bin')
 // 界面
@@ -1944,7 +1939,6 @@ const buildConfigVisible = ref(false)
 const buildConfig = ref({
   mode: 'release', // 'debug' | 'release'
   autoOpenFolder: true,
-  garbleLevel: 'basic', // v0.8.0 修订：Garble 混淆强度三档（off/basic/full），默认 basic
   // 项目信息（写回 project.eg.json）
   projectName: '',
   version: '',
@@ -2735,20 +2729,6 @@ onMounted(() => {
   loadGlobalLibs().catch(e => console.warn('[lib] 全局库加载失败:', e))
   // G10：IDE 启动时扫描 exe 同级 templates/ 全局项目模板，合并到新建项目对话框
   loadGlobalTemplates().catch(e => console.warn('[template] 全局模板加载失败:', e))
-  // 同步"编译选项"到后端（Garble 混淆强度等），让 buildRuntime 根据强度决定混淆方式
-  if (window.IDEService && window.IDEService.SetBuildOptions) {
-    try { window.IDEService.SetBuildOptions(buildGarbleLevel.value) } catch (e) {
-      console.warn('[build] SetBuildOptions 初始同步失败:', e)
-    }
-  }
-  // watch buildGarbleLevel 变化时实时同步到后端
-  watch(buildGarbleLevel, (v) => {
-    if (window.IDEService && window.IDEService.SetBuildOptions) {
-      try { window.IDEService.SetBuildOptions(v) } catch (e) {
-        console.warn('[build] SetBuildOptions 同步失败:', e)
-      }
-    }
-  })
   // G5/G6/G8：IDE 启动时扫描 exe 同级 plugins/ 加载插件
   loadAllPlugins({
     output: (text) => { appendOutput(text) },

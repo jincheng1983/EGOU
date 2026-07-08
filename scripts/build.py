@@ -45,60 +45,6 @@ def run(cmd, cwd=None, check=True, env=None):
     return result
 
 
-def ensure_garble():
-    """确保 garble.exe 可用。返回路径字符串或 None。
-
-    查找顺序：
-      1. tools/garble.exe（已预编译，离线可用）
-      2. PATH 中的 garble（用户自行 go install）
-      3. 用 `go install mvdan.cc/garble@v0.15.0` 在线安装到 GOPATH/bin，再复制到 tools/
-
-    v0.11.29 修订：固定 garble v0.15.0（与 Go 1.25.x 兼容），v0.16.0 要求 Go ≥ 1.26.0。
-    v0.8.0 起 UPX 完全移除，Garble 成为 IDE 本体和用户产物的唯一防逆向手段。
-    v0.8.0 修订：IDE 本体固定用 garble -tiny（仅变量名/函数名混淆），
-    去掉 -literals（字符串字面量运行时解密会触发杀软误报 TrojanSpy/Stealer.uj）。
-    首次构建需联网（go install），后续从 tools/garble.exe 离线复用。
-    """
-    # 1. tools/garble.exe 已存在
-    local_garble = ROOT / "tools" / "garble.exe"
-    if local_garble.exists():
-        return str(local_garble)
-
-    # 2. PATH 查找
-    found = shutil.which("garble") or shutil.which("garble.exe")
-    if found:
-        return found
-
-    # 3. 在线 go install（首次构建），固定 v0.15.0 兼容 Go 1.25.x，设置 GOTOOLCHAIN=local 防止自动下载新工具链
-    garble_version = "v0.15.0"
-    print(f"未找到 garble，尝试 go install mvdan.cc/garble@{garble_version}（首次需联网）...")
-    tools_dir = ROOT / "tools"
-    tools_dir.mkdir(parents=True, exist_ok=True)
-    install_env = os.environ.copy()
-    install_env["GOTOOLCHAIN"] = "local"
-    result = subprocess.run(
-        ["go", "install", f"mvdan.cc/garble@{garble_version}"],
-        cwd=ROOT, text=True, capture_output=True, env=install_env,
-    )
-    if result.returncode != 0:
-        print(f"go install garble 失败: {result.stderr}")
-        print(f"  提示: 检查网络连接，或手动执行 `go install mvdan.cc/garble@{garble_version}`")
-        return None
-
-    # 从 GOPATH/bin 复制到 tools/garble.exe
-    gopath = os.environ.get("GOPATH", "")
-    if not gopath:
-        gopath = str(Path.home() / "go")
-    gopath_garble = Path(gopath) / "bin" / "garble.exe"
-    if gopath_garble.exists():
-        shutil.copy2(gopath_garble, local_garble)
-        print(f"已预编译 garble 到: {local_garble}")
-        return str(local_garble)
-
-    print(f"go install 成功但未找到 garble.exe（GOPATH/bin 路径异常）: {gopath_garble}")
-    return None
-
-
 def main():
     parser = argparse.ArgumentParser(description="EGOU IDE 构建脚本")
     parser.add_argument("--skip-test", action="store_true", help="跳过 go test（开发迭代加速）")
@@ -252,13 +198,9 @@ def main():
                         rc_file.unlink()
     version = "0.0.1"
     exe_path = BIN_DIR / "EGOU.exe"
-    # v0.8.0 修订2：IDE 本体改回普通 go build（不用 Garble）
-    # 原因：Garble 会混淆未导出的包名（如 internal/app 的 "app"），导致 Wails v3 运行时
-    #   通过反射计算的方法 ID 与 wails3 generate bindings（未混淆）生成的方法 ID 不一致，
-    #   前端调用时报 "unknown bound method id" 错误。
-    # IDE 本体防逆向方案：-trimpath（去路径）+ -s -w（去符号表/调试信息），不依赖 garble。
-    # 用户产物仍支持 garble 混淆（用户产物不使用 Wails binding，不受此限制）。
-    print("IDE 本体用普通 go build（Garble 与 Wails binding 反射不兼容）...")
+    # IDE 本体防逆向方案：-trimpath（去路径）+ -s -w（去符号表/调试信息），不依赖任何外部混淆工具。
+    # v0.11.33 起 Garble 完全移除（需要 git、用户环境兼容性问题多、实际防逆向效果有限）。
+    print("IDE 本体用普通 go build...")
     run([
         "go", "build",
         "-tags", "production,netgo,osusergo",
@@ -379,26 +321,12 @@ def main():
         else:
             print(f"警告: vendor 目录未复制，用户程序编译需要联网", file=sys.stderr)
 
-    # 7.5 Garble 工具（随 IDE 打包，用户程序编译时直接用，无需用户另装）
-    #     v0.8.0 起 UPX 完全移除，Garble 成为唯一防逆向手段
-    #     v0.8.0 修订2：IDE 本体不用 garble（与 Wails binding 反射不兼容），
-    #       但 garble.exe 仍随包分发，供用户产物编译使用
-    garble_exe = ensure_garble()
-    garble_dst_dir = BIN_DIR / "tools"
-    garble_dst_dir.mkdir(parents=True, exist_ok=True)
-    if garble_exe:
-        garble_dst = garble_dst_dir / "garble.exe"
-        # garble_exe 可能是 tools/garble.exe（已预编译）或 PATH 中的路径
-        if Path(garble_exe).resolve() != garble_dst.resolve():
-            shutil.copy2(garble_exe, garble_dst)
-        print(f"已复制 Garble 工具: tools/garble.exe")
-    else:
-        print("未找到 garble，bin/tools/ 不包含 garble（用户产物将无法启用混淆）")
-
-    # 7.5b Wails3 CLI（随 IDE 打包，用户程序前端资源构建/缓存失效时使用）
+    # 7.5 Wails3 CLI（随 IDE 打包，用户程序前端资源构建/缓存失效时使用）
     #      无 wails3 时 runtime-frontend 缓存失效将无法重新构建前端
+    tools_dst_dir = BIN_DIR / "tools"
+    tools_dst_dir.mkdir(parents=True, exist_ok=True)
     if wails3:
-        wails3_dst = garble_dst_dir / "wails3.exe"
+        wails3_dst = tools_dst_dir / "wails3.exe"
         if Path(wails3).resolve() != wails3_dst.resolve():
             shutil.copy2(wails3, wails3_dst)
         wails3_size = wails3_dst.stat().st_size / (1024 * 1024)
