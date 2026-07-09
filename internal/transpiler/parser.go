@@ -910,11 +910,11 @@ func (p *Parser) parseReturnTypes(endKw string) []string {
 	return nil
 }
 
-// parseParamList 解析参数列表，支持两种语法：
-//   - 标准语法：参数 a 整数型, 参数 b 文本型（空格分隔名字和类型）
-//   - 逗号分隔：参数 a, 整数型, 参数 b, 文本型（用逗号分隔名字和类型）
-//   - 简写：a 整数型, b 文本型（不带参数关键字）
-// 示例：函数 f(a 整数型, b 文本型) 或 函数 f(参数 a, 整数型) 或 函数 f(参数 文本型)（参数是变量名）
+// parseParamList 解析参数列表，支持 "名字 类型" 语法
+// 特殊情况支持：
+//   - 可变参数：name ...类型（如 items ...整数型）
+//   - 通道类型：name 通道 类型（如 ch 通道 整数型）
+// 示例：函数 f(a 整数型, b 文本型) 或 函数 f(items ...整数型) 或 函数 f(ch 通道 整数型)
 func (p *Parser) parseParamList() []*ParamDecl {
 	var params []*ParamDecl
 
@@ -922,60 +922,8 @@ func (p *Parser) parseParamList() []*ParamDecl {
 		return tok.Type == TokenIdentifier || tok.Type == TokenChineseText || tok.Type == TokenKeywordType
 	}
 
-	// parseStandard 解析 "参数 名字 类型" 或 "参数 名字, 类型" 格式
-	parseStandard := func(paramKwPos Pos) {
-		// 保存当前位置
-		savedPos := p.pos
-		p.nextFiltered() // 消费 "参数"
-		first := p.peekFiltered() // 第一个 token（在 "参数" 后面）
-		p.nextFiltered() // 消费第一个 token
-		_ = p.peekFiltered() // 第二个 token（用于向前探测，不使用）
-
-		// 恢复位置，因为后面还要根据情况重新解析
-		p.pos = savedPos
-		p.nextFiltered() // 重新消费 "参数"
-		first = p.peekFiltered() // 第一个 token
-
-		// 特殊情况："参数 文本型)" 或 "参数 文本型," - 参数是变量名，文本型是类型
-		if first.Type == TokenKeywordType {
-			p.nextFiltered() // 消费类型
-			afterType := p.peekFiltered()
-			if afterType.Type == TokenDelimiter && (afterType.Value == ")" || afterType.Value == ",") {
-				params = append(params, &ParamDecl{Name: "参数", Type: first.Value, Variadic: false, Pos: paramKwPos})
-				return
-			}
-			// 不是 ) 或 ,，回退位置按标准处理
-			p.pos = savedPos
-		}
-
-		// 标准处理：参数 名字 [类型]
-		if !isNameTok(first) {
-			p.errorf(Pos{first.Line, first.Col}, "参数缺少名字，实际为 %q", first.Value)
-			return
-		}
-		paramName := first.Value
-		paramPos := Pos{first.Line, first.Col}
-		p.nextFiltered() // 消费名字
-
-		// 检查后面是逗号还是类型
-		afterName := p.peekFiltered()
-		if afterName.Type == TokenDelimiter && afterName.Value == "," {
-			p.nextFiltered() // 消费逗号
-			paramType := p.parseType()
-			params = append(params, &ParamDecl{Name: paramName, Type: paramType, Variadic: false, Pos: paramPos})
-		} else {
-			variadic := false
-			if nt := p.peekFiltered(); nt.Type == TokenOperator && nt.Value == "..." {
-				variadic = true
-				p.nextFiltered()
-			}
-			paramType := p.parseType()
-			params = append(params, &ParamDecl{Name: paramName, Type: paramType, Variadic: variadic, Pos: paramPos})
-		}
-	}
-
-	// parseSimple 解析 "名字 类型" 格式
-	parseSimple := func() {
+	// parseParam 解析单个参数
+	parseParam := func() {
 		nameTok := p.peekFiltered()
 		if !isNameTok(nameTok) {
 			p.errorf(Pos{nameTok.Line, nameTok.Col}, "参数缺少名字，实际为 %q", nameTok.Value)
@@ -986,20 +934,36 @@ func (p *Parser) parseParamList() []*ParamDecl {
 		paramPos := Pos{nameTok.Line, nameTok.Col}
 		p.nextFiltered()
 
+		// 检查是否为 "..." 前缀（可变参数）
 		variadic := false
 		if nt := p.peekFiltered(); nt.Type == TokenOperator && nt.Value == "..." {
 			variadic = true
 			p.nextFiltered()
 		}
 
-		var paramType string
-		nt := p.peekFiltered()
-		if nt.Type == TokenDelimiter && (nt.Value == ")" || nt.Value == ",") {
-			paramType = ""
-		} else {
-			paramType = p.parseType()
+		// 检查是否为 "通道" 关键字（通道类型：名字 通道 类型）
+		if nt := p.peekFiltered(); nt.Type == TokenKeyword && nt.Value == "通道" {
+			p.nextFiltered() // 消费 "通道"
+			elemType := p.parseType()
+			paramType := "通道 " + elemType
+			params = append(params, &ParamDecl{Name: paramName, Type: paramType, Variadic: variadic, Pos: paramPos})
+			return
 		}
 
+		// 普通类型（如果下一���是类型关键字，也要处理）
+		nt := p.peekFiltered()
+		if nt.Type == TokenKeywordType {
+			p.nextFiltered()
+			params = append(params, &ParamDecl{Name: paramName, Type: nt.Value, Variadic: variadic, Pos: paramPos})
+			return
+		}
+
+		if nt.Type == TokenDelimiter && (nt.Value == ")" || nt.Value == ",") {
+			params = append(params, &ParamDecl{Name: paramName, Type: "", Variadic: variadic, Pos: paramPos})
+			return
+		}
+
+		paramType := p.parseType()
 		params = append(params, &ParamDecl{Name: paramName, Type: paramType, Variadic: variadic, Pos: paramPos})
 	}
 
@@ -1016,11 +980,7 @@ func (p *Parser) parseParamList() []*ParamDecl {
 			continue
 		}
 
-		if t.Type == TokenChineseText && t.Value == "参数" {
-			parseStandard(Pos{t.Line, t.Col})
-		} else {
-			parseSimple()
-		}
+		parseParam()
 
 		p.consumeDelimiter(",")
 	}

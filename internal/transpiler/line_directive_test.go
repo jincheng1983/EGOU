@@ -1,4 +1,4 @@
-// Package transpiler — //line 指令测试（#@eg-file 标记识别 + 多文件合并场景）
+﻿// Package transpiler — //line 指令测试（#@eg-file 标记识别 + 多文件合并场景）
 package transpiler
 
 import (

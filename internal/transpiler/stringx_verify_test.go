@@ -1,4 +1,4 @@
-package transpiler
+﻿package transpiler
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ func TestStringxSourceTranspile(t *testing.T) {
 // 示例扩展包：字符串扩展函数。
 
 // 反转文本：把文本字符顺序反转。
-函数 反转文本(参数 原始文本 文本型) 文本型
+函数 反转文本(原始文本 文本型) 文本型
     局部变量 结果, 文本型
     结果 = ""
     循环 字符 ＝ 范围 原始文本
@@ -24,7 +24,7 @@ func TestStringxSourceTranspile(t *testing.T) {
 结束函数
 
 // 重复文本：把文本重复 N 次。
-函数 重复文本(参数 原始文本 文本型, 参数 次数 整数型) 文本型
+函数 重复文本(原始文本 文本型, 次数 整数型) 文本型
     局部变量 结果, 文本型
     结果 = ""
     循环 i := 0; i < 次数; i++

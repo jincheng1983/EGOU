@@ -1,4 +1,4 @@
-package transpiler
+﻿package transpiler
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ func TestMergedLibsPackageFirst(t *testing.T) {
 #@eg-file global:libs/stringx/source.eg
 // 示例扩展包
 
-函数 反转文本(参数 原始文本 文本型) 文本型
+函数 反转文本(原始文本 文本型) 文本型
     局部变量 结果, 文本型
     结果 = ""
     循环 字符 ＝ 范围 原始文本

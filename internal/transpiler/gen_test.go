@@ -1,4 +1,4 @@
-// Package transpiler — AST → Go 代码生成器测试
+﻿// Package transpiler — AST → Go 代码生成器测试
 package transpiler
 
 import (
@@ -495,7 +495,7 @@ func TestGenerateGoMultiReturnTypes(t *testing.T) {
 func TestGenerateGoSingleReturnType(t *testing.T) {
 	src := `# 程序集 main
 
-函数 加法(参数 a 整数型, 参数 b 整数型) 整数型
+函数 加法(a 整数型, b 整数型) 整数型
 	返回 a + b
 结束函数
 `
@@ -1959,11 +1959,11 @@ func TestGenerateGoChanTypeLocalVar(t *testing.T) {
 	}
 }
 
-// TestGenerateGoChanTypeParam 验证函数参数 chan 类型
+// TestGenerateGoChanTypeParam 验证函数chan 类型
 func TestGenerateGoChanTypeParam(t *testing.T) {
 	src := `# 程序集 main
 
-函数 处理(参数 ch 通道 整数型)
+函数 处理(ch 通道 整数型)
 	返回
 结束函数
 `
@@ -2267,11 +2267,11 @@ func TestGenerateGoNewAsArg(t *testing.T) {
 	}
 }
 
-// TestGenerateGoVariadicParam 验证可变参数函数声明：参数 args ... 整数型 → args ...int
+// TestGenerateGoVariadicParam 验证可变参数函数声明：args ... 整数型 → args ...int
 func TestGenerateGoVariadicParam(t *testing.T) {
 	src := `# 程序集 main
 
-函数 求和(参数 nums ... 整数型) 整数型
+函数 求和(nums ... 整数型) 整数型
 	局部变量 总和, 整数型
 	循环 v ＝ 范围 nums
 		总和 += v
@@ -2297,11 +2297,11 @@ func TestGenerateGoVariadicParam(t *testing.T) {
 	}
 }
 
-// TestGenerateGoVariadicEmpty 验证可变参数函数声明：参数 args ... 变体型 → args ...interface{}
+// TestGenerateGoVariadicEmpty 验证可变参数函数声明：args ... 变体型 → args ...interface{}
 func TestGenerateGoVariadicEmpty(t *testing.T) {
 	src := `# 程序集 main
 
-函数 打印全部(参数 args ... 变体型)
+函数 打印全部(args ... 变体型)
 结束函数
 `
 	file, errs := Parse(src)
@@ -2326,7 +2326,7 @@ func TestGenerateGoVariadicEmpty(t *testing.T) {
 func TestGenerateGoVariadicCallSpread(t *testing.T) {
 	src := `# 程序集 main
 
-函数 求和(参数 nums ... 整数型) 整数型
+函数 求和(nums ... 整数型) 整数型
 	返回 0
 结束函数
 
@@ -2357,7 +2357,7 @@ func TestGenerateGoVariadicCallSpread(t *testing.T) {
 func TestGenerateGoVariadicCallNormal(t *testing.T) {
 	src := `# 程序集 main
 
-函数 求和(参数 nums ... 整数型) 整数型
+函数 求和(nums ... 整数型) 整数型
 	返回 0
 结束函数
 
@@ -2387,7 +2387,7 @@ func TestGenerateGoVariadicCallNormal(t *testing.T) {
 func TestGenerateGoVariadicMixedParams(t *testing.T) {
 	src := `# 程序集 main
 
-函数 打印带前缀(参数 prefix 文本型, 参数 args ... 整数型)
+函数 打印带前缀(prefix 文本型, args ... 整数型)
 结束函数
 `
 	file, errs := Parse(src)
@@ -2442,7 +2442,7 @@ func TestGenerateGoVariadicMethod(t *testing.T) {
 类型 计算器 结构体
 结束类型
 
-方法 (c 计算器) 求和(参数 nums ... 整数型) 整数型
+方法 (c 计算器) 求和(nums ... 整数型) 整数型
 	返回 0
 结束方法
 `
@@ -2531,8 +2531,8 @@ func TestGenerateGoInterfaceWithParams(t *testing.T) {
 	src := `# 程序集 main
 
 类型 处理器 接口
-	处理(参数 data 文本型) 文本型
-	批量处理(参数 items ...文本型) 文本型
+	处理(data 文本型) 文本型
+	批量处理(items ...文本型) 文本型
 结束类型
 `
 	file, errs := Parse(src)
@@ -2561,7 +2561,7 @@ func TestGenerateGoInterfaceMultiReturn(t *testing.T) {
 	src := `# 程序集 main
 
 类型 读写器 接口
-	读取(参数 n 整数型) (文本型, 逻辑型)
+	读取(n 整数型) (文本型, 逻辑型)
 结束类型
 `
 	file, errs := Parse(src)
@@ -2688,7 +2688,7 @@ func TestGenerateGoFuncLitWithParams(t *testing.T) {
 
 函数 主函数()
 	局部变量 add, 变体型
-	add ＝ 函数(参数 a 整数型, 参数 b 整数型) 整数型
+	add ＝ 函数(a 整数型, b 整数型) 整数型
 		返回 a + b
 	结束函数
 结束函数
@@ -2810,7 +2810,7 @@ func TestGenerateGoFuncLitCallWithArgs(t *testing.T) {
 	src := `# 程序集 main
 
 函数 主函数()
-	函数(参数 s 文本型)
+	函数(s 文本型)
 		打印(s)
 	结束函数("hi")
 结束函数
@@ -2842,7 +2842,7 @@ func TestGenerateGoFuncLitMultiReturn(t *testing.T) {
 
 函数 主函数()
 	局部变量 f, 变体型
-	f ＝ 函数(参数 n 整数型) (整数型, 整数型)
+	f ＝ 函数(n 整数型) (整数型, 整数型)
 		返回 n, n * 2
 	结束函数
 结束函数
@@ -3227,7 +3227,7 @@ func TestGenerateGoTypeAliasUsage(t *testing.T) {
 
 类型 整数 ＝ 整数型
 
-函数 加一(参数 n 整数) 整数
+函数 加一(n 整数) 整数
 	返回 n + 1
 结束函数
 `
@@ -3460,7 +3460,7 @@ func TestGenerateGoInterfaceEmbedBasic(t *testing.T) {
 结束类型
 
 类型 写接口 接口
-	写入(参数 s 文本型)
+	写入(s 文本型)
 结束类型
 
 类型 读写器 接口
@@ -5555,7 +5555,7 @@ func TestGenerateGoRuneType(t *testing.T) {
 func TestGenerateGoUnsignedTypeInFunc(t *testing.T) {
 	src := `# 程序集 main
 
-函数 加法(参数 a 无符号整数型, 参数 b 无符号整数型) 无符号整数型
+函数 加法(a 无符号整数型, b 无符号整数型) 无符号整数型
     返回 a + b
 结束函数
 `

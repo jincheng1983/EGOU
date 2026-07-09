@@ -1,4 +1,4 @@
-// Package transpiler — 端到端转译测试
+﻿// Package transpiler — 端到端转译测试
 //
 // 验证 延迟/协程/通道/且/或/非 等新关键字能正确转译为 Go 代码
 package transpiler

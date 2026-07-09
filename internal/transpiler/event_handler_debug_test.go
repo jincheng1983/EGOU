@@ -1,4 +1,4 @@
-// Package transpiler — 事件处理函数注册调试测试
+﻿// Package transpiler — 事件处理函数注册调试测试
 package transpiler
 
 import (

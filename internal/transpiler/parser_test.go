@@ -1,4 +1,4 @@
-// Package transpiler — AST 解析器测试
+﻿// Package transpiler — AST 解析器测试
 //
 // 验证 延迟/协程 语句能被 parser.go 正确解析为 DeferStmt/GoStmt
 package transpiler

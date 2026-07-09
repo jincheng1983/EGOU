@@ -1,4 +1,4 @@
-// Package transpiler — 多行 常量(...)/变量(...) 块解析测试
+﻿// Package transpiler — 多行 常量(...)/变量(...) 块解析测试
 package transpiler
 
 import (
