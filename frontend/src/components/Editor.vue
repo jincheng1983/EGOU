@@ -367,7 +367,7 @@ onMounted(() => {
 
   monaco.languages.registerCompletionItemProvider('egou', {
     triggerCharacters: ['.', '(', ' '],
-    provideCompletionItems: (model, position) => {
+    provideCompletionItems: async (model, position) => {
       const word = model.getWordUntilPosition(position)
       const range = {
         startLineNumber: position.lineNumber,

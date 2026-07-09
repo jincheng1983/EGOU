@@ -217,7 +217,6 @@
                           :minimap-show-slider="editorMinimapShowSlider"
                           :minimap-render-characters="editorMinimapRenderCharacters"
                           :minimap-max-column="editorMinimapMaxColumn"
-                          :project-path="projectPath"
                           @cursor-change="onCursorChange"
                           @show-help="onShowHelp"
                           @goto-def="onGotoDef"

@@ -1,4 +1,4 @@
-package runner
+﻿package runner
 
 import (
 	"os"
@@ -19,7 +19,7 @@ func TestStripLibEntryDeclarations(t *testing.T) {
     fmt.Println("hi")
 结束函数
 
-函数 辅助_被单击(参数 x 整数型)
+函数 辅助_被单击(x 整数型)
     打印(x)
 结束函数
 `
@@ -114,7 +114,7 @@ func TestMergeProjectLibs_AliasRegistration(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(pkg, "commands.json"), []byte(cmdsJSON), 0644); err != nil {
 		t.Fatal(err)
 	}
-	libSrc := `函数 HelloNlib(参数 名字 文本型) 文本型
+	libSrc := `函数 HelloNlib(名字 文本型) 文本型
     返回 "你好"
 结束函数
 `
@@ -171,7 +171,7 @@ func TestMergeProjectLibs_FullGoStructure(t *testing.T) {
     fmt.Println("不应进入主函数")
 结束函数
 
-函数 Square(参数 n 整数型) 整数型
+函数 Square(n 整数型) 整数型
     返回 n * n
 结束函数
 `
