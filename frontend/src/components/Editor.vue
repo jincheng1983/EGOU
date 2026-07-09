@@ -1,5 +1,20 @@
 <template>
-  <div ref="hostRef" class="editor-host"></div>
+  <div ref="hostRef" class="editor-host" @contextmenu.prevent="showContextMenu"></div>
+  <!-- 自定义右键菜单 -->
+  <div v-show="contextMenuVisible" class="custom-context-menu" :style="contextMenuStyle">
+    <div class="menu-item" @click="doFormatDoc">格式化文档 (Ctrl+Shift+F)</div>
+    <div class="menu-item" @click="doFormatSelection">格式化所选代码</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item" @click="doToggleComment">注释/取消注释 (Ctrl+/)</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item" @click="doCut">剪切 (Ctrl+X)</div>
+    <div class="menu-item" @click="doCopy">复制 (Ctrl+C)</div>
+    <div class="menu-item" @click="doPaste">粘贴 (Ctrl+V)</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item" @click="doSelectAll">全选 (Ctrl+A)</div>
+    <div class="menu-item" @click="doUndo">撤销 (Ctrl+Z)</div>
+    <div class="menu-item" @click="doRedo">重��� (Ctrl+Y)</div>
+  </div>
 </template>
 
 <script setup>
@@ -42,6 +57,70 @@ const props = defineProps({
   minimapMaxColumn: { type: Number, default: 120 },
   projectPath: { type: String, default: '' }
 })
+
+// 自定义右键菜单状态
+const contextMenuVisible = ref(false)
+const contextMenuStyle = ref({ top: '0px', left: '0px' })
+
+function showContextMenu(e) {
+  const menu = document.querySelector('.custom-context-menu')
+  if (!menu) return
+  contextMenuStyle.value = {
+    top: e.clientY + 'px',
+    left: e.clientX + 'px'
+  }
+  contextMenuVisible.value = true
+}
+
+function hideContextMenu() {
+  contextMenuVisible.value = false
+}
+
+// 监听全局点击隐藏菜单
+onMounted(() => {
+  document.addEventListener('click', hideContextMenu)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', hideContextMenu)
+})
+
+// 菜单操作函数
+function doFormatDoc() {
+  editor.getAction('format-document')?.run()
+  hideContextMenu()
+}
+function doFormatSelection() {
+  editor.getAction('format-selection')?.run()
+  hideContextMenu()
+}
+function doToggleComment() {
+  editor.getAction('editor.action.commentLine')?.run()
+  hideContextMenu()
+}
+function doCut() {
+  document.execCommand('cut')
+  hideContextMenu()
+}
+function doCopy() {
+  document.execCommand('copy')
+  hideContextMenu()
+}
+function doPaste() {
+  document.execCommand('paste')
+  hideContextMenu()
+}
+function doSelectAll() {
+  editor.getAction('editor.action.selectAll')?.run()
+  hideContextMenu()
+}
+function doUndo() {
+  editor.getAction('undo')?.run()
+  hideContextMenu()
+}
+function doRedo() {
+  editor.getAction('redo')?.run()
+  hideContextMenu()
+}
 
 const emit = defineEmits([
   'update:modelValue', 'cursor-change', 'show-help',
@@ -1158,6 +1237,31 @@ defineExpose({
   height: 100%;
   min-height: 200px;
   overflow: hidden;
+}
+/* 自定义右键菜单样式 */
+.custom-context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: #1e1e1e;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.custom-context-menu .menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #cccccc;
+  font-size: 13px;
+}
+.custom-context-menu .menu-item:hover {
+  background: #094771;
+}
+.custom-context-menu .menu-separator {
+  height: 1px;
+  background: #3c3c3c;
+  margin: 4px 0;
 }
 </style>
 
