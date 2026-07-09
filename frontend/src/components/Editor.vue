@@ -123,7 +123,7 @@ onMounted(() => {
     scrollBeyondLastLine: false,
     roundedSelection: true,
     padding: { top: 8 },
-    contextmenu: true,
+    contextmenu: false,
     glyphMargin: true,
     multiCursorModifier: 'alt',
     bracketPairColorization: { enabled: true },
@@ -150,23 +150,23 @@ onMounted(() => {
       if (!src.trim()) return
 
       try {
-        // 1. 先转译 EGOU → Go
-        const transpileResp = await IDEService.Transpile(src)
-        if (transpileResp.error) {
-          console.warn('转译失败:', transpileResp.error)
-          return
-        }
-        // 2. 格式化 Go 代码
-        const formatResp = await IDEService.FormatCode(transpileResp.code)
-        if (formatResp.error) {
-          console.warn('格式化失败:', formatResp.error)
-          return
-        }
-        if (formatResp.code) {
-          // 显示格式化后的 Go 代码（替代编辑器内容）
-          const fullRange = model.getFullModelRange()
-          model.applyEdits([{ range: fullRange, text: formatResp.code }])
-        }
+         // 1. 先转译 EGOU → Go
+         const transpileResp = await IDEService.Transpile(src)
+         if (transpileResp.error) {
+           console.warn('转译失败:', transpileResp.error)
+           return
+         }
+         // 2. 格式化 Go 代码
+         const formatResp = await IDEService.FormatCode(transpileResp.go)
+         if (formatResp.error) {
+           console.warn('格式化失败:', formatResp.error)
+           return
+         }
+         if (formatResp.code) {
+           // 显示格式化后的 Go 代码（替代编辑器内容）
+           const fullRange = model.getFullModelRange()
+           model.applyEdits([{ range: fullRange, text: formatResp.code }])
+         }
       } catch (e) {
         console.warn('格式化异常:', e)
       }
