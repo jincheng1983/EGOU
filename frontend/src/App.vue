@@ -5226,7 +5226,9 @@ async function buildExecutable() {
       if (projectPath.value) {
         IDEService.ReadProjectConfig(projectPath.value).then(cfg => { projectConfig.value = cfg })
         if (buildConfig.value.autoOpenFolder) {
-          IDEService.OpenInExplorer(projectPath.value)
+          // 打开产物所在目录，而不是项目根目录
+          const targetDir = artifactPath ? artifactPath.substring(0, artifactPath.lastIndexOf('\\')) : projectPath.value
+          IDEService.OpenInExplorer(targetDir)
         }
       }
       if (artifactPath) {
