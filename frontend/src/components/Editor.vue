@@ -1,5 +1,5 @@
 <template>
-  <div ref="hostRef" class="editor-host" @contextmenu.prevent="showContextMenu"></div>
+  <div ref="hostRef" class="editor-host"></div>
   <!-- 自定义右键菜单 -->
   <div v-show="contextMenuVisible" class="custom-context-menu" :style="contextMenuStyle">
     <div class="menu-item" @click="doFormatDoc">格式化文档 (Ctrl+Shift+F)</div>
@@ -202,7 +202,7 @@ onMounted(() => {
     scrollBeyondLastLine: false,
     roundedSelection: true,
     padding: { top: 8 },
-    contextmenu: false,
+    contextmenu: true,
     glyphMargin: true,
     multiCursorModifier: 'alt',
     bracketPairColorization: { enabled: true },
