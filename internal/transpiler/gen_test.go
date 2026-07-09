@@ -2408,6 +2408,59 @@ func TestGenerateGoVariadicMixedParams(t *testing.T) {
 	}
 }
 
+// TestGenerateGoParamNewSyntax 验证新语法 "名字 类型"（不带 "参数" 关键字前缀）
+// 以及用户用 "参数" 作为变量名的场景
+func TestGenerateGoParamNewSyntax(t *testing.T) {
+	src := `# 程序集 main
+
+函数 子程序1(参数 文本型)
+打印(参数)
+结束函数
+`
+	file, errs := Parse(src)
+	if len(errs) > 0 {
+		t.Fatalf("Parse errors: %v", errs)
+	}
+	if file == nil {
+		t.Fatal("file is nil")
+	}
+
+	out, err := GenerateGo(file)
+	if err != nil {
+		t.Logf("GenerateGo 返回 err: %v", err)
+	}
+
+	// 验证：参数名为 "参数"，类型为 string
+	if !strings.Contains(out, "func 子程序1(参数 string)") {
+		t.Errorf("期望包含 'func 子程序1(参数 string)', 实际:\n%s", out)
+	}
+}
+
+// TestGenerateGoParamOldSyntax 验证旧语法 "参数 名字 类型" 仍然兼容
+func TestGenerateGoParamOldSyntax(t *testing.T) {
+	src := `# 程序集 main
+
+函数 打印带前缀(参数 prefix 文本型, 参数 args ... 整数型)
+结束函数
+`
+	file, errs := Parse(src)
+	if len(errs) > 0 {
+		t.Fatalf("Parse errors: %v", errs)
+	}
+	if file == nil {
+		t.Fatal("file is nil")
+	}
+
+	out, err := GenerateGo(file)
+	if err != nil {
+		t.Logf("GenerateGo 返回 err: %v", err)
+	}
+
+	if !strings.Contains(out, "func 打印带前缀(prefix string, args ...int)") {
+		t.Errorf("期望包含 'func 打印带前缀(prefix string, args ...int)', 实际:\n%s", out)
+	}
+}
+
 // TestGenerateGoVariadicMethod 验证方法支持可变参数
 func TestGenerateGoVariadicMethod(t *testing.T) {
 	src := `# 程序集 main

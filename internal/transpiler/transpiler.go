@@ -897,14 +897,21 @@ func translateFunctionSignature(line string) (string, error) {
 			if p == "" {
 				continue
 			}
-			// 参数格式: 参数 名字 类型
+			// 支持两种语法：旧语法 "参数 名字 类型"（3 段）和新语法 "名字 类型"（2 段）
 			fields := strings.Fields(p)
-			if len(fields) != 3 || fields[0] != "参数" {
+			var varName, varType string
+			if len(fields) == 3 && fields[0] == "参数" {
+				// 旧语法：参数 名字 类型
+				varName = fields[1]
+				varType = fields[2]
+			} else if len(fields) == 2 {
+				// 新语法：名字 类型
+				varName = fields[0]
+				varType = fields[1]
+			} else {
 				return "", fmt.Errorf("参数格式错误: %s", p)
 			}
-			varName := fields[1]
-			varType := mapType(fields[2])
-			goParams = append(goParams, fmt.Sprintf("%s %s", varName, varType))
+			goParams = append(goParams, fmt.Sprintf("%s %s", varName, mapType(varType)))
 		}
 	}
 
@@ -983,11 +990,19 @@ func translateMethodSignature(line string) (string, error) {
 			if p == "" {
 				continue
 			}
+			// 支持两种语法：旧语法 "参数 名字 类型"（3 段）和新语法 "名字 类型"（2 段）
 			fields := strings.Fields(p)
-			if len(fields) != 3 || fields[0] != "参数" {
+			var varName, varType string
+			if len(fields) == 3 && fields[0] == "参数" {
+				varName = fields[1]
+				varType = fields[2]
+			} else if len(fields) == 2 {
+				varName = fields[0]
+				varType = fields[1]
+			} else {
 				return "", fmt.Errorf("参数格式错误: %s", p)
 			}
-			goParams = append(goParams, fmt.Sprintf("%s %s", fields[1], mapType(fields[2])))
+			goParams = append(goParams, fmt.Sprintf("%s %s", varName, mapType(varType)))
 		}
 	}
 

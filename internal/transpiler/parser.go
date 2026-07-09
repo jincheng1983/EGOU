@@ -910,9 +910,52 @@ func (p *Parser) parseReturnTypes(endKw string) []string {
 	return nil
 }
 
-// parseParamList 解析参数列表（参数 a 整数型, 参数 b 整数型）
+// parseParamList 解析参数列表，支持两种语法：
+//   - 旧语法：参数 a 整数型, 参数 b 文本型（"参数" 关键字前缀，3 段）
+//   - 新语法：a 整数型, b 文本型（直接 名字 类型，2 段；用户也可以用 "参数" 作为变量名）
+//
+// 判定逻辑：当第一个 token 是 "参数"（TokenChineseText）时，向前探测——
+//   - 后面还有 2 个 token（名字+类型）→ 旧语法 "参数 名字 类型"
+//   - 后面只有 1 个 token（类型）→ 新语法，"参数" 本身是变量名
 func (p *Parser) parseParamList() []*ParamDecl {
 	var params []*ParamDecl
+
+	// 名字 token 类型检查：标识符、中文文本、类型关键字均可做参数名
+	isNameTok := func(tok Token) bool {
+		return tok.Type == TokenIdentifier || tok.Type == TokenChineseText || tok.Type == TokenKeywordType
+	}
+
+	// parseNewSyntax 解析 "名字 [类型]" 格式（当前 token 是名字）
+	parseNewSyntax := func() {
+		nameTok := p.peekFiltered()
+		if !isNameTok(nameTok) {
+			p.errorf(Pos{nameTok.Line, nameTok.Col}, "参数缺少名字，实际为 %q", nameTok.Value)
+			p.nextFiltered()
+			return
+		}
+		paramName := nameTok.Value
+		paramPos := Pos{nameTok.Line, nameTok.Col}
+		p.nextFiltered() // 消费名字
+
+		// 可变参数前缀
+		variadic := false
+		if nt := p.peekFiltered(); nt.Type == TokenOperator && nt.Value == "..." {
+			variadic = true
+			p.nextFiltered()
+		}
+
+		// 类型（可选：如果没有类型，留空）
+		var paramType string
+		nt := p.peekFiltered()
+		if nt.Type == TokenDelimiter && (nt.Value == ")" || nt.Value == ",") {
+			paramType = ""
+		} else {
+			paramType = p.parseType()
+		}
+
+		params = append(params, &ParamDecl{Name: paramName, Type: paramType, Variadic: variadic, Pos: paramPos})
+	}
+
 	for {
 		t := p.peekFiltered()
 		if t.Type == TokenDelimiter && t.Value == ")" {
@@ -921,30 +964,50 @@ func (p *Parser) parseParamList() []*ParamDecl {
 		if t.Type == TokenEOF {
 			break
 		}
-		// 参数 名字 ... 类型  或  参数 名字 类型
-		if t.Type == TokenKeyword && t.Value == "参数" {
+		// 跳过逗号
+		if t.Type == TokenDelimiter && t.Value == "," {
 			p.nextFiltered()
-			nameTok := p.peekFiltered()
-			if nameTok.Type != TokenIdentifier && nameTok.Type != TokenChineseText {
-				p.errorf(Pos{nameTok.Line, nameTok.Col}, "参数缺少名字")
-				break
-			}
-			paramName := nameTok.Value
-			paramPos := Pos{nameTok.Line, nameTok.Col}
-			p.nextFiltered()
-			// 可变参数前缀：... （可选，必须在类型前）
-			variadic := false
-			if nt := p.peekFiltered(); nt.Type == TokenOperator && nt.Value == "..." {
-				variadic = true
-				p.nextFiltered()
-			}
-			// 通用类型解析：支持 *Type / 通道 Type / 组合
-			paramType := p.parseType()
-			params = append(params, &ParamDecl{Name: paramName, Type: paramType, Variadic: variadic, Pos: paramPos})
-		} else {
-			// 跳过未知 Token（可能是逗号等）
-			p.nextFiltered()
+			continue
 		}
+
+		if t.Type == TokenChineseText && t.Value == "参数" {
+			// 可能是旧语法 "参数 名字 类型" 或新语法 "参数 类型"（"参数" 是变量名）
+			// 保存位置，向前探测
+			savedPos := p.pos
+			p.nextFiltered() // 消费 "参数"
+			nextTok := p.peekFiltered()
+
+			if isNameTok(nextTok) {
+				// 再看下一个 token 是不是类型（判断是 3 段还是 2 段）
+				p.nextFiltered() // 消费 nextTok
+				afterNext := p.peekFiltered()
+
+				if afterNext.Type == TokenOperator && afterNext.Value == "..." {
+					// "参数 名字 ... 类型" → 旧语法
+					variadic := true
+					p.nextFiltered() // 消费 ...
+					paramType := p.parseType()
+					params = append(params, &ParamDecl{Name: nextTok.Value, Type: paramType, Variadic: variadic, Pos: Pos{nextTok.Line, nextTok.Col}})
+				} else if afterNext.Type == TokenDelimiter && (afterNext.Value == ")" || afterNext.Value == ",") {
+					// "参数 名字 )" 或 "参数 名字 ," → "参数" 是名字，nextTok 是类型
+					// 回退，用新语法解析
+					p.pos = savedPos
+					parseNewSyntax()
+				} else {
+					// "参数 名字 类型" → 旧语法
+					paramType := p.parseType()
+					params = append(params, &ParamDecl{Name: nextTok.Value, Type: paramType, Variadic: false, Pos: Pos{nextTok.Line, nextTok.Col}})
+				}
+			} else {
+				// "参数" 后面不是名字 token → "参数" 是名字，nextTok 是类型
+				p.pos = savedPos
+				parseNewSyntax()
+			}
+		} else {
+			// 新语法：名字 类型
+			parseNewSyntax()
+		}
+
 		// 消费可能的逗号
 		p.consumeDelimiter(",")
 	}

@@ -24,29 +24,23 @@ function parseParams(paramsText) {
   if (inner.startsWith('(') && inner.endsWith(')')) {
     paramsText = inner.slice(1, -1)
   }
-  // "参数 a 整数型, 参数 b 整数型" 或 "参数 a, 整数型, 参数 b, 整数型"
+  // 支持两种语法：旧语法 "参数 名字 类型"（3 段）和新语法 "名字 类型"（2 段）
+  // 当 "参数" 作为变量名时："参数 文本型" 应解析为 name=参数, type=文本型
   const rawItems = paramsText.split(',').map(s => s.trim()).filter(Boolean)
   const params = []
-  let i = 0
-  while (i < rawItems.length) {
-    const item = rawItems[i]
-    if (item.startsWith('参数 ')) {
-      const rest = item.slice(3).trim()
-      const fields = rest.split(/\s+/)
-      if (fields.length >= 2) {
-        params.push({ name: fields[0], type: fields[1] })
-        i++
-      } else if (fields.length === 1 && i + 1 < rawItems.length) {
-        // "参数 a, 整数型" 形式：名字在逗号前一段，类型在下一段
-        params.push({ name: fields[0], type: rawItems[i + 1] })
-        i += 2
-      } else {
-        params.push({ name: rest, type: '' })
-        i++
-      }
+  for (const item of rawItems) {
+    const fields = item.split(/\s+/)
+    if (fields.length >= 3 && fields[0] === '参数') {
+      // 旧语法：参数 名字 类型
+      params.push({ name: fields[1], type: fields[2] })
+    } else if (fields.length === 2) {
+      // 新语法：名字 类型（包括 fields[0]==="参数" 的情况）
+      params.push({ name: fields[0], type: fields[1] })
+    } else if (fields.length === 1) {
+      // 只有名字，无类型
+      params.push({ name: fields[0], type: '' })
     } else {
       params.push(parseVarDecl(item))
-      i++
     }
   }
   return params
