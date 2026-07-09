@@ -890,14 +890,13 @@ func translateFunctionSignature(line string) (string, error) {
 
 	var goParams []string
 	if paramsStr != "" {
-		// 按逗号拆分每个参数
+		// 解析参数：支持 "名字 类型"（2 段）或 "参数 名字 类型"（3 段）
 		parts := splitParams(paramsStr)
 		for _, p := range parts {
 			p = strings.TrimSpace(p)
 			if p == "" {
 				continue
 			}
-			// 支持两种语法：旧语法 "参数 名字 类型"（3 段）和新语法 "名字 类型"（2 段）
 			fields := strings.Fields(p)
 			var varName, varType string
 			if len(fields) == 3 && fields[0] == "参数" {
@@ -909,7 +908,7 @@ func translateFunctionSignature(line string) (string, error) {
 				varName = fields[0]
 				varType = fields[1]
 			} else {
-				return "", fmt.Errorf("参数格式错误: %s", p)
+				return "", fmt.Errorf("参数格式错误（期望 名字 类型 或 参数 名字 类型）: %s", p)
 			}
 			goParams = append(goParams, fmt.Sprintf("%s %s", varName, mapType(varType)))
 		}
@@ -990,17 +989,18 @@ func translateMethodSignature(line string) (string, error) {
 			if p == "" {
 				continue
 			}
-			// 支持两种语法：旧语法 "参数 名字 类型"（3 段）和新语法 "名字 类型"（2 段）
 			fields := strings.Fields(p)
 			var varName, varType string
 			if len(fields) == 3 && fields[0] == "参数" {
+				// 旧语法：参数 名字 类型
 				varName = fields[1]
 				varType = fields[2]
 			} else if len(fields) == 2 {
+				// 新语法：名字 类型
 				varName = fields[0]
 				varType = fields[1]
 			} else {
-				return "", fmt.Errorf("参数格式错误: %s", p)
+				return "", fmt.Errorf("参数格式错误（期望 名字 类型 或 参数 名字 类型）: %s", p)
 			}
 			goParams = append(goParams, fmt.Sprintf("%s %s", varName, mapType(varType)))
 		}

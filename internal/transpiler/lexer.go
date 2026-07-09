@@ -144,7 +144,7 @@ var keywords = map[string]bool{
 	"选择": true, "情况": true, "默认": true, "结束选择": true,
 	"通道选择": true, "结束通道选择": true,
 	"返回": true, "继续": true, "跳出": true, "抛出": true, "恢复": true, "跳转": true, "穿透": true,
-	// 修饰符（"参数" 不是关键字——用户可以用 "参数" 作为变量名，如 函数 f(参数 文本型)）
+	// 修饰符（用于语法高亮，用户编程用 "名字 类型" 语法）
 	"范围": true, "映射": true, "数组": true,
 	// 字面量
 	"真": true, "假": true, "空": true,
