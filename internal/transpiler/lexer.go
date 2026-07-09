@@ -145,7 +145,7 @@ var keywords = map[string]bool{
 	"通道选择": true, "结束通道选择": true,
 	"返回": true, "继续": true, "跳出": true, "抛出": true, "恢复": true, "跳转": true, "穿透": true,
 	// 修饰符（用于语法高亮，用户编程用 "名字 类型" 语法）
-	"范围": true, "映射": true, "数组": true,
+	"范围": true, "映射": true,
 	// 字面量
 	"真": true, "假": true, "空": true,
 	// 待实现（先列入高亮，transpiler.go 暂不支持）
