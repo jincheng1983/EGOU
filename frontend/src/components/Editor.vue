@@ -135,6 +135,135 @@ onMounted(() => {
     guidesIndentation: true
   })
 
+  // ===== 智能缩进 + 流程线 =====
+  // 块关键字列表：开始块 → 结束块
+  const BLOCK_PAIRS = {
+    '如果': '结束如果',
+    '否则': '结束如果',
+    '否则如果': '结束如果',
+    '循环': '结束循环',
+    '判断循环': '结束判断循环',
+    '选择': '结束选择',
+    '情况': '结束选择',
+    '默认': '结束选择',
+    '通道选择': '结束通道选择',
+    '函数': '结束函数',
+    '方法': '结束方法',
+    '类型': '结束类型',
+    '结构体': '结束类型',
+    '接口': '结束类型',
+    '枚举': '结束枚举'
+  }
+  const END_BLOCK_KEYWORDS = new Set(['结束如果', '结束循环', '结束判断循环', '结束选择', '结束通道选择', '结束函数', '结束方法', '结束类型', '结束枚举'])
+
+  // 流程线装饰器
+  let flowLineDecorations = []
+  function updateFlowLines() {
+    if (!editor) return
+    const model = editor.getModel()
+    if (!model) return
+    const lines = model.getLinesContent()
+    const decorations = []
+    const stack = [] // {line, keyword}
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      const lineNum = i + 1
+
+      // 找到开始块关键字
+      for (const [startKw, endKw] of Object.entries(BLOCK_PAIRS)) {
+        if (line.startsWith(startKw) || line === startKw) {
+          // 检查是否是结束块关键字
+          const isEnd = END_BLOCK_KEYWORDS.has(startKw)
+          if (!isEnd) {
+            stack.push({ line: lineNum, keyword: startKw, indent: (lines[i].match(/^(\s*)/) || [''])[0].length })
+            break
+          }
+        }
+      }
+
+      // 检查是否是结束块
+      for (const endKw of END_BLOCK_KEYWORDS) {
+        if (line.startsWith(endKw) || line === endKw) {
+          if (stack.length > 0) {
+            const start = stack.pop()
+            // 添加竖线装饰器
+            decorations.push({
+              range: new monaco.Range(start.line, 1, lineNum, 1),
+              options: {
+                isWholeLine: false,
+                className: 'eg-flow-line',
+                stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+              }
+            })
+          }
+          break
+        }
+      }
+    }
+
+    flowLineDecorations = editor.deltaDecorations(flowLineDecorations, decorations)
+  }
+
+  // 监听内容变化更新流程线
+  editor.onDidChangeModelContent(() => {
+    updateFlowLines()
+  })
+
+  // 智能缩进 + 阻止删除前导空格
+  editor.onKeyDown((e) => {
+    const position = editor.getPosition()
+    if (!position) return
+
+    const model = editor.getModel()
+    if (!model) return
+
+    // 检测是否在行首删除前导空格
+    if (e.code === 'Backspace' && position.column <= props.tabSize + 1) {
+      const lineContent = model.getLineContent(position.lineNumber)
+      const indent = lineContent.match(/^(\s*)/)[1]
+      if (indent.length > 0 && position.column <= indent.length + 1) {
+        // 光标在缩进区域内，不允许删除
+        e.preventDefault()
+        // 将光标移到行首
+        editor.setPosition({ lineNumber: position.lineNumber, column: 1 })
+        return
+      }
+    }
+
+    // 回车时智能缩进
+    if (e.code === 'Enter' || e.code === 'Return') {
+      const lineContent = model.getLineContent(position.lineNumber)
+      const currentIndent = (lineContent.match(/^(\s*)/) || [''])[0]
+
+      // 检查当前行是否是块开始关键字
+      const trimmed = lineContent.trim()
+      for (const startKw of Object.keys(BLOCK_PAIRS)) {
+        if (trimmed === startKw || trimmed.startsWith(startKw + '(') || trimmed.startsWith(startKw + ' ')) {
+          // 增加了缩进
+          e.preventDefault()
+          const newIndent = currentIndent + ' '.repeat(props.tabSize)
+          const closingKw = BLOCK_PAIRS[startKw]
+          const closeIndent = currentIndent
+
+          // 插入新行
+          const edits = {
+            range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, lineContent.length + 1),
+            text: '\n' + newIndent + '\n' + closeIndent + closingKw
+          }
+          model.applyEdits([edits])
+
+          // 设置光标到缩进位置
+          setTimeout(() => {
+            editor.setPosition({ lineNumber: position.lineNumber + 1, column: newIndent.length + 1 })
+            editor.focus()
+          }, 0)
+          return
+        }
+      }
+    }
+  })
+
   // ===== 书签系统（P3-1 编辑器功能补完） =====
   // 书签存储：fileId -> Set<lineNumber>
   // 持久化：localStorage key = 'eg-bookmarks-' + fileId
@@ -1118,6 +1247,14 @@ defineExpose({
   box-shadow: 0 0 3px rgba(241, 76, 76, 0.5);
   position: relative;
 }
+.eg-breakpoint-conditional-glyph:hover {
+  transform: scale(1.15);
+}
+/* 流程线样式 */
+.eg-flow-line {
+  border-left: 2px dashed var(--flow-line-color, #666);
+  margin-left: 4px;
+}
 .eg-breakpoint-conditional-glyph::after {
   content: '?';
   position: absolute;
@@ -1134,11 +1271,9 @@ defineExpose({
 }
 /* 调试当前执行行高亮（VS Code 风格：黄色背景 + 左侧箭头标记） */
 .eg-debug-current-line {
-  background: rgba(255, 213, 79, 0.35) !important;
+  background: rgba(255, 213, 79, 0.15);
   border-left: 3px solid #ffd54f;
-  box-shadow: inset 0 0 0 1px rgba(255, 213, 79, 0.3);
 }
-/* 当前行 glyph 区域显示黄色箭头（指示当前执行位置） */
 .eg-debug-current-glyph {
   width: 12px !important;
   height: 12px !important;
