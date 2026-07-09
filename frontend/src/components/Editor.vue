@@ -136,6 +136,62 @@ onMounted(() => {
     guidesBracketPairs: true
   })
 
+  // ===== 自定义右键菜单（中文化+格式化+注释） =====
+  editor.addAction({
+    id: 'format-document',
+    label: '格式化文档',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF],
+    contextMenuGroupId: '9_cutcopyinsert',
+    contextMenuOrder: 1.5,
+    run: (ed) => ed.getAction('editor.action.formatDocument').run()
+  })
+  editor.addAction({
+    id: 'format-selection',
+    label: '格式化所选代码',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF],
+    contextMenuGroupId: '9_cutcopyinsert',
+    contextMenuOrder: 1.6,
+    run: (ed) => ed.getAction('editor.action.formatSelection').run()
+  })
+  editor.addAction({
+    id: 'toggle-comment',
+    label: '注释/取消注释',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeySlash],
+    contextMenuGroupId: '9_cutcopyinsert',
+    contextMenuOrder: 1.7,
+    run: (ed) => ed.getAction('editor.action.commentLine').run()
+  })
+  editor.addAction({
+    id: 'add-line-comment',
+    label: '添加行注释',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyA],
+    contextMenuGroupId: '9_cutcopyinsert',
+    contextMenuOrder: 1.8,
+    run: (ed) => ed.getAction('editor.action.addCommentLine').run()
+  })
+  editor.addAction({
+    id: 'remove-line-comment',
+    label: '移除行注释',
+    contextMenuGroupId: '9_cutcopyinsert',
+    contextMenuOrder: 1.9,
+    run: (ed) => ed.getAction('editor.action.removeCommentLine').run()
+  })
+  editor.addAction({
+    id: 'block-comment',
+    label: '添加块注释',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyB],
+    contextMenuGroupId: '9_cutcopyinsert',
+    contextMenuOrder: 2.0,
+    run: (ed) => {
+      const selection = ed.getSelection()
+      const model = ed.getModel()
+      if (!selection || !model) return
+      const text = model.getValueInRange(selection)
+      const newText = '/* ' + text + ' */'
+      ed.executeEdits('', [{ range: selection, text: newText }])
+    }
+  })
+
   // ===== 书签系统（P3-1 编辑器功能补完） =====
   // 书签存储：fileId -> Set<lineNumber>
   // 持久化：localStorage key = 'eg-bookmarks-' + fileId
