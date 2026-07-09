@@ -225,34 +225,10 @@ onMounted(() => {
     run: async (ed) => {
       const model = ed.getModel()
       if (!model) return
-      const src = model.getValue()
-      if (!src.trim()) return
 
-      try {
-         // 1. 先转译 EGOU → Go
-         const transpileResp = await IDEService.Transpile(src)
-         if (transpileResp.error) {
-           alert('转译失败: ' + transpileResp.error)
-           return
-         }
-         // 2. 格式化 Go 代码
-         const formatResp = await IDEService.FormatCode(transpileResp.go)
-         if (formatResp.error) {
-           alert('格式化失败: ' + formatResp.error)
-           return
-         }
-         if (formatResp.code) {
-           // 只显示格式化结果，不替换编辑器内容
-           // 用新窗口打开显示
-           const win = window.open('', '_blank')
-           if (win) {
-             win.document.write('<pre style="background:#1e1e1e;color:#d4d4d4;padding:20px;font-family:monospace;">' +
-               formatResp.code.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>')
-           }
-         }
-      } catch (e) {
-        console.warn('格式化异常:', e)
-      }
+      // 使用 Monaco 原生格式化（只格式化空白和缩进）
+      ed.getAction('editor.action.formatDocument')?.run()
+      hideContextMenu()
     }
   })
   editor.addAction({
