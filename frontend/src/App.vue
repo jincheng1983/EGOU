@@ -430,6 +430,21 @@
         </template>
       </div>
 
+      <!-- 关于对话框 -->
+      <n-modal v-model:show="aboutVisible" preset="card" title="关于 EGOU 易狗 IDE" :bordered="false" style="width: 400px; max-width: 90vw;" :closable="true">
+        <div style="text-align: center; padding: 20px 0;">
+          <img src="/appicon.png" style="width: 80px; height: 80px; margin-bottom: 20px;" alt="logo">
+          <h2 style="margin: 0 0 10px 0;">EGOU 易狗 IDE</h2>
+          <p style="color: #666; margin: 5px 0;">一款支持中 文编程的现代 IDE</p>
+          <n-divider />
+          <p style="margin: 10px 0;"><strong>作者：</strong>JCOS</p>
+          <p style="margin: 10px 0;"><strong>Q群：</strong>1071098978</p>
+          <p style="margin: 10px 0;"><strong>官网：</strong><a href="https://www.nx998.com" target="_blank" style="color: #18a058;">https://www.nx998.com</a></p>
+          <n-divider />
+          <p style="color: #999; font-size: 12px;">基于 Wails v3 + Vue 3 + Go 构建</p>
+        </div>
+      </n-modal>
+
       <n-modal
         v-model:show="settingsVisible"
         preset="card"
@@ -1934,6 +1949,8 @@ const createProjectTemplate = ref('builtin:window')
 const globalTemplates = ref([])
 const newWindowVisible = ref(false)
 const newWindowName = ref('窗口1')
+// 关于对话框
+const aboutVisible = ref(false)
 // 构建配置面板
 const buildConfigVisible = ref(false)
 const buildConfig = ref({
@@ -5276,8 +5293,7 @@ async function buildExecutable() {
   }
 }
 function showAbout() {
-  output.value = t('message.aboutTitle')
-  outputTabName.value = 'output'
+  aboutVisible.value = true
 }
 function toggleTheme() {
   const names = getThemeNames()
