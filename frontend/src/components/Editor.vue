@@ -15,6 +15,7 @@ import { t } from '../i18n/index.js'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
+  projectPath: { type: String, default: '' },
   suggestions: { type: Array, default: () => [] },
   isDark: { type: Boolean, default: true },
   editorTheme: { type: String, default: 'auto' },
@@ -411,6 +412,74 @@ onMounted(() => {
           range
         })
       })
+      // 用户函数补全：从当前文件符号中提取函数/方法
+      try {
+        const src = model.getValue()
+        const resp = await IDEService.ListSymbols(src)
+        if (resp && resp.symbols) {
+          resp.symbols.forEach(sym => {
+            if (sym.kind === 'function' || sym.kind === 'method') {
+              let params = ''
+              if (sym.params && sym.params.length > 0) {
+                params = sym.params.map(p => p.name + ' ' + p.type).join(', ')
+              }
+              let insert = sym.name + '(' + params + ')'
+              if (params) {
+                insert = sym.name + '(${1:' + params + '})'
+              }
+              suggestions.push({
+                label: sym.name,
+                kind: monaco.languages.CompletionItemKind.Function,
+                insertText: insert,
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                detail: (sym.kind === 'method' ? t('editor.method') : t('editor.function')) + (sym.returnType ? ' → ' + sym.returnType : ''),
+                documentation: { value: sym.returnType ? '返回: ' + sym.returnType : '' },
+                range
+              })
+            } else if (sym.kind === 'type') {
+              suggestions.push({
+                label: sym.name,
+                kind: monaco.languages.CompletionItemKind.Class,
+                insertText: sym.name,
+                detail: t('editor.type'),
+                range
+              })
+            }
+          })
+        }
+      } catch (e) {}
+      // 项目级补全：如果有项目路径，添加项目中所有文件的函数
+      if (props.projectPath) {
+        try {
+          const allResp = await IDEService.ListAllSymbols(props.projectPath)
+          if (allResp && allResp.symbols) {
+            // 去重
+            const added = new Set()
+            suggestions.forEach(s => added.add(s.label))
+            allResp.symbols.forEach(sym => {
+              if ((sym.kind === 'function' || sym.kind === 'method') && !added.has(sym.name)) {
+                let params = ''
+                if (sym.params && sym.params.length > 0) {
+                  params = sym.params.map(p => p.name + ' ' + p.type).join(', ')
+                }
+                let insert = sym.name + '(' + params + ')'
+                if (params) {
+                  insert = sym.name + '(${1:' + params + '})'
+                }
+                suggestions.push({
+                  label: sym.name,
+                  kind: monaco.languages.CompletionItemKind.Function,
+                  insertText: insert,
+                  insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                  detail: (sym.kind === 'method' ? t('editor.method') : t('editor.function')) + (sym.returnType ? ' → ' + sym.returnType : ''),
+                  documentation: { value: (sym.file ? '文件: ' + sym.file + '\n' : '') + (sym.returnType ? '返回: ' + sym.returnType : '') },
+                  range
+                })
+              }
+            })
+          }
+        } catch (e) {}
+      }
       return { suggestions }
     }
   })

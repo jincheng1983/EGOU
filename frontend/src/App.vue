@@ -192,6 +192,7 @@
                         <Editor
                           ref="editorRef"
                           v-model="activeFile.source"
+                          :project-path="projectPath"
                           :suggestions="editorSuggestions"
                           :is-dark="isDark"
                           :editor-theme="editorTheme"
