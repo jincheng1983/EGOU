@@ -1,9 +1,0 @@
-go 环境
-https://go.dev/dl/
-至少 1.25.11版本
-
-upx 压缩
-https://github.com/upx/upx
-比如：https://github.com/upx/upx/releases/tag/v5.2.0
-下载后把 upx.exe
-放到 tools 目录里
